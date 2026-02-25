@@ -46,11 +46,15 @@ def index():
     monthly_expense = month_stats.expense or Decimal('0')
     monthly_balance = monthly_income - monthly_expense
 
+    # 获取所有分类
+    categories = Category.query.all()
+
     return render_template('index.html',
                           transactions=transactions,
                           monthly_income=float(monthly_income),
                           monthly_expense=float(monthly_expense),
-                          monthly_balance=float(monthly_balance))
+                          monthly_balance=float(monthly_balance),
+                          categories=categories)
 
 
 @app.route('/add', methods=['POST'])
