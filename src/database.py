@@ -1,6 +1,6 @@
 from flask import Flask
-from src.models import db, Category, DEFAULT_CATEGORIES
-from src.config import BASE_DIR, SQLALCHEMY_DATABASE_URI, SQLALCHEMY_TRACK_MODIFICATIONS
+from models import db, Category, DEFAULT_CATEGORIES
+from config import BASE_DIR, SQLALCHEMY_DATABASE_URI, SQLALCHEMY_TRACK_MODIFICATIONS
 
 
 def init_database(app: Flask) -> None:

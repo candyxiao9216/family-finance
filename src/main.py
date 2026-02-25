@@ -4,8 +4,8 @@ from decimal import Decimal
 from flask import Flask, redirect, render_template, request, url_for
 from sqlalchemy import func, extract
 
-from src.database import create_app, init_database
-from src.models import db, Transaction, Category
+from database import create_app, init_database
+from models import db, Transaction, Category
 
 app = create_app()
 
@@ -103,4 +103,5 @@ def delete_transaction(transaction_id):
 if __name__ == '__main__':
     # 首次运行时初始化数据库
     init_database(app)
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # 使用 5001 端口避免与 macOS AirPlay Receiver 冲突
+    app.run(host='0.0.0.0', port=5001, debug=True)
