@@ -30,14 +30,14 @@ def index():
     month_stats = db.session.query(
         func.sum(
             case(
-                (Transaction.type == 'income') & (extract('month', Transaction.transaction_date) == current_month) &
-                (extract('year', Transaction.transaction_date) == current_year), Transaction.amount
+                ((Transaction.type == 'income') & (extract('month', Transaction.transaction_date) == current_month) &
+                 (extract('year', Transaction.transaction_date) == current_year), Transaction.amount)
             )
         ).label('income'),
         func.sum(
             case(
-                (Transaction.type == 'expense') & (extract('month', Transaction.transaction_date) == current_month) &
-                (extract('year', Transaction.transaction_date) == current_year), Transaction.amount
+                ((Transaction.type == 'expense') & (extract('month', Transaction.transaction_date) == current_month) &
+                 (extract('year', Transaction.transaction_date) == current_year), Transaction.amount)
             )
         ).label('expense')
     ).first()
