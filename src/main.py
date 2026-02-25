@@ -2,7 +2,7 @@ from datetime import date, datetime
 from decimal import Decimal
 
 from flask import Flask, redirect, render_template, request, url_for
-from sqlalchemy import func, extract
+from sqlalchemy import func, extract, case
 
 from database import create_app, init_database
 from models import db, Transaction, Category
@@ -29,15 +29,15 @@ def index():
 
     month_stats = db.session.query(
         func.sum(
-            func.case(
-                ((Transaction.type == 'income') & (extract('month', Transaction.transaction_date) == current_month) &
-                 (extract('year', Transaction.transaction_date) == current_year)), Transaction.amount, else_=0
+            case(
+                (Transaction.type == 'income') & (extract('month', Transaction.transaction_date) == current_month) &
+                (extract('year', Transaction.transaction_date) == current_year), Transaction.amount
             )
         ).label('income'),
         func.sum(
-            func.case(
-                ((Transaction.type == 'expense') & (extract('month', Transaction.transaction_date) == current_month) &
-                 (extract('year', Transaction.transaction_date) == current_year)), Transaction.amount, else_=0
+            case(
+                (Transaction.type == 'expense') & (extract('month', Transaction.transaction_date) == current_month) &
+                (extract('year', Transaction.transaction_date) == current_year), Transaction.amount
             )
         ).label('expense')
     ).first()
