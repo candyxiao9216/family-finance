@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>家庭财务管理</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <h1>家庭财务</h1>
+            <p id="current-date"></p>
+        </header>
+
+        <!-- 统计栏 -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-label">本月收入</div>
+                <div class="stat-value income" id="stat-income">¥0.00</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">本月支出</div>
+                <div class="stat-value expense" id="stat-expense">¥0.00</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">结余</div>
+                <div class="stat-value balance" id="stat-balance">¥0.00</div>
+            </div>
+        </div>
+
+        <!-- 添加交易表单 -->
+        <div class="card form-section">
+            <div class="card-header">
+                <h2 class="card-title">添加交易</h2>
+            </div>
+            <form action="/add" method="POST">
+                <div class="type-selector">
+                    <label class="type-option">
+                        <input type="radio" name="type" value="income" required>
+                        <span class="type-label income">💰 收入</span>
+                    </label>
+                    <label class="type-option">
+                        <input type="radio" name="type" value="expense" checked required>
+                        <span class="type-label expense">📤 支出</span>
+                    </label>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">金额</label>
+                        <input type="number" name="amount" class="form-input" placeholder="0.00" step="0.01" min="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">分类</label>
+                        <select name="category" class="form-select" required>
+                            <option value="">选择分类</option>
+                            <optgroup label="收入">
+                                <option value="1">工资</option>
+                                <option value="2">奖金</option>
+                            </optgroup>
+                            <optgroup label="支出">
+                                <option value="3">餐饮</option>
+                                <option value="4">交通</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">日期</label>
+                        <input type="date" name="date" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">备注（选填）</label>
+                        <input type="text" name="description" class="form-input" placeholder="添加备注">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit">
+                    <span id="btn-text">添加记录</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- 交易列表 -->
+        <div class="card transactions-section">
+            <div class="card-header">
+                <h2 class="card-title">近期交易</h2>
+            </div>
+
+            <div class="transactions-list" id="transactions-list">
+                {% if transactions %}
+                    {% for t in transactions %}
+                    <div class="transaction-item {{ 'income' if t.type == 'income' else 'expense' }}">
+                        <div class="t-icon">
+                            {{ '💰' if t.type == 'income' else '📤' }}
+                        </div>
+                        <div class="t-info">
+                            <span class="t-description">{{ t.description or (t.category_name if t.category_name else '未分类') }}</span>
+                            <span class="t-meta">
+                                <span>{{ t.category_name or '-' }}</span>
+                                <span>•</span>
+                                <span>{{ t.transaction_date }}</span>
+                            </span>
+                        </div>
+                        <div class="t-amount">
+                            {{ '+' if t.type == 'income' else '-' }}¥{{ "%.2f"|format(t.amount) }}
+                        </div>
+                        <form action="/delete/{{ t.id }}" method="POST" class="delete-form">
+                            <button type="submit" class="btn-delete" title="删除">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 6h10M5 6v10a1 1 0 001 1h4a1 1 0 001-1V6M8 6V4M6 6v1M10 6v1"/>
+                                </svg>
+                            </button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📝</div>
+                        <p class="empty-state-text">还没有交易记录，试试添加一条吧</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 设置当前日期
+        function setCurrentDate() {
+            const now = new Date();
+            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+            document.getElementById('current-date').textContent = now.toLocaleDateString('zh-CN', options);
+        }
+
+        // 设置默认日期为今天
+        function setDefaultDate() {
+            const today = new Date().toISOString().split('T')[0];
+            document.querySelector('input[name="date"]').value = today;
+        }
+
+        // 格式化货币
+        function formatCurrency(amount) {
+            return '¥' + amount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        // 更新统计数据
+        function updateStats() {
+            let income = 0, expense = 0;
+
+            const items = document.querySelectorAll('.transaction-item');
+            items.forEach(item => {
+                const amountText = item.querySelector('.t-amount').textContent;
+                const amount = parseFloat(amountText.replace(/[¥+-]/g, ''));
+
+                if (item.classList.contains('income')) {
+                    income += amount;
+                } else {
+                    expense += amount;
+                }
+            });
+
+            document.getElementById('stat-income').textContent = formatCurrency(income);
+            document.getElementById('stat-expense').textContent = formatCurrency(expense);
+            document.getElementById('stat-balance').textContent = formatCurrency(income - expense);
+        }
+
+        // 分类联动 - 切换类型时更新分类选项
+        const typeInputs = document.querySelectorAll('input[name="type"]');
+        const categorySelect = document.querySelector('select[name="category"]');
+
+        const categories = {
+            income: [
+                { value: '1', text: '工资' },
+                { value: '2', text: '奖金' }
+            ],
+            expense: [
+                { value: '3', text: '餐饮' },
+                { value: '4', text: '交通' }
+            ]
+        };
+
+        function updateCategories(type) {
+            const currentCategory = categorySelect.value;
+            categorySelect.innerHTML = '<option value="">选择分类</option>';
+
+            categories[type].forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat.value;
+                option.textContent = cat.text;
+                categorySelect.appendChild(option);
+            });
+
+            // 尝试保持选中的分类
+            if (categories[type].some(c => c.value === currentCategory)) {
+                categorySelect.value = currentCategory;
+            }
+        }
+
+        typeInputs.forEach(input => {
+            input.addEventListener('change', (e) => {
+                updateCategories(e.target.value);
+            });
+        });
+
+        // 表单提交动画
+        const form = document.querySelector('form');
+        form.addEventListener('submit', (e) => {
+            const btnText = document.getElementById('btn-text');
+            btnText.textContent = '添加中...';
+        });
+
+        // 初始化
+        setCurrentDate();
+        setDefaultDate();
+        updateCategories('expense');
+    </script>
+</body>
+</html>

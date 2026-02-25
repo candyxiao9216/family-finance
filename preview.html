@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>家庭财务管理 - 预览</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="src/static/css/style.css">
+    <style>
+        body { background: #F9F7F4; }
+        .demo-note {
+            text-align: center;
+            padding: 20px;
+            color: #9A9A9A;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <p class="demo-note">此为静态预览，表单和按钮为演示效果</p>
+
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <h1>家庭财务</h1>
+            <p id="current-date"></p>
+        </header>
+
+        <!-- 统计栏 -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-label">本月收入</div>
+                <div class="stat-value income">¥15,000.00</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">本月支出</div>
+                <div class="stat-value expense">¥4,280.50</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">结余</div>
+                <div class="stat-value balance">¥10,719.50</div>
+            </div>
+        </div>
+
+        <!-- 添加交易表单 -->
+        <div class="card form-section">
+            <div class="card-header">
+                <h2 class="card-title">添加交易</h2>
+            </div>
+            <form onsubmit="event.preventDefault();
+                        const btn = document.getElementById('btn-text');
+                        btn.textContent = '已添加 ✓';
+                        setTimeout(() => btn.textContent = '添加记录', 2000);">
+                <div class="type-selector">
+                    <label class="type-option">
+                        <input type="radio" name="type" value="income" required>
+                        <span class="type-label income">💰 收入</span>
+                    </label>
+                    <label class="type-option">
+                        <input type="radio" name="type" value="expense" checked required>
+                        <span class="type-label expense">📤 支出</span>
+                    </label>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">金额</label>
+                        <input type="number" name="amount" class="form-input" placeholder="0.00" step="0.01" min="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">分类</label>
+                        <select name="category" class="form-select" required>
+                            <option value="">选择分类</option>
+                            <optgroup label="收入">
+                                <option value="1">工资</option>
+                                <option value="2">奖金</option>
+                            </optgroup>
+                            <optgroup label="支出">
+                                <option value="3">餐饮</option>
+                                <option value="4">交通</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">日期</label>
+                        <input type="date" name="date" class="form-input" value="2026-02-26" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">备注（选填）</label>
+                        <input type="text" name="description" class="form-input" placeholder="添加备注">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit">
+                    <span id="btn-text">添加记录</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- 交易列表 -->
+        <div class="card transactions-section">
+            <div class="card-header">
+                <h2 class="card-title">近期交易</h2>
+            </div>
+
+            <div class="transactions-list">
+                <div class="transaction-item income">
+                    <div class="t-icon">💰</div>
+                    <div class="t-info">
+                        <span class="t-description">2月工资</span>
+                        <span class="t-meta">
+                            <span>工资</span>
+                            <span>•</span>
+                            <span>2026-02-26</span>
+                        </span>
+                    </div>
+                    <div class="t-amount">+¥15,000.00</div>
+                    <button class="btn-delete" title="删除">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h10M5 6v10a1 1 0 001 1h4a1 1 0 001-1V6M8 6V4M6 6v1M10 6v1"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="transaction-item expense">
+                    <div class="t-icon">📤</div>
+                    <div class="t-info">
+                        <span class="t-description">午餐</span>
+                        <span class="t-meta">
+                            <span>餐饮</span>
+                            <span>•</span>
+                            <span>2026-02-25</span>
+                        </span>
+                    </div>
+                    <div class="t-amount">-¥45.00</div>
+                    <button class="btn-delete" title="删除">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h10M5 6v10a1 1 0 001 1h4a1 1 0 001-1V6M8 6V4M6 6v1M10 6v1"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="transaction-item expense">
+                    <div class="t-icon">📤</div>
+                    <div class="t-info">
+                        <span class="t-description">地铁通勤</span>
+                        <span class="t-meta">
+                            <span>交通</span>
+                            <span>•</span>
+                            <span>2026-02-25</span>
+                        </span>
+                    </div>
+                    <div class="t-amount">-¥6.00</div>
+                    <button class="btn-delete" title="删除">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h10M5 6v10a1 1 0 001 1h4a1 1 0 001-1V6M8 6V4M6 6v1M10 6v1"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="transaction-item expense">
+                    <div class="t-icon">📤</div>
+                    <div class="t-info">
+                        <span class="t-description">买菜</span>
+                        <span class="t-meta">
+                            <span>餐饮</span>
+                            <span>•</span>
+                            <span>2026-02-24</span>
+                        </span>
+                    </div>
+                    <div class="t-amount">-¥128.50</div>
+                    <button class="btn-delete" title="删除">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h10M5 6v10a1 1 0 001 1h4a1 1 0 001-1V6M8 6V4M6 6v1M10 6v1"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="transaction-item expense">
+                    <div class="t-icon">📤</div>
+                    <div class="t-info">
+                        <span class="t-description">打车</span>
+                        <span class="t-meta">
+                            <span>交通</span>
+                            <span>•</span>
+                            <span>2026-02-23</span>
+                        </span>
+                    </div>
+                    <div class="t-amount">-¥42.00</div>
+                    <button class="btn-delete" title="删除">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h10M5 6v10a1 1 0 001 1h4a1 1 0 001-1V6M8 6V4M6 6v1M10 6v1"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="transaction-item income">
+                    <div class="t-icon">💰</div>
+                    <div class="t-info">
+                        <span class="t-description">项目奖金</span>
+                        <span class="t-meta">
+                            <span>奖金</span>
+                            <span>•</span>
+                            <span>2026-02-20</span>
+                        </span>
+                    </div>
+                    <div class="t-amount">+¥3,500.00</div>
+                    <button class="btn-delete" title="删除">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h10M5 6v10a1 1 0 001 1h4a1 1 0 001-1V6M8 6V4M6 6v1M10 6v1"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 设置当前日期
+        function setCurrentDate() {
+            const now = new Date();
+            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+            document.getElementById('current-date').textContent = now.toLocaleDateString('zh-CN', options);
+        }
+        setCurrentDate();
+    </script>
+</body>
+</html>
