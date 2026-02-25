@@ -150,26 +150,10 @@
             return '¥' + amount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
-        // 更新统计数据
-        function updateStats() {
-            let income = 0, expense = 0;
-
-            const items = document.querySelectorAll('.transaction-item');
-            items.forEach(item => {
-                const amountText = item.querySelector('.t-amount').textContent;
-                const amount = parseFloat(amountText.replace(/[¥+-]/g, ''));
-
-                if (item.classList.contains('income')) {
-                    income += amount;
-                } else {
-                    expense += amount;
-                }
-            });
-
-            document.getElementById('stat-income').textContent = formatCurrency(income);
-            document.getElementById('stat-expense').textContent = formatCurrency(expense);
-            document.getElementById('stat-balance').textContent = formatCurrency(income - expense);
-        }
+        // 初始化统计数据（从后端获取）
+        document.getElementById('stat-income').textContent = formatCurrency({{ monthly_income }});
+        document.getElementById('stat-expense').textContent = formatCurrency({{ monthly_expense }});
+        document.getElementById('stat-balance').textContent = formatCurrency({{ monthly_balance }});
 
         // 分类联动 - 切换类型时更新分类选项
         const typeInputs = document.querySelectorAll('input[name="type"]');
