@@ -5,7 +5,7 @@ from flask import Flask, redirect, render_template, request, url_for
 from sqlalchemy import func, extract, case
 
 from database import create_app, init_database
-from models import db, Transaction, Category, User, Family
+from models import db, Transaction, Category, User, Family, TransactionModification
 from routes.auth import auth_bp
 from routes.family import family_bp
 from flask import session
@@ -36,12 +36,31 @@ def init_db_route():
 
 @app.route('/')
 def index():
-    """首页 - 交易列表"""
-    # 获取当前用户的交易，按日期降序
+    """首页 - 交易列表，支持个人/家庭视图切换"""
     user_id = session.get('user_id')
-    transactions = Transaction.query.filter_by(user_id=user_id).order_by(Transaction.transaction_date.desc()).all()
 
-    # 计算本月统计（仅当前用户）
+    # 获取当前用户和家庭信息
+    user = User.query.get(user_id)
+    family = user.family if user else None
+
+    # 读取视图参数：personal（个人）或 family（家庭）
+    current_view = request.args.get('view', 'personal')
+
+    # 确定查询范围：家庭视图且用户有家庭时，查询所有家庭成员的数据
+    if current_view == 'family' and family:
+        family_member_ids = [m.id for m in family.members]
+        user_filter = Transaction.user_id.in_(family_member_ids)
+        family_members = family.members
+    else:
+        # 个人视图或无家庭，回退到仅查询当前用户
+        current_view = 'personal'
+        user_filter = (Transaction.user_id == user_id)
+        family_members = []
+
+    # 获取交易列表，按日期降序
+    transactions = Transaction.query.filter(user_filter).order_by(Transaction.transaction_date.desc()).all()
+
+    # 计算本月统计
     current_month = date.today().month
     current_year = date.today().year
 
@@ -49,13 +68,13 @@ def index():
         func.sum(
             case(
                 ((Transaction.type == 'income') & (extract('month', Transaction.transaction_date) == current_month) &
-                 (extract('year', Transaction.transaction_date) == current_year) & (Transaction.user_id == user_id), Transaction.amount)
+                 (extract('year', Transaction.transaction_date) == current_year) & user_filter, Transaction.amount)
             )
         ).label('income'),
         func.sum(
             case(
                 ((Transaction.type == 'expense') & (extract('month', Transaction.transaction_date) == current_month) &
-                 (extract('year', Transaction.transaction_date) == current_year) & (Transaction.user_id == user_id), Transaction.amount)
+                 (extract('year', Transaction.transaction_date) == current_year) & user_filter, Transaction.amount)
             )
         ).label('expense')
     ).first()
@@ -75,6 +94,9 @@ def index():
                           monthly_expense=float(monthly_expense),
                           monthly_balance=float(monthly_balance),
                           categories=categories,
+                          current_view=current_view,
+                          family=family,
+                          family_members=family_members,
                           username=session.get('nickname', session.get('username', '用户')))
 
 
@@ -116,6 +138,85 @@ def add_transaction():
     return redirect(url_for('index'))
 
 
+@app.route('/edit/<int:transaction_id>', methods=['GET', 'POST'])
+def edit_transaction(transaction_id):
+    """编辑交易 - GET 显示编辑表单，POST 处理提交"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('auth.login'))
+
+    transaction = Transaction.query.get_or_404(transaction_id)
+    user = User.query.get(user_id)
+
+    # 权限检查：自己的交易或同一家庭的交易可编辑
+    if transaction.user_id != user_id:
+        if not (user.family_id and user.family_id == transaction.user.family_id):
+            return "无权编辑此交易", 403
+
+    if request.method == 'GET':
+        # 显示编辑表单
+        categories = Category.query.filter(
+            (Category.user_id == None) | (Category.user_id == user_id)
+        ).all()
+
+        return render_template('edit_transaction.html',
+                              transaction=transaction,
+                              categories=categories,
+                              username=session.get('nickname', session.get('username', '用户')))
+
+    # POST：处理编辑表单提交
+    new_type = request.form.get('type')
+    new_amount = request.form.get('amount')
+    new_category_id = request.form.get('category')
+    new_date_str = request.form.get('date')
+    new_description = request.form.get('description')
+
+    # 解析日期
+    try:
+        new_date = datetime.strptime(new_date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return "日期格式错误", 400
+
+    # 逐字段对比，记录变化
+    modifications = []
+    field_map = {
+        'type': ('类型', str(transaction.type), new_type),
+        'amount': ('金额', str(float(transaction.amount)), new_amount),
+        'category_id': ('分类', str(transaction.category_id), new_category_id),
+        'transaction_date': ('日期', str(transaction.transaction_date), new_date_str),
+        'description': ('备注', transaction.description or '', new_description or ''),
+    }
+
+    for field, (label, old_val, new_val) in field_map.items():
+        if old_val != new_val:
+            mod = TransactionModification(
+                transaction_id=transaction.id,
+                modified_by=user_id,
+                field_name=label,
+                old_value=old_val,
+                new_value=new_val
+            )
+            modifications.append(mod)
+
+    # 如果有变化，更新记录
+    if modifications:
+        transaction.type = new_type
+        transaction.amount = Decimal(new_amount)
+        transaction.category_id = int(new_category_id)
+        transaction.transaction_date = new_date
+        transaction.description = new_description or None
+        transaction.last_modified_by = user_id
+        transaction.last_modified_at = datetime.utcnow()
+        transaction.modification_count = (transaction.modification_count or 0) + 1
+
+        for mod in modifications:
+            db.session.add(mod)
+
+        db.session.commit()
+
+    return redirect(url_for('index'))
+
+
 @app.route('/delete/<int:transaction_id>', methods=['POST'])
 def delete_transaction(transaction_id):
     """删除交易"""
@@ -124,10 +225,12 @@ def delete_transaction(transaction_id):
         return redirect(url_for('auth.login'))
 
     transaction = Transaction.query.get_or_404(transaction_id)
+    user = User.query.get(user_id)
 
-    # 检查权限：只能删除自己的交易
+    # 权限检查：自己的交易或同一家庭的交易可删除
     if transaction.user_id != user_id:
-        return "无权删除此交易", 403
+        if not (user.family_id and user.family_id == transaction.user.family_id):
+            return "无权删除此交易", 403
 
     db.session.delete(transaction)
     db.session.commit()

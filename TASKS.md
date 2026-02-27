@@ -12,15 +12,15 @@
 
 ## 当前里程碑：Phase 1 - 核心功能完善（2026-02-27）
 
-### TASK-001：修复分类下拉框硬编码问题
-- 状态：TODO
+### TASK-001：修复分类下拉框硬编码问题 ✅
+- 状态：DONE
 - 优先级：P0
 - 规模：S
 - 目标（一句话）：分类选项从后端动态获取，而非模板硬编码
 - 验收标准：
-  - [ ] index.html 中分类 select 动态渲染 categories 数据
-  - [ ] 支持新增自定义分类后自动显示
-  - [ ] 按类型（收入/支出）分组显示
+  - [x] index.html 中分类 select 动态渲染 categories 数据
+  - [x] 支持新增自定义分类后自动显示
+  - [x] 按类型（收入/支出）分组显示
 - 涉及文件/目录：
   - `/src/main.py`（确认已传递 categories 给模板）
   - `/src/templates/index.html`
@@ -46,40 +46,49 @@
 - 依赖：无
 - 备注：已完成，通过代码审查
 
-### TASK-003：家庭管理路由实现
-- 状态：TODO
+### TASK-003：家庭管理路由实现 ✅
+- 状态：DONE
 - 优先级：P0
 - 规模：M
 - 目标（一句话）：实现家庭创建、加入、成员管理路由
 - 验收标准：
-  - [ ] 家庭创建路由（第一个用户自动创建）
-  - [ ] 家庭加入路由（邀请码验证）
-  - [ ] 家庭成员列表路由
-  - [ ] 邀请码管理路由
+  - [x] 家庭创建路由（第一个用户自动创建）
+  - [x] 家庭加入路由（邀请码验证）
+  - [x] 家庭成员列表路由
+  - [x] 邀请码管理路由
 - 涉及文件/目录：
   - `/src/routes/family.py`
-  - `/src/templates/family/`
-  - `/src/main.py`（路由注册）
+  - `/src/routes/auth.py`（注册流程集成家庭创建/加入）
+  - `/src/templates/family/info.html`
+  - `/src/templates/family/members.html`
+  - `/src/main.py`（蓝图注册）
 - 依赖：TASK-002
-- 备注：基于已完成的 Family 数据模型
+- 备注：已完成，包含家庭信息页、成员列表页、邀请码重新生成、API 接口
 
 ---
 
 ## 待办池（Phase 2 - 扩展功能）
 
-### TASK-003：交易编辑功能
-- 状态：TODO
+### TASK-003：交易编辑功能 ✅
+- 状态：DONE
 - 优先级：P1
 - 规模：M
-- 目标（一句话）：支持编辑已有交易记录
+- 目标（一句话）：支持编辑已有交易记录，含修改日志追踪
 - 验收标准：
-  - [ ] 交易列表显示编辑按钮
-  - [ ] 点击编辑显示编辑表单（预填充现有数据）
-  - [ ] 提交更新数据库记录
+  - [x] 交易列表显示编辑按钮
+  - [x] 点击编辑显示编辑表单（预填充现有数据）
+  - [x] 提交更新数据库记录
+  - [x] TransactionModification 模型记录逐字段修改历史
+  - [x] 家庭成员可互相编辑/删除交易
+  - [x] 首页显示「已修改」徽标
 - 涉及文件/目录：
-  - `/src/main.py` 或 `/src/routes/transaction.py`
-  - `/src/templates/edit_transaction.html`
+  - `/src/main.py`（edit_transaction 路由，GET+POST）
+  - `/src/models.py`（TransactionModification 模型、Transaction 追踪字段）
+  - `/src/templates/edit_transaction.html`（编辑表单页）
+  - `/src/templates/index.html`（编辑按钮、修改徽标）
+  - `/src/static/css/style.css`（btn-edit、t-modified 样式）
 - 依赖：TASK-001
+- 备注：已完成，含家庭权限检查和修改历史展示
 
 ### TASK-004：自定义分类管理
 - 状态：TODO

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>编辑交易 - 家庭财务管理</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-main">
+                <h1>编辑交易</h1>
+                <p><a href="/" style="color: var(--text-muted); text-decoration: none;">← 返回首页</a></p>
+            </div>
+        </header>
+
+        <div class="card form-section">
+            <div class="card-header">
+                <h2 class="card-title">修改交易记录</h2>
+            </div>
+            <form action="/edit/{{ transaction.id }}" method="POST">
+                <div class="type-selector">
+                    <label class="type-option">
+                        <input type="radio" name="type" value="income" {{ 'checked' if transaction.type == 'income' }} required>
+                        <span class="type-label income">💰 收入</span>
+                    </label>
+                    <label class="type-option">
+                        <input type="radio" name="type" value="expense" {{ 'checked' if transaction.type == 'expense' }} required>
+                        <span class="type-label expense">📤 支出</span>
+                    </label>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">金额</label>
+                        <input type="number" name="amount" class="form-input" value="{{ '%.2f'|format(transaction.amount) }}" step="0.01" min="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">分类</label>
+                        <select name="category" class="form-select" required>
+                            <option value="">选择分类</option>
+                            <optgroup label="收入">
+                                {% for c in categories if c.type == 'income' %}
+                                <option value="{{ c.id }}" {{ 'selected' if c.id == transaction.category_id }}>{{ c.name }}</option>
+                                {% endfor %}
+                            </optgroup>
+                            <optgroup label="支出">
+                                {% for c in categories if c.type == 'expense' %}
+                                <option value="{{ c.id }}" {{ 'selected' if c.id == transaction.category_id }}>{{ c.name }}</option>
+                                {% endfor %}
+                            </optgroup>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">日期</label>
+                        <input type="date" name="date" class="form-input" value="{{ transaction.transaction_date }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">备注（选填）</label>
+                        <input type="text" name="description" class="form-input" value="{{ transaction.description or '' }}">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 12px;">
+                    <button type="submit" class="btn-submit" style="flex: 1;">
+                        <span>保存修改</span>
+                    </button>
+                    <a href="/" class="btn-submit" style="flex: 0 0 auto; background: var(--text-muted); text-decoration: none; text-align: center;">取消</a>
+                </div>
+            </form>
+        </div>
+
+        <!-- 如果有修改历史，展示 -->
+        {% if transaction.modifications %}
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">修改记录</h2>
+            </div>
+            <div style="padding: 16px;">
+                {% for mod in transaction.modifications|sort(attribute='modified_at', reverse=True) %}
+                <div style="padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px;">
+                    <span style="color: var(--text-muted);">
+                        {{ mod.modifier.nickname or mod.modifier.username }}
+                        修改了「{{ mod.field_name }}」：
+                        {{ mod.old_value }} → {{ mod.new_value }}
+                    </span>
+                    <span style="float: right; color: var(--text-muted); font-size: 12px;">
+                        {{ mod.modified_at.strftime('%Y-%m-%d %H:%M') }}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

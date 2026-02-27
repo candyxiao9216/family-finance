@@ -18,12 +18,29 @@
                 <p id="current-date"></p>
             </div>
             <div class="user-info">
-                <span class="username">欢迎，{{ username }}</span>
+                <span class="username">{{ username }}</span>
                 <div class="user-actions">
+                    {% if family %}
+                    <a href="{{ url_for('family.family_info') }}" class="nav-link">家庭</a>
+                    {% endif %}
                     <a href="{{ url_for('auth.logout') }}" class="logout-btn">退出</a>
                 </div>
             </div>
         </header>
+
+        <!-- 视图切换 -->
+        {% if family %}
+        <div class="view-switcher">
+            <a href="/?view=personal" class="view-btn {{ 'active' if current_view == 'personal' }}">我的</a>
+            <a href="/?view=family" class="view-btn {{ 'active' if current_view == 'family' }}">家庭</a>
+        </div>
+        {% if current_view == 'family' %}
+        <div class="family-bar">
+            <span class="family-name">{{ family.name }}</span>
+            <span class="family-meta">{{ family.members|length }} 位成员 · 邀请码 {{ family.invite_code }}</span>
+        </div>
+        {% endif %}
+        {% endif %}
 
         <!-- 统计栏 -->
         <div class="stats-bar">
@@ -68,12 +85,14 @@
                         <select name="category" class="form-select" required>
                             <option value="">选择分类</option>
                             <optgroup label="收入">
-                                <option value="1">工资</option>
-                                <option value="2">奖金</option>
+                                {% for c in categories if c.type == 'income' %}
+                                <option value="{{ c.id }}">{{ c.name }}</option>
+                                {% endfor %}
                             </optgroup>
                             <optgroup label="支出">
-                                <option value="3">餐饮</option>
-                                <option value="4">交通</option>
+                                {% for c in categories if c.type == 'expense' %}
+                                <option value="{{ c.id }}">{{ c.name }}</option>
+                                {% endfor %}
                             </optgroup>
                         </select>
                     </div>
@@ -112,21 +131,35 @@
                         <div class="t-info">
                             <span class="t-description">{{ t.description or (t.category_name if t.category_name else '未分类') }}</span>
                             <span class="t-meta">
+                                {% if current_view == 'family' %}
+                                <span class="t-creator">{{ t.user.nickname or t.user.username }}</span>
+                                <span>·</span>
+                                {% endif %}
                                 <span>{{ t.category_name or '-' }}</span>
-                                <span>•</span>
+                                <span>·</span>
                                 <span>{{ t.transaction_date }}</span>
+                                {% if t.modification_count %}
+                                <span class="t-modified" title="已修改 {{ t.modification_count }} 次">已修改</span>
+                                {% endif %}
                             </span>
                         </div>
                         <div class="t-amount">
                             {{ '+' if t.type == 'income' else '-' }}¥{{ "%.2f"|format(t.amount) }}
                         </div>
-                        <form action="/delete/{{ t.id }}" method="POST" class="delete-form">
-                            <button type="submit" class="btn-delete" title="删除">
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M3 6h10M5 6v10a1 1 0 001 1h4a1 1 0 001-1V6M8 6V4M6 6v1M10 6v1"/>
+                        <div class="t-actions">
+                            <a href="/edit/{{ t.id }}" class="btn-edit" title="编辑">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M11.5 2.5l2 2M2 14l1-4L11.5 1.5l2 2L5 12l-4 1z"/>
                                 </svg>
-                            </button>
-                        </form>
+                            </a>
+                            <form action="/delete/{{ t.id }}" method="POST" class="delete-form">
+                                <button type="submit" class="btn-delete" title="删除">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M3 6h10M5 6v10a1 1 0 001 1h4a1 1 0 001-1V6M8 6V4M6 6v1M10 6v1"/>
+                                    </svg>
+                                </button>
+                            </form>
+                        </div>
                     </div>
                     {% endfor %}
                 {% else %}
@@ -169,12 +202,14 @@
 
         const categories = {
             income: [
-                { value: '1', text: '工资' },
-                { value: '2', text: '奖金' }
+                {% for c in categories if c.type == 'income' %}
+                { value: '{{ c.id }}', text: '{{ c.name }}' }{% if not loop.last %},{% endif %}
+                {% endfor %}
             ],
             expense: [
-                { value: '3', text: '餐饮' },
-                { value: '4', text: '交通' }
+                {% for c in categories if c.type == 'expense' %}
+                { value: '{{ c.id }}', text: '{{ c.name }}' }{% if not loop.last %},{% endif %}
+                {% endfor %}
             ]
         };
 

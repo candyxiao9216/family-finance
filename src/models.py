@@ -18,7 +18,7 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # 关系定义
-    transactions = db.relationship('Transaction', backref='user', lazy=True)
+    transactions = db.relationship('Transaction', foreign_keys='Transaction.user_id', backref='user', lazy=True)
     categories = db.relationship('Category', backref='user', lazy=True)
 
     def set_password(self, password):
@@ -77,6 +77,14 @@ class Transaction(db.Model):
     transaction_date = db.Column(db.Date, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # 修改追踪字段
+    last_modified_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # 最后修改人
+    last_modified_at = db.Column(db.DateTime, nullable=True)  # 最后修改时间
+    modification_count = db.Column(db.Integer, default=0)  # 修改次数
+
+    # 最后修改人关系（需用 foreign_keys 避免与 user backref 冲突）
+    last_modifier = db.relationship('User', foreign_keys=[last_modified_by], backref='modified_transactions')
+
     @property
     def category_name(self):
         return self.category.name if self.category else None
@@ -90,7 +98,10 @@ class Transaction(db.Model):
             'category_name': self.category_name,
             'description': self.description,
             'transaction_date': self.transaction_date.isoformat() if self.transaction_date else None,
-            'created_at': self.created_at.isoformat() if self.created_at else None
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'last_modified_by': self.last_modified_by,
+            'last_modified_at': self.last_modified_at.isoformat() if self.last_modified_at else None,
+            'modification_count': self.modification_count or 0
         }
 
 
@@ -125,4 +136,37 @@ class Family(db.Model):
             'invite_code': self.invite_code,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'member_count': len(self.members) if self.members else 0
+        }
+
+
+class TransactionModification(db.Model):
+    """交易修改记录表 - 记录每次交易修改的详细信息"""
+    __tablename__ = 'transaction_modifications'
+
+    id = db.Column(db.Integer, primary_key=True)
+    transaction_id = db.Column(db.Integer, db.ForeignKey('transactions.id'), nullable=False)  # 关联的交易 ID
+    modified_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)  # 修改人 ID
+    field_name = db.Column(db.String(50), nullable=False)  # 被修改的字段名
+    old_value = db.Column(db.Text, nullable=True)  # 修改前的值
+    new_value = db.Column(db.Text, nullable=True)  # 修改后的值
+    modified_at = db.Column(db.DateTime, default=datetime.utcnow)  # 修改时间
+
+    # 关系定义
+    transaction = db.relationship('Transaction', foreign_keys=[transaction_id], backref='modifications')
+    modifier = db.relationship('User', foreign_keys=[modified_by], backref='transaction_modifications')
+
+    def __repr__(self):
+        return f"<TransactionModification {self.id}: {self.field_name} on Transaction {self.transaction_id}>"
+
+    def to_dict(self):
+        """转换为字典格式"""
+        return {
+            'id': self.id,
+            'transaction_id': self.transaction_id,
+            'modified_by': self.modified_by,
+            'modifier_name': self.modifier.nickname or self.modifier.username if self.modifier else None,
+            'field_name': self.field_name,
+            'old_value': self.old_value,
+            'new_value': self.new_value,
+            'modified_at': self.modified_at.isoformat() if self.modified_at else None
         }
