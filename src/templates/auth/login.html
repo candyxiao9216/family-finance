@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 家庭财务管理</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1>家庭财务管理</h1>
+                <p class="auth-subtitle">请登录您的账户</p>
+            </div>
+
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for message in messages %}
+                            <div class="flash-message">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" class="auth-form">
+                <div class="form-group">
+                    <label for="username">用户名</label>
+                    <input type="text" id="username" name="username" required
+                           placeholder="请输入用户名" autocomplete="username">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" name="password" required
+                           placeholder="请输入密码" autocomplete="current-password">
+                </div>
+
+                <button type="submit" class="btn-primary btn-full">登录</button>
+            </form>
+
+            <div class="auth-links">
+                <p>还没有账户？<a href="{{ url_for('auth.register') }}">立即注册</a></p>
+            </div>
+
+            <div class="demo-account">
+                <h3>演示账户</h3>
+                <p><strong>用户名:</strong> admin</p>
+                <p><strong>密码:</strong> admin123</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 自动聚焦到用户名输入框
+        document.addEventListener('DOMContentLoaded', function() {
+            const usernameInput = document.getElementById('username');
+            if (usernameInput) {
+                usernameInput.focus();
+            }
+        });
+    </script>
+</body>
+</html>

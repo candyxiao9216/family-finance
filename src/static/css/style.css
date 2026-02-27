@@ -570,3 +570,160 @@ body::before {
     from { opacity: 1; }
     to { opacity: 0; }
 }
+
+/* 认证页面样式 */
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: var(--color-bg);
+    padding: var(--space-xl);
+}
+
+.auth-card {
+    background: var(--color-bg-card);
+    border-radius: var(--radius-lg);
+    padding: var(--space-2xl);
+    box-shadow: var(--shadow-soft);
+    width: 100%;
+    max-width: 400px;
+    border: 1px solid var(--color-border-light);
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: var(--space-xl);
+}
+
+.auth-header h1 {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: var(--space-sm);
+}
+
+.auth-subtitle {
+    color: var(--color-text-secondary);
+    font-size: 14px;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+}
+
+.auth-links {
+    text-align: center;
+    margin-top: var(--space-lg);
+    font-size: 14px;
+    color: var(--color-text-secondary);
+}
+
+.auth-links a {
+    color: var(--color-accent);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.auth-links a:hover {
+    color: var(--color-accent-hover);
+}
+
+.demo-account {
+    margin-top: var(--space-xl);
+    padding: var(--space-md);
+    background: var(--color-income-bg);
+    border-radius: var(--radius-md);
+    border-left: 4px solid var(--color-income);
+}
+
+.demo-account h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: var(--space-sm);
+}
+
+.demo-account p {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    margin: 2px 0;
+}
+
+/* 用户信息样式 */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-xl);
+}
+
+.header-main {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    font-size: 14px;
+    color: var(--color-text-secondary);
+}
+
+.username {
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+.logout-btn {
+    background: var(--color-expense-light);
+    color: var(--color-expense);
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    transition: var(--transition-fast);
+}
+
+.logout-btn:hover {
+    background: var(--color-expense);
+    color: white;
+}
+
+/* 闪存消息样式 */
+.flash-messages {
+    margin-bottom: var(--space-lg);
+}
+
+.flash-message {
+    padding: var(--space-md);
+    background: var(--color-income-bg);
+    color: var(--color-income);
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 500;
+    border-left: 4px solid var(--color-income);
+    margin-bottom: var(--space-sm);
+}
+
+.flash-message:last-child {
+    margin-bottom: 0;
+}
+
+/* 表单提示文字 */
+.form-hint {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin-top: 4px;
+}
+
+/* 全宽按钮 */
+.btn-full {
+    width: 100%;
+    justify-content: center;
+}

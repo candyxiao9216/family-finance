@@ -1,6 +1,6 @@
 from flask import Flask
 from models import db, Category, DEFAULT_CATEGORIES
-from config import BASE_DIR, SQLALCHEMY_DATABASE_URI, SQLALCHEMY_TRACK_MODIFICATIONS
+from config import BASE_DIR, SQLALCHEMY_DATABASE_URI, SQLALCHEMY_TRACK_MODIFICATIONS, SECRET_KEY
 
 
 def init_database(app: Flask) -> None:
@@ -26,6 +26,7 @@ def create_app() -> Flask:
     app = Flask(__name__)
     app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = SQLALCHEMY_TRACK_MODIFICATIONS
+    app.config['SECRET_KEY'] = SECRET_KEY
 
     # 初始化数据库
     db.init_app(app)

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册 - 家庭财务管理</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1>家庭财务管理</h1>
+                <p class="auth-subtitle">创建新账户</p>
+            </div>
+
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for message in messages %}
+                            <div class="flash-message">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" class="auth-form">
+                <div class="form-group">
+                    <label for="username">用户名</label>
+                    <input type="text" id="username" name="username" required
+                           placeholder="3-20个字符，字母、数字、下划线"
+                           pattern="[a-zA-Z0-9_]{3,20}"
+                           title="用户名只能包含字母、数字和下划线，长度3-20个字符"
+                           autocomplete="username">
+                    <small class="form-hint">3-20个字符，字母、数字、下划线</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="nickname">昵称（可选）</label>
+                    <input type="text" id="nickname" name="nickname"
+                           placeholder="显示名称，如不填写则使用用户名">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" name="password" required
+                           placeholder="至少6个字符" minlength="6"
+                           autocomplete="new-password">
+                    <small class="form-hint">至少6个字符</small>
+                </div>
+
+                <button type="submit" class="btn-primary btn-full">注册</button>
+            </form>
+
+            <div class="auth-links">
+                <p>已有账户？<a href="{{ url_for('auth.login') }}">立即登录</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 自动聚焦到用户名输入框
+        document.addEventListener('DOMContentLoaded', function() {
+            const usernameInput = document.getElementById('username');
+            if (usernameInput) {
+                usernameInput.focus();
+            }
+        });
+
+        // 实时验证用户名格式
+        document.getElementById('username').addEventListener('input', function(e) {
+            const username = e.target.value;
+            const pattern = /^[a-zA-Z0-9_]{3,20}$/;
+
+            if (username && !pattern.test(username)) {
+                e.target.setCustomValidity('用户名只能包含字母、数字和下划线，长度3-20个字符');
+            } else {
+                e.target.setCustomValidity('');
+            }
+        });
+    </script>
+</body>
+</html>

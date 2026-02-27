@@ -5,9 +5,26 @@ from flask import Flask, redirect, render_template, request, url_for
 from sqlalchemy import func, extract, case
 
 from database import create_app, init_database
-from models import db, Transaction, Category
+from models import db, Transaction, Category, User, Family
+from routes.auth import auth_bp
+from routes.family import family_bp
+from flask import session
 
 app = create_app()
+
+# 注册蓝图
+app.register_blueprint(auth_bp)
+app.register_blueprint(family_bp)
+
+@app.before_request
+def require_login():
+    """登录状态检查"""
+    # 允许访问的公开路由
+    allowed_routes = ['auth.login', 'auth.register', 'static', 'family.family_info', 'family.family_members']
+
+    if request.endpoint and request.endpoint not in allowed_routes:
+        if 'user_id' not in session:
+            return redirect(url_for('auth.login'))
 
 
 @app.route('/init-db')
@@ -20,10 +37,11 @@ def init_db_route():
 @app.route('/')
 def index():
     """首页 - 交易列表"""
-    # 获取所有交易，按日期降序
-    transactions = Transaction.query.order_by(Transaction.transaction_date.desc()).all()
+    # 获取当前用户的交易，按日期降序
+    user_id = session.get('user_id')
+    transactions = Transaction.query.filter_by(user_id=user_id).order_by(Transaction.transaction_date.desc()).all()
 
-    # 计算本月统计
+    # 计算本月统计（仅当前用户）
     current_month = date.today().month
     current_year = date.today().year
 
@@ -31,13 +49,13 @@ def index():
         func.sum(
             case(
                 ((Transaction.type == 'income') & (extract('month', Transaction.transaction_date) == current_month) &
-                 (extract('year', Transaction.transaction_date) == current_year), Transaction.amount)
+                 (extract('year', Transaction.transaction_date) == current_year) & (Transaction.user_id == user_id), Transaction.amount)
             )
         ).label('income'),
         func.sum(
             case(
                 ((Transaction.type == 'expense') & (extract('month', Transaction.transaction_date) == current_month) &
-                 (extract('year', Transaction.transaction_date) == current_year), Transaction.amount)
+                 (extract('year', Transaction.transaction_date) == current_year) & (Transaction.user_id == user_id), Transaction.amount)
             )
         ).label('expense')
     ).first()
@@ -46,20 +64,27 @@ def index():
     monthly_expense = month_stats.expense or Decimal('0')
     monthly_balance = monthly_income - monthly_expense
 
-    # 获取所有分类
-    categories = Category.query.all()
+    # 获取当前用户可用的分类（系统预设 + 用户自定义）
+    categories = Category.query.filter(
+        (Category.user_id == None) | (Category.user_id == user_id)
+    ).all()
 
     return render_template('index.html',
                           transactions=transactions,
                           monthly_income=float(monthly_income),
                           monthly_expense=float(monthly_expense),
                           monthly_balance=float(monthly_balance),
-                          categories=categories)
+                          categories=categories,
+                          username=session.get('nickname', session.get('username', '用户')))
 
 
 @app.route('/add', methods=['POST'])
 def add_transaction():
     """添加交易"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('auth.login'))
+
     transaction_type = request.form.get('type')
     amount = request.form.get('amount')
     category_id = request.form.get('category')
@@ -81,7 +106,8 @@ def add_transaction():
         type=transaction_type,
         category_id=int(category_id),
         description=description or None,
-        transaction_date=transaction_date
+        transaction_date=transaction_date,
+        user_id=user_id
     )
 
     db.session.add(transaction)
@@ -93,7 +119,16 @@ def add_transaction():
 @app.route('/delete/<int:transaction_id>', methods=['POST'])
 def delete_transaction(transaction_id):
     """删除交易"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('auth.login'))
+
     transaction = Transaction.query.get_or_404(transaction_id)
+
+    # 检查权限：只能删除自己的交易
+    if transaction.user_id != user_id:
+        return "无权删除此交易", 403
+
     db.session.delete(transaction)
     db.session.commit()
 

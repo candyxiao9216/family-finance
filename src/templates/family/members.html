@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>家庭成员 - 家庭财务管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .member-card {
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+            border: none;
+        }
+        .member-card:hover {
+            transform: translateY(-2px);
+        }
+        .member-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.5rem;
+            margin: 0 auto;
+        }
+        .role-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+        .join-date {
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+        .stats-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #495057;
+        }
+        .stats-label {
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-piggy-bank me-2"></i>家庭财务管理系统
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('index') }}">
+                    <i class="fas fa-home me-1"></i>首页
+                </a>
+                <a class="nav-link" href="{{ url_for('family.family_info') }}">
+                    <i class="fas fa-home me-1"></i>家庭信息
+                </a>
+                <a class="nav-link active" href="{{ url_for('family.family_members') }}">
+                    <i class="fas fa-users me-1"></i>成员列表
+                </a>
+                <a class="nav-link" href="{{ url_for('auth.profile') }}">
+                    <i class="fas fa-user me-1"></i>{{ user.nickname }}
+                </a>
+                <a class="nav-link" href="{{ url_for('auth.logout') }}">
+                    <i class="fas fa-sign-out-alt me-1"></i>退出
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- 页面标题 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="h3 mb-1">
+                            <i class="fas fa-users me-2"></i>家庭成员列表
+                        </h1>
+                        <p class="text-muted mb-0">{{ family.name }} - 共 {{ members|length }} 位成员</p>
+                    </div>
+                    <a href="{{ url_for('family.family_info') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left me-1"></i>返回家庭信息
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 成员统计 -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="card text-center member-card">
+                    <div class="card-body">
+                        <div class="stats-number">{{ members|length }}</div>
+                        <div class="stats-label">总成员数</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card text-center member-card">
+                    <div class="card-body">
+                        <div class="stats-number">{{ family.created_at.strftime('%Y-%m-%d') }}</div>
+                        <div class="stats-label">家庭创建时间</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card text-center member-card">
+                    <div class="card-body">
+                        <div class="stats-number">{{ family.invite_code }}</div>
+                        <div class="stats-label">当前邀请码</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card text-center member-card">
+                    <div class="card-body">
+                        <div class="stats-number">{{ members|length }}</div>
+                        <div class="stats-label">活跃成员</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 成员列表 -->
+        <div class="row">
+            {% for member in members %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card member-card">
+                        <div class="card-body text-center">
+                            <!-- 成员头像 -->
+                            <div class="member-avatar mb-3">
+                                {{ member.nickname[0] if member.nickname else member.username[0] }}
+                            </div>
+
+                            <!-- 成员信息 -->
+                            <h5 class="card-title mb-1">
+                                {{ member.nickname or member.username }}
+                                {% if member.id == user.id %}
+                                    <span class="badge bg-primary role-badge">我</span>
+                                {% endif %}
+                            </h5>
+                            <p class="text-muted mb-2">@{{ member.username }}</p>
+
+                            <!-- 角色和状态 -->
+                            <div class="mb-3">
+                                <span class="badge bg-secondary role-badge">
+                                    {{ member.role }}
+                                </span>
+                                {% if member.id == user.id %}
+                                    <span class="badge bg-success role-badge">在线</span>
+                                {% endif %}
+                            </div>
+
+                            <!-- 加入时间 -->
+                            <div class="join-date mb-3">
+                                <i class="fas fa-calendar-alt me-1"></i>
+                                加入时间：{{ member.created_at.strftime('%Y年%m月%d日') }}
+                            </div>
+
+                            <!-- 操作按钮 -->
+                            {% if member.id != user.id %}
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-outline-primary btn-sm" onclick="sendMessage({{ member.id }})">
+                                        <i class="fas fa-envelope me-1"></i>发送消息
+                                    </button>
+                                </div>
+                            {% else %}
+                                <div class="d-grid gap-2">
+                                    <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-secondary btn-sm">
+                                        <i class="fas fa-cog me-1"></i>编辑资料
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- 空状态 -->
+        {% if not members %}
+            <div class="row">
+                <div class="col-12">
+                    <div class="text-center py-5">
+                        <i class="fas fa-users fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">暂无家庭成员</h4>
+                        <p class="text-muted">邀请家人加入您的家庭，共同管理财务</p>
+                        <a href="{{ url_for('family.family_info') }}" class="btn btn-primary">
+                            <i class="fas fa-share-alt me-1"></i>分享邀请码
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Bootstrap & jQuery -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+        // 发送消息功能（预留）
+        function sendMessage(memberId) {
+            alert('发送消息功能正在开发中...');
+        }
+
+        // 页面加载完成后执行
+        $(document).ready(function() {
+            console.log('家庭成员页面加载完成');
+
+            // 为每个成员卡片添加悬停效果
+            $('.member-card').hover(
+                function() {
+                    $(this).css('box-shadow', '0 8px 15px rgba(0, 0, 0, 0.15)');
+                },
+                function() {
+                    $(this).css('box-shadow', '0 4px 6px rgba(0, 0, 0, 0.1)');
+                }
+            );
+        });
+    </script>
+</body>
+</html>

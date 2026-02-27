@@ -13,8 +13,16 @@
     <div class="container">
         <!-- 头部 -->
         <header class="header">
-            <h1>家庭财务</h1>
-            <p id="current-date"></p>
+            <div class="header-main">
+                <h1>家庭财务</h1>
+                <p id="current-date"></p>
+            </div>
+            <div class="user-info">
+                <span class="username">欢迎，{{ username }}</span>
+                <div class="user-actions">
+                    <a href="{{ url_for('auth.logout') }}" class="logout-btn">退出</a>
+                </div>
+            </div>
         </header>
 
         <!-- 统计栏 -->

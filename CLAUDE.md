@@ -315,11 +315,54 @@ python src/main.py
 - Gunicorn/Nginx
 - Docker 容器化部署
 
+## 功能实现记录
+
+### 2026-02-27: User-Family 关联功能 ✅
+
+**实现内容:**
+- 在 User 模型中添加 `family_id` 外键字段（nullable=True，支持向后兼容）
+- 建立 User-Family 一对多关系映射
+- 增强 `to_dict()` 方法包含家庭信息
+- 编写完整的测试用例验证关联功能
+
+**技术细节:**
+- User 模型：`family_id = db.Column(db.Integer, db.ForeignKey('families.id'), nullable=True)`
+- Family 模型：`members = db.relationship('User', backref='family', lazy=True)`
+- User.to_dict() 新增：`'family_name': self.family.name if self.family else None`
+- Family.to_dict() 新增：`'member_count': len(self.members) if self.members else 0`
+
+**测试验证:**
+- ✅ 用户与家庭关联创建
+- ✅ 家庭访问成员功能
+- ✅ to_dict() 方法包含家庭信息
+- ✅ 向后兼容性（用户可无家庭关联）
+- ✅ 多用户关联同一家庭
+- ✅ 家庭字典包含成员数量
+
+**业务价值:**
+- 为家庭级别的财务数据聚合提供基础
+- 支持家庭成员间的协作功能
+- 为后续权限管理奠定数据基础
+
 ## 经验教训
 
-_（本章节将在开发过程中动态更新）_
+### 2026-02-27: User-Family 关联实现经验
+
+**问题:** 测试过程中出现 invite_code 唯一约束冲突
+
+**原因:** 临时数据库文件可能被重复使用，导致 invite_code 重复
+
+**解决方案:**
+- 使用随机生成的 invite_code 避免冲突
+- 确保每次测试使用全新的临时数据库
+- 测试完成后及时清理临时文件
+
+**经验总结:**
+- 测试环境隔离是保证测试可靠性的关键
+- 唯一约束字段在测试中需要使用随机值
+- TDD 流程有助于发现潜在的设计问题
 
 ---
 
-**最后更新:** 2026-02-25
-**文档版本:** 1.0.0
+**最后更新:** 2026-02-27
+**文档版本:** 1.1.0
