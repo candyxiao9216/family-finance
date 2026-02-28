@@ -932,3 +932,53 @@ body::before {
     color: var(--color-accent);
     border-color: var(--color-accent);
 }
+
+/* ===== 图表相关样式 ===== */
+
+.chart-section {
+    margin-bottom: var(--space-lg);
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    padding: var(--space-md);
+}
+
+.chart-container-mini {
+    height: 200px;
+}
+
+.chart-container-pie {
+    height: 280px;
+}
+
+.chart-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+}
+
+.chart-half {
+    margin-bottom: 0;
+}
+
+.chart-detail-link {
+    font-size: 12px;
+    color: var(--color-accent);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.chart-detail-link:hover {
+    color: var(--color-accent-hover);
+    text-decoration: underline;
+}
+
+/* 响应式：移动端饼图堆叠 */
+@media (max-width: 640px) {
+    .chart-row {
+        grid-template-columns: 1fr;
+    }
+}
