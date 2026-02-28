@@ -90,33 +90,41 @@
 - 依赖：TASK-001
 - 备注：已完成，含家庭权限检查和修改历史展示
 
-### TASK-004：自定义分类管理
-- 状态：TODO
+### TASK-004：自定义分类管理 ✅
+- 状态：DONE
 - 优先级：P1
 - 规模：M
 - 目标（一句话）：添加分类管理界面，支持添加/删除用户自定义分类
 - 验收标准：
-  - [ ] 创建分类管理页面
-  - [ ] 显示系统默认分类和用户自定义分类
-  - [ ] 支持添加新分类（收入/支出类型）
-  - [ ] 支持删除用户自定义分类
+  - [x] 创建分类管理页面
+  - [x] 显示系统默认分类和用户自定义分类
+  - [x] 支持添加新分类（收入/支出类型）
+  - [x] 支持删除用户自定义分类
 - 涉及文件/目录：
-  - `/src/main.py` 或 `/src/routes/category.py`
-  - `/src/templates/categories.html`
+  - `/src/routes/category.py`（新建，category_bp 蓝图）
+  - `/src/templates/categories.html`（新建）
+  - `/src/main.py`（注册蓝图）
+  - `/src/templates/index.html`（添加导航入口）
+  - `/src/static/css/style.css`（分类页面样式）
 - 依赖：TASK-002
+- 备注：已完成，系统分类受保护不可删除，删除自定义分类时关联交易变为未分类
 
-### TASK-005：数据可视化图表
-- 状态：TODO
+### TASK-005：数据可视化图表 ✅
+- 状态：DONE
 - 优先级：P1
 - 规模：M
 - 目标（一句话）：使用 Chart.js 添加收支统计图表
 - 验收标准：
-  - [ ] 月度收支趋势折线图
-  - [ ] 分类支出饼图
+  - [x] 月度收支趋势折线图
+  - [x] 分类支出饼图
 - 涉及文件/目录：
-  - `/src/main.py`
-  - `/src/templates/index.html`
+  - `/src/routes/reports.py`（报表 API 蓝图：趋势 + 分类数据接口）
+  - `/src/templates/reports.html`（独立报表页：折线图 + 双饼图）
+  - `/src/templates/index.html`（首页迷你趋势图 + 报表导航入口）
+  - `/src/static/css/style.css`（图表样式 + 响应式布局）
+  - `/src/main.py`（蓝图注册）
 - 依赖：无
+- 备注：已完成，支持个人/家庭视图切换、1/3/6/12 月时间范围选择
 
 ### TASK-006：账户余额追踪
 - 状态：TODO
