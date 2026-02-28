@@ -20,6 +20,7 @@
             <div class="user-info">
                 <span class="username">{{ username }}</span>
                 <div class="user-actions">
+                    <a href="{{ url_for('category.category_list') }}" class="nav-link">分类</a>
                     {% if family %}
                     <a href="{{ url_for('family.family_info') }}" class="nav-link">家庭</a>
                     {% endif %}

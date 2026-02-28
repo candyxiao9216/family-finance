@@ -8,6 +8,7 @@ from database import create_app, init_database
 from models import db, Transaction, Category, User, Family, TransactionModification
 from routes.auth import auth_bp
 from routes.family import family_bp
+from routes.category import category_bp
 from flask import session
 
 app = create_app()
@@ -15,6 +16,7 @@ app = create_app()
 # 注册蓝图
 app.register_blueprint(auth_bp)
 app.register_blueprint(family_bp)
+app.register_blueprint(category_bp)
 
 @app.before_request
 def require_login():
