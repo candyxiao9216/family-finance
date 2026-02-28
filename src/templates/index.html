@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 </head>
 <body>
     <div class="container">
@@ -21,6 +22,7 @@
                 <span class="username">{{ username }}</span>
                 <div class="user-actions">
                     <a href="{{ url_for('category.category_list') }}" class="nav-link">分类</a>
+                    <a href="{{ url_for('reports.reports_page', view=current_view) }}" class="nav-link">报表</a>
                     {% if family %}
                     <a href="{{ url_for('family.family_info') }}" class="nav-link">家庭</a>
                     {% endif %}
@@ -56,6 +58,17 @@
             <div class="stat-item">
                 <div class="stat-label">结余</div>
                 <div class="stat-value balance" id="stat-balance">¥0.00</div>
+            </div>
+        </div>
+
+        <!-- 迷你图表 -->
+        <div class="card chart-section">
+            <div class="card-header">
+                <h2 class="card-title">收支趋势</h2>
+                <a href="{{ url_for('reports.reports_page', view=current_view) }}" class="chart-detail-link">查看详情</a>
+            </div>
+            <div class="chart-container chart-container-mini">
+                <canvas id="miniTrendChart"></canvas>
             </div>
         </div>
 
@@ -248,6 +261,51 @@
         setCurrentDate();
         setDefaultDate();
         updateCategories('expense');
+
+        // 迷你趋势图（近 6 个月）
+        (async function() {
+            const resp = await fetch('/reports/api/trend?months=6&view={{ current_view }}');
+            const data = await resp.json();
+            const ctx = document.getElementById('miniTrendChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: '收入',
+                            data: data.income,
+                            borderColor: '#D4A574',
+                            backgroundColor: 'rgba(212, 165, 116, 0.15)',
+                            fill: true, tension: 0.3, pointRadius: 3
+                        },
+                        {
+                            label: '支出',
+                            data: data.expense,
+                            borderColor: '#7C8BA1',
+                            backgroundColor: 'rgba(124, 139, 161, 0.15)',
+                            fill: true, tension: 0.3, pointRadius: 3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => ctx.dataset.label + ': ¥' + ctx.parsed.y.toLocaleString('zh-CN', {minimumFractionDigits: 2})
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { callback: v => '¥' + v.toLocaleString(), font: { size: 10 } } },
+                        x: { ticks: { font: { size: 10 } } }
+                    }
+                }
+            });
+        })();
     </script>
 </body>
 </html>
