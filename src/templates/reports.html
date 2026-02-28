@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>财务报表 - 家庭财务</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <div class="header-main">
+                <h1>财务报表</h1>
+                <p>收支趋势与分类分析</p>
+            </div>
+            <div class="user-info">
+                <span class="username">{{ username }}</span>
+                <div class="user-actions">
+                    <a href="{{ url_for('index') }}" class="nav-link">首页</a>
+                    <a href="{{ url_for('auth.logout') }}" class="logout-btn">退出</a>
+                </div>
+            </div>
+        </header>
+
+        <!-- 视图切换 -->
+        {% if family %}
+        <div class="view-switcher">
+            <a href="/reports?view=personal" class="view-btn {{ 'active' if current_view == 'personal' }}">我的</a>
+            <a href="/reports?view=family" class="view-btn {{ 'active' if current_view == 'family' }}">家庭</a>
+        </div>
+        {% endif %}
+
+        <!-- 时间范围按钮组 -->
+        <div class="view-switcher" id="range-switcher">
+            <button class="view-btn" data-months="1">1月</button>
+            <button class="view-btn" data-months="3">3月</button>
+            <button class="view-btn active" data-months="6">6月</button>
+            <button class="view-btn" data-months="12">12月</button>
+        </div>
+
+        <!-- 趋势折线图 -->
+        <div class="card chart-section">
+            <div class="card-header">
+                <h2 class="card-title">收支趋势</h2>
+            </div>
+            <div class="chart-container">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 分类饼图 -->
+        <div class="chart-row">
+            <div class="card chart-section chart-half">
+                <div class="card-header">
+                    <h2 class="card-title">支出构成</h2>
+                </div>
+                <div class="chart-container chart-container-pie">
+                    <canvas id="expensePieChart"></canvas>
+                </div>
+            </div>
+            <div class="card chart-section chart-half">
+                <div class="card-header">
+                    <h2 class="card-title">收入构成</h2>
+                </div>
+                <div class="chart-container chart-container-pie">
+                    <canvas id="incomePieChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 当前视图和时间范围
+        var currentView = '{{ current_view }}';
+        var currentMonths = 6;
+
+        // 配色方案
+        var COLORS = {
+            income: '#D4A574',
+            expense: '#7C8BA1',
+            pie: [
+                '#D4A574', '#7C8BA1', '#A8C5A0', '#C4A0D4',
+                '#D4A0A0', '#A0C5D4', '#D4C5A0', '#A0A0D4',
+                '#D4A0C5', '#A0D4C5'
+            ]
+        };
+
+        // Chart.js 全局字体设置
+        Chart.defaults.font.family = "'Outfit', 'Noto Serif SC', sans-serif";
+
+        // 图表实例引用
+        var trendChartInstance = null;
+        var expensePieInstance = null;
+        var incomePieInstance = null;
+
+        // 工具函数：fetch JSON
+        function fetchJSON(url) {
+            return fetch(url).then(function(res) {
+                if (!res.ok) throw new Error('请求失败: ' + res.status);
+                return res.json();
+            });
+        }
+
+        // 加载趋势折线图
+        function loadTrendChart() {
+            var url = '/reports/api/trend?months=' + currentMonths + '&view=' + currentView;
+            fetchJSON(url).then(function(data) {
+                var canvas = document.getElementById('trendChart');
+                var ctx = canvas.getContext('2d');
+
+                if (trendChartInstance) {
+                    trendChartInstance.destroy();
+                }
+
+                trendChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [
+                            {
+                                label: '收入',
+                                data: data.income,
+                                borderColor: COLORS.income,
+                                backgroundColor: COLORS.income + '33',
+                                fill: true,
+                                tension: 0.3,
+                                pointBackgroundColor: COLORS.income,
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                pointRadius: 4
+                            },
+                            {
+                                label: '支出',
+                                data: data.expense,
+                                borderColor: COLORS.expense,
+                                backgroundColor: COLORS.expense + '33',
+                                fill: true,
+                                tension: 0.3,
+                                pointBackgroundColor: COLORS.expense,
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                pointRadius: 4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        var value = context.parsed.y || 0;
+                                        return context.dataset.label + ': ¥' + value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                    }
+                                }
+                            },
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    usePointStyle: true,
+                                    padding: 20
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '¥' + value.toLocaleString();
+                                    }
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.06)'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                });
+            }).catch(function(err) {
+                console.error('加载趋势图失败:', err);
+            });
+        }
+
+        // 加载分类饼图
+        function loadPieChart(canvasId, catType, chartRef) {
+            var url = '/reports/api/category?months=' + currentMonths + '&view=' + currentView + '&type=' + catType;
+            fetchJSON(url).then(function(data) {
+                var canvas = document.getElementById(canvasId);
+                var ctx = canvas.getContext('2d');
+
+                // 销毁已有实例
+                if (chartRef === 'expense' && expensePieInstance) {
+                    expensePieInstance.destroy();
+                } else if (chartRef === 'income' && incomePieInstance) {
+                    incomePieInstance.destroy();
+                }
+
+                var colors = COLORS.pie.slice(0, data.labels.length);
+
+                var instance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            data: data.values,
+                            backgroundColor: colors,
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        var total = context.dataset.data.reduce(function(a, b) { return a + b; }, 0);
+                                        var value = context.parsed;
+                                        var pct = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                        return context.label + ': ¥' + value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' (' + pct + '%)';
+                                    }
+                                }
+                            },
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    usePointStyle: true,
+                                    padding: 16,
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                if (chartRef === 'expense') {
+                    expensePieInstance = instance;
+                } else {
+                    incomePieInstance = instance;
+                }
+            }).catch(function(err) {
+                console.error('加载' + catType + '饼图失败:', err);
+            });
+        }
+
+        // 加载所有图表
+        function loadAllCharts() {
+            loadTrendChart();
+            loadPieChart('expensePieChart', 'expense', 'expense');
+            loadPieChart('incomePieChart', 'income', 'income');
+        }
+
+        // 时间范围按钮组点击事件
+        var rangeButtons = document.querySelectorAll('#range-switcher .view-btn');
+        rangeButtons.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                rangeButtons.forEach(function(b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                currentMonths = parseInt(btn.getAttribute('data-months'));
+                loadAllCharts();
+            });
+        });
+
+        // 页面加载时初始化图表
+        loadAllCharts();
+    </script>
+</body>
+</html>
