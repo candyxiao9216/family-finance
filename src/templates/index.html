@@ -23,6 +23,7 @@
                 <div class="user-actions">
                     <a href="{{ url_for('category.category_list') }}" class="nav-link">分类</a>
                     <a href="{{ url_for('reports.reports_page', view=current_view) }}" class="nav-link">报表</a>
+                    <a href="{{ url_for('account.account_list', view=current_view) }}" class="nav-link">账户</a>
                     {% if family %}
                     <a href="{{ url_for('family.family_info') }}" class="nav-link">家庭</a>
                     {% endif %}
@@ -48,15 +49,15 @@
         <!-- 统计栏 -->
         <div class="stats-bar">
             <div class="stat-item">
-                <div class="stat-label">本月收入</div>
+                <div class="stat-label">{{ stat_year }}年{{ stat_month }}月收入</div>
                 <div class="stat-value income" id="stat-income">¥0.00</div>
             </div>
             <div class="stat-item">
-                <div class="stat-label">本月支出</div>
+                <div class="stat-label">{{ stat_year }}年{{ stat_month }}月支出</div>
                 <div class="stat-value expense" id="stat-expense">¥0.00</div>
             </div>
             <div class="stat-item">
-                <div class="stat-label">结余</div>
+                <div class="stat-label">{{ stat_year }}年{{ stat_month }}月结余</div>
                 <div class="stat-value balance" id="stat-balance">¥0.00</div>
             </div>
         </div>
@@ -96,7 +97,7 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">分类</label>
-                        <select name="category" class="form-select" required>
+                        <select name="category" class="form-select" required id="category-select">
                             <option value="">选择分类</option>
                             <optgroup label="收入">
                                 {% for c in categories if c.type == 'income' %}
@@ -108,6 +109,7 @@
                                 <option value="{{ c.id }}">{{ c.name }}</option>
                                 {% endfor %}
                             </optgroup>
+                            <option value="__add_category__">+ 添加分类...</option>
                         </select>
                     </div>
                 </div>
@@ -145,10 +147,8 @@
                         <div class="t-info">
                             <span class="t-description">{{ t.description or (t.category_name if t.category_name else '未分类') }}</span>
                             <span class="t-meta">
-                                {% if current_view == 'family' %}
                                 <span class="t-creator">{{ t.user.nickname or t.user.username }}</span>
                                 <span>·</span>
-                                {% endif %}
                                 <span>{{ t.category_name or '-' }}</span>
                                 <span>·</span>
                                 <span>{{ t.transaction_date }}</span>
@@ -238,11 +238,24 @@
                 categorySelect.appendChild(option);
             });
 
+            // 添加"添加分类"选项
+            const addOption = document.createElement('option');
+            addOption.value = '__add_category__';
+            addOption.textContent = '+ 添加分类...';
+            categorySelect.appendChild(addOption);
+
             // 尝试保持选中的分类
             if (categories[type].some(c => c.value === currentCategory)) {
                 categorySelect.value = currentCategory;
             }
         }
+
+        // 选中"添加分类"时跳转
+        categorySelect.addEventListener('change', function() {
+            if (categorySelect.value === '__add_category__') {
+                window.location.href = '{{ url_for("category.category_list") }}';
+            }
+        });
 
         typeInputs.forEach(input => {
             input.addEventListener('change', (e) => {

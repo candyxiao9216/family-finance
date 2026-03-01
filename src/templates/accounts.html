@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>账户管理 - 家庭财务</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <div class="header-main">
+                <h1>账户管理</h1>
+                <p>管理储蓄和投资账户</p>
+            </div>
+            <div class="user-info">
+                <span class="username">{{ username }}</span>
+                <div class="user-actions">
+                    <a href="{{ url_for('index') }}" class="nav-link">首页</a>
+                    <a href="{{ url_for('reports.reports_page', view=current_view) }}" class="nav-link">报表</a>
+                    <a href="{{ url_for('auth.logout') }}" class="logout-btn">退出</a>
+                </div>
+            </div>
+        </header>
+
+        <!-- 视图切换 -->
+        {% if family %}
+        <div class="view-switcher">
+            <a href="/accounts?view=personal" class="view-btn {{ 'active' if current_view == 'personal' }}">我的</a>
+            <a href="/accounts?view=family" class="view-btn {{ 'active' if current_view == 'family' }}">家庭</a>
+        </div>
+        {% endif %}
+
+        <!-- 闪存消息 -->
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="flash-messages">
+            {% for msg in messages %}
+            <div class="flash-message">{{ msg }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <!-- 资产总览 -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-label">储蓄资产</div>
+                <div class="stat-value income">¥{{ "%.2f"|format(savings_total) }}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">投资资产</div>
+                <div class="stat-value expense">¥{{ "%.2f"|format(investment_total) }}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">总资产</div>
+                <div class="stat-value balance">¥{{ "%.2f"|format(savings_total + investment_total) }}</div>
+            </div>
+        </div>
+
+        {% if savings_accounts or investment_accounts %}
+
+        <!-- 储蓄账户 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">储蓄账户</h2>
+                <span class="account-count">{{ savings_accounts|length }} 个</span>
+            </div>
+            <div class="account-list">
+                {% if savings_accounts %}
+                    {% for a in savings_accounts %}
+                    <div class="account-item savings">
+                        <div class="account-info">
+                            <span class="account-name">{{ a.name }}</span>
+                            <span class="category-badge default">{{ a.account_type.name }}</span>
+                            {% if a.owner %}
+                            <span class="account-owner">{{ a.owner.nickname or a.owner.username }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="account-balance">
+                            <span class="account-balance-value">¥{{ "%.2f"|format(a.current_balance|float) }}</span>
+                            {% if snapshots.get(a.id) and snapshots[a.id].change_amount is not none %}
+                            <span class="account-change {{ 'positive' if snapshots[a.id].change_amount >= 0 else 'negative' }}">
+                                {{ '+' if snapshots[a.id].change_amount >= 0 }}¥{{ "%.2f"|format(snapshots[a.id].change_amount|float|abs) }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        <form action="{{ url_for('account.delete_account', account_id=a.id) }}" method="POST" class="delete-form">
+                            <button type="submit" class="btn-delete-cat" onclick="return confirm('确定删除账户「{{ a.name }}」？')">删除</button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <p class="empty-state-text">暂无储蓄账户</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 投资账户 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">投资账户</h2>
+                <span class="account-count">{{ investment_accounts|length }} 个</span>
+            </div>
+            <div class="account-list">
+                {% if investment_accounts %}
+                    {% for a in investment_accounts %}
+                    <div class="account-item investment">
+                        <div class="account-info">
+                            <span class="account-name">{{ a.name }}</span>
+                            <span class="category-badge default">{{ a.account_type.name }}</span>
+                            {% if a.owner %}
+                            <span class="account-owner">{{ a.owner.nickname or a.owner.username }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="account-balance">
+                            <span class="account-balance-value">¥{{ "%.2f"|format(a.current_balance|float) }}</span>
+                            {% if snapshots.get(a.id) and snapshots[a.id].change_amount is not none %}
+                            <span class="account-change {{ 'positive' if snapshots[a.id].change_amount >= 0 else 'negative' }}">
+                                {{ '+' if snapshots[a.id].change_amount >= 0 }}¥{{ "%.2f"|format(snapshots[a.id].change_amount|float|abs) }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        <form action="{{ url_for('account.delete_account', account_id=a.id) }}" method="POST" class="delete-form">
+                            <button type="submit" class="btn-delete-cat" onclick="return confirm('确定删除账户「{{ a.name }}」？')">删除</button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <p class="empty-state-text">暂无投资账户</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% else %}
+        <!-- 空状态 -->
+        <div class="card">
+            <div class="empty-state">
+                <div class="empty-state-icon">🏦</div>
+                <p class="empty-state-text">还没有账户，在下方创建第一个账户吧</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 创建账户表单 -->
+        <div class="card form-section">
+            <div class="card-header">
+                <h2 class="card-title">创建账户</h2>
+            </div>
+            <form action="{{ url_for('account.create_account') }}" method="POST">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">账户类型</label>
+                        <select name="type_id" class="form-select" required>
+                            <option value="">选择类型</option>
+                            <optgroup label="储蓄">
+                                {% for t in account_types if t.category == 'savings' %}
+                                <option value="{{ t.id }}">{{ t.name }}</option>
+                                {% endfor %}
+                            </optgroup>
+                            <optgroup label="投资">
+                                {% for t in account_types if t.category == 'investment' %}
+                                <option value="{{ t.id }}">{{ t.name }}</option>
+                                {% endfor %}
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">账户名称</label>
+                        <input type="text" name="name" class="form-input" placeholder="例如：招商银行储蓄卡" required maxlength="50">
+                    </div>
+                </div>
+                <div class="form-row single">
+                    <div class="form-group">
+                        <label class="form-label">初始余额</label>
+                        <input type="number" name="initial_balance" class="form-input" placeholder="0.00" step="0.01" min="0" value="0">
+                    </div>
+                </div>
+                <button type="submit" class="btn-submit">创建账户</button>
+            </form>
+        </div>
+
+        <!-- 录入月度快照表单 -->
+        <div class="card form-section">
+            <div class="card-header">
+                <h2 class="card-title">录入月度快照</h2>
+            </div>
+            <form id="snapshot-form" action="#" method="POST">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">选择账户</label>
+                        <select id="snapshot-account" name="account_id" class="form-select" required>
+                            <option value="">选择账户</option>
+                            {% if savings_accounts %}
+                            <optgroup label="储蓄">
+                                {% for a in savings_accounts %}
+                                <option value="{{ a.id }}">{{ a.name }}</option>
+                                {% endfor %}
+                            </optgroup>
+                            {% endif %}
+                            {% if investment_accounts %}
+                            <optgroup label="投资">
+                                {% for a in investment_accounts %}
+                                <option value="{{ a.id }}">{{ a.name }}</option>
+                                {% endfor %}
+                            </optgroup>
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">当前余额</label>
+                        <input type="number" name="balance" class="form-input" placeholder="0.00" step="0.01" min="0" required>
+                    </div>
+                </div>
+                <div class="form-row single">
+                    <div class="form-group">
+                        <label class="form-label">记录月份</label>
+                        <input type="month" name="month" class="form-input" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-submit">录入快照</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 快照表单动态 action
+        const snapshotForm = document.getElementById('snapshot-form');
+        const accountSelect = document.getElementById('snapshot-account');
+        if (snapshotForm && accountSelect) {
+            accountSelect.addEventListener('change', function() {
+                const accountId = this.value;
+                if (accountId) {
+                    snapshotForm.action = '/accounts/' + accountId + '/snapshot';
+                }
+            });
+            // 默认月份为当前月
+            const monthInput = document.querySelector('input[name="month"]');
+            if (monthInput) {
+                const now = new Date();
+                monthInput.value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+            }
+        }
+    </script>
+</body>
+</html>
