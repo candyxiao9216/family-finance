@@ -5,7 +5,7 @@ from flask import Flask, redirect, render_template, request, url_for
 from sqlalchemy import func, extract, case
 
 from database import create_app, init_database
-from models import db, Transaction, Category, User, Family, TransactionModification
+from models import db, Transaction, Category, User, Family, TransactionModification, Account
 from routes.auth import auth_bp
 from routes.family import family_bp
 from routes.category import category_bp
@@ -94,6 +94,9 @@ def index():
         (Category.user_id == None) | (Category.user_id == user_id)
     ).all()
 
+    # 获取当前用户的账户列表（用于交易表单）
+    accounts = Account.query.filter_by(user_id=user_id).all()
+
     return render_template('index.html',
                           transactions=transactions,
                           monthly_income=float(monthly_income),
@@ -102,6 +105,7 @@ def index():
                           stat_year=current_year,
                           stat_month=current_month,
                           categories=categories,
+                          accounts=accounts,
                           current_view=current_view,
                           family=family,
                           family_members=family_members,
@@ -120,6 +124,7 @@ def add_transaction():
     category_id = request.form.get('category')
     transaction_date_str = request.form.get('date')
     description = request.form.get('description')
+    account_id = request.form.get('account_id', type=int)
 
     # 基本验证
     if not all([transaction_type, amount, category_id, transaction_date_str]):
@@ -137,10 +142,21 @@ def add_transaction():
         category_id=int(category_id),
         description=description or None,
         transaction_date=transaction_date,
-        user_id=user_id
+        user_id=user_id,
+        account_id=account_id or None
     )
 
     db.session.add(transaction)
+
+    # 如果关联了账户，更新账户余额
+    if account_id:
+        account = Account.query.get(account_id)
+        if account:
+            if transaction_type == 'income':
+                account.current_balance = account.current_balance + Decimal(amount)
+            else:
+                account.current_balance = account.current_balance - Decimal(amount)
+
     db.session.commit()
 
     return redirect(url_for('index'))
@@ -166,10 +182,12 @@ def edit_transaction(transaction_id):
         categories = Category.query.filter(
             (Category.user_id == None) | (Category.user_id == user_id)
         ).all()
+        accounts = Account.query.filter_by(user_id=user_id).all()
 
         return render_template('edit_transaction.html',
                               transaction=transaction,
                               categories=categories,
+                              accounts=accounts,
                               username=session.get('nickname', session.get('username', '用户')))
 
     # POST：处理编辑表单提交
@@ -178,6 +196,7 @@ def edit_transaction(transaction_id):
     new_category_id = request.form.get('category')
     new_date_str = request.form.get('date')
     new_description = request.form.get('description')
+    new_account_id = request.form.get('account_id', type=int) or None
 
     # 解析日期
     try:
@@ -193,6 +212,7 @@ def edit_transaction(transaction_id):
         'category_id': ('分类', str(transaction.category_id), new_category_id),
         'transaction_date': ('日期', str(transaction.transaction_date), new_date_str),
         'description': ('备注', transaction.description or '', new_description or ''),
+        'account_id': ('关联账户', str(transaction.account_id or ''), str(new_account_id or '')),
     }
 
     for field, (label, old_val, new_val) in field_map.items():
@@ -208,6 +228,33 @@ def edit_transaction(transaction_id):
 
     # 如果有变化，更新记录
     if modifications:
+        # 先处理账户余额修正（需要用旧值），再更新交易字段
+        old_account_id = transaction.account_id
+        old_amount = transaction.amount
+        old_type = transaction.type
+
+        # 反向修正旧账户余额
+        if old_account_id:
+            old_account = Account.query.get(old_account_id)
+            if old_account:
+                if old_type == 'income':
+                    old_account.current_balance = old_account.current_balance - old_amount
+                else:
+                    old_account.current_balance = old_account.current_balance + old_amount
+
+        # 更新交易的 account_id
+        transaction.account_id = new_account_id
+
+        # 正向更新新账户余额
+        if new_account_id:
+            new_account = Account.query.get(new_account_id)
+            if new_account:
+                if new_type == 'income':
+                    new_account.current_balance = new_account.current_balance + Decimal(new_amount)
+                else:
+                    new_account.current_balance = new_account.current_balance - Decimal(new_amount)
+
+        # 更新交易字段
         transaction.type = new_type
         transaction.amount = Decimal(new_amount)
         transaction.category_id = int(new_category_id)
@@ -239,6 +286,15 @@ def delete_transaction(transaction_id):
     if transaction.user_id != user_id:
         if not (user.family_id and user.family_id == transaction.user.family_id):
             return "无权删除此交易", 403
+
+    # 反向修正关联账户余额
+    if transaction.account_id:
+        account = Account.query.get(transaction.account_id)
+        if account:
+            if transaction.type == 'income':
+                account.current_balance = account.current_balance - transaction.amount
+            else:
+                account.current_balance = account.current_balance + transaction.amount
 
     db.session.delete(transaction)
     db.session.commit()
