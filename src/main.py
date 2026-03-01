@@ -10,6 +10,7 @@ from routes.auth import auth_bp
 from routes.family import family_bp
 from routes.category import category_bp
 from routes.reports import reports_bp
+from routes.account import account_bp
 from flask import session
 
 app = create_app()
@@ -19,6 +20,7 @@ app.register_blueprint(auth_bp)
 app.register_blueprint(family_bp)
 app.register_blueprint(category_bp)
 app.register_blueprint(reports_bp)
+app.register_blueprint(account_bp)
 
 @app.before_request
 def require_login():
@@ -97,6 +99,8 @@ def index():
                           monthly_income=float(monthly_income),
                           monthly_expense=float(monthly_expense),
                           monthly_balance=float(monthly_balance),
+                          stat_year=current_year,
+                          stat_month=current_month,
                           categories=categories,
                           current_view=current_view,
                           family=family,
