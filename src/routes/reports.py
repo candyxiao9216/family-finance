@@ -10,7 +10,7 @@ from dateutil.relativedelta import relativedelta
 from flask import Blueprint, jsonify, render_template, request, session
 from sqlalchemy import func
 
-from models import db, Transaction, Category, User
+from models import db, Transaction, Category, User, Account, AccountType, AccountBalance
 
 reports_bp = Blueprint('reports', __name__, url_prefix='/reports')
 
@@ -32,6 +32,17 @@ def _get_user_filter(user_id, current_view):
             return Transaction.user_id.in_(family_member_ids)
     # 默认返回个人视图过滤
     return Transaction.user_id == user_id
+
+
+def _get_account_ids(user_id, current_view):
+    """根据视图模式返回账户 ID 列表"""
+    user = User.query.get(user_id)
+    if current_view == 'family' and user and user.family:
+        family_member_ids = [m.id for m in user.family.members]
+        accounts = Account.query.filter(Account.user_id.in_(family_member_ids)).all()
+    else:
+        accounts = Account.query.filter_by(user_id=user_id).all()
+    return [a.id for a in accounts]
 
 
 @reports_bp.route('/')
@@ -175,4 +186,81 @@ def api_category():
     return jsonify({
         'labels': labels,
         'values': values
+    })
+
+
+@reports_bp.route('/api/asset-trend')
+def api_asset_trend():
+    """资产趋势 API
+
+    基于 account_balance 月度快照数据，返回储蓄/投资/总资产按月汇总
+
+    参数:
+        months: 查询月数，1|3|6|12，默认 6
+        view: 视图模式，personal|family，默认 personal
+
+    返回:
+        { labels: ["2026-01", ...], savings: [...], investment: [...], total: [...] }
+    """
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': '未登录'}), 401
+
+    months = request.args.get('months', 6, type=int)
+    if months not in (1, 3, 6, 12):
+        months = 6
+    current_view = request.args.get('view', 'personal')
+
+    account_ids = _get_account_ids(user_id, current_view)
+    if not account_ids:
+        return jsonify({'labels': [], 'savings': [], 'investment': [], 'total': []})
+
+    # 计算起始日期
+    today = date.today()
+    start_date = (today.replace(day=1) - relativedelta(months=months - 1))
+
+    # 查询快照数据，JOIN AccountType 获取 category
+    results = db.session.query(
+        func.strftime('%Y-%m', AccountBalance.record_month).label('month'),
+        AccountType.category,
+        func.sum(AccountBalance.balance).label('total_balance')
+    ).join(
+        Account, AccountBalance.account_id == Account.id
+    ).join(
+        AccountType, Account.type_id == AccountType.id
+    ).filter(
+        AccountBalance.account_id.in_(account_ids),
+        AccountBalance.record_month >= start_date
+    ).group_by(
+        func.strftime('%Y-%m', AccountBalance.record_month),
+        AccountType.category
+    ).all()
+
+    # 生成完整月份标签
+    labels = []
+    current = start_date
+    end_month = today.replace(day=1)
+    while current <= end_month:
+        labels.append(current.strftime('%Y-%m'))
+        current += relativedelta(months=1)
+
+    # 组装数据
+    savings_map = {}
+    investment_map = {}
+    for row in results:
+        val = float(row.total_balance) if row.total_balance else 0.0
+        if row.category == 'savings':
+            savings_map[row.month] = val
+        else:
+            investment_map[row.month] = val
+
+    savings = [savings_map.get(m, 0.0) for m in labels]
+    investment = [investment_map.get(m, 0.0) for m in labels]
+    total = [s + i for s, i in zip(savings, investment)]
+
+    return jsonify({
+        'labels': labels,
+        'savings': savings,
+        'investment': investment,
+        'total': total
     })

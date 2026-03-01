@@ -37,10 +37,10 @@
 
         <!-- 时间范围按钮组 -->
         <div class="view-switcher" id="range-switcher">
-            <button class="view-btn" data-months="1">1月</button>
-            <button class="view-btn" data-months="3">3月</button>
-            <button class="view-btn active" data-months="6">6月</button>
-            <button class="view-btn" data-months="12">12月</button>
+            <button class="view-btn" data-months="1">近1月</button>
+            <button class="view-btn" data-months="3">近3月</button>
+            <button class="view-btn active" data-months="6">近6月</button>
+            <button class="view-btn" data-months="12">近12月</button>
         </div>
 
         <!-- 趋势折线图 -->
@@ -72,6 +72,16 @@
                 </div>
             </div>
         </div>
+
+        <!-- 资产趋势图 -->
+        <div class="card chart-section">
+            <div class="card-header">
+                <h2 class="card-title">资产趋势</h2>
+            </div>
+            <div class="chart-container">
+                <canvas id="assetTrendChart"></canvas>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -97,6 +107,7 @@
         var trendChartInstance = null;
         var expensePieInstance = null;
         var incomePieInstance = null;
+        var assetTrendInstance = null;
 
         // 工具函数：fetch JSON
         function fetchJSON(url) {
@@ -245,6 +256,21 @@
                                     padding: 16,
                                     font: {
                                         size: 12
+                                    },
+                                    generateLabels: function(chart) {
+                                        var dataset = chart.data.datasets[0];
+                                        return chart.data.labels.map(function(label, i) {
+                                            var value = dataset.data[i] || 0;
+                                            return {
+                                                text: label + '  ¥' + value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                                                fillStyle: dataset.backgroundColor[i],
+                                                strokeStyle: dataset.borderColor,
+                                                lineWidth: dataset.borderWidth,
+                                                pointStyle: 'circle',
+                                                hidden: !chart.getDataVisibility(i),
+                                                index: i
+                                            };
+                                        });
                                     }
                                 }
                             }
@@ -262,11 +288,116 @@
             });
         }
 
+        // 加载资产趋势图
+        function loadAssetTrendChart() {
+            var url = '/reports/api/asset-trend?months=' + currentMonths + '&view=' + currentView;
+            fetchJSON(url).then(function(data) {
+                var canvas = document.getElementById('assetTrendChart');
+                var ctx = canvas.getContext('2d');
+
+                if (assetTrendInstance) {
+                    assetTrendInstance.destroy();
+                }
+
+                assetTrendInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [
+                            {
+                                label: '储蓄资产',
+                                data: data.savings,
+                                borderColor: COLORS.income,
+                                backgroundColor: COLORS.income + '33',
+                                fill: true,
+                                tension: 0.3,
+                                pointBackgroundColor: COLORS.income,
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                pointRadius: 4
+                            },
+                            {
+                                label: '投资资产',
+                                data: data.investment,
+                                borderColor: COLORS.expense,
+                                backgroundColor: COLORS.expense + '33',
+                                fill: true,
+                                tension: 0.3,
+                                pointBackgroundColor: COLORS.expense,
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                pointRadius: 4
+                            },
+                            {
+                                label: '总资产',
+                                data: data.total,
+                                borderColor: '#A8C5A0',
+                                backgroundColor: 'rgba(168, 197, 160, 0.15)',
+                                fill: false,
+                                tension: 0.3,
+                                pointBackgroundColor: '#A8C5A0',
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                pointRadius: 4,
+                                borderWidth: 3
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        var value = context.parsed.y || 0;
+                                        return context.dataset.label + ': ¥' + value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                    }
+                                }
+                            },
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    usePointStyle: true,
+                                    padding: 20
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '¥' + value.toLocaleString();
+                                    }
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.06)'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                });
+            }).catch(function(err) {
+                console.error('加载资产趋势图失败:', err);
+            });
+        }
+
         // 加载所有图表
         function loadAllCharts() {
             loadTrendChart();
             loadPieChart('expensePieChart', 'expense', 'expense');
             loadPieChart('incomePieChart', 'income', 'income');
+            loadAssetTrendChart();
         }
 
         // 时间范围按钮组点击事件
