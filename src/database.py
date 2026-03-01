@@ -1,5 +1,5 @@
 from flask import Flask
-from models import db, Category, DEFAULT_CATEGORIES
+from models import db, Category, DEFAULT_CATEGORIES, AccountType, DEFAULT_ACCOUNT_TYPES
 from config import BASE_DIR, SQLALCHEMY_DATABASE_URI, SQLALCHEMY_TRACK_MODIFICATIONS, SECRET_KEY
 
 
@@ -16,9 +16,17 @@ def init_database(app: Flask) -> None:
                 category = Category(**cat_data)
                 db.session.add(category)
 
+        # 插入预设账户类型（仅当不存在时）
+        for at_data in DEFAULT_ACCOUNT_TYPES:
+            existing = AccountType.query.filter_by(name=at_data['name']).first()
+            if not existing:
+                account_type = AccountType(**at_data)
+                db.session.add(account_type)
+
         db.session.commit()
         print(f"数据库初始化完成: {SQLALCHEMY_DATABASE_URI}")
         print(f"预设分类: {len(DEFAULT_CATEGORIES)} 个")
+        print(f"预设账户类型: {len(DEFAULT_ACCOUNT_TYPES)} 个")
 
 
 def create_app() -> Flask:

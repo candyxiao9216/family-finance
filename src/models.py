@@ -77,6 +77,10 @@ class Transaction(db.Model):
     transaction_date = db.Column(db.Date, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # 账户关联
+    account_id = db.Column(db.Integer, db.ForeignKey('accounts.id'), nullable=True)
+    account = db.relationship('Account', backref='transactions', lazy=True)
+
     # 修改追踪字段
     last_modified_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # 最后修改人
     last_modified_at = db.Column(db.DateTime, nullable=True)  # 最后修改时间
@@ -101,7 +105,8 @@ class Transaction(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'last_modified_by': self.last_modified_by,
             'last_modified_at': self.last_modified_at.isoformat() if self.last_modified_at else None,
-            'modification_count': self.modification_count or 0
+            'modification_count': self.modification_count or 0,
+            'account_id': self.account_id
         }
 
 
@@ -169,4 +174,99 @@ class TransactionModification(db.Model):
             'old_value': self.old_value,
             'new_value': self.new_value,
             'modified_at': self.modified_at.isoformat() if self.modified_at else None
+        }
+
+
+class AccountType(db.Model):
+    """账户类型表 - 定义储蓄/投资等账户类型"""
+    __tablename__ = 'account_types'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+    category = db.Column(db.String(20), nullable=False)  # 'savings' 或 'investment'
+    is_default = db.Column(db.Boolean, default=False)
+
+    # 关系定义
+    accounts = db.relationship('Account', backref='account_type', lazy=True)
+
+    def __repr__(self):
+        return f"<AccountType {self.id}: {self.name} ({self.category})>"
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'category': self.category,
+            'is_default': self.is_default
+        }
+
+
+# 预设账户类型
+DEFAULT_ACCOUNT_TYPES = [
+    {'name': '银行', 'category': 'savings', 'is_default': True},
+    {'name': '微众', 'category': 'savings', 'is_default': True},
+    {'name': '中金', 'category': 'savings', 'is_default': True},
+    {'name': '富途', 'category': 'investment', 'is_default': True},
+    {'name': '中银国际', 'category': 'investment', 'is_default': True},
+]
+
+
+class Account(db.Model):
+    """账户表 - 用户的具体账户"""
+    __tablename__ = 'accounts'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    type_id = db.Column(db.Integer, db.ForeignKey('account_types.id'), nullable=False)
+    initial_balance = db.Column(db.Numeric(10, 2), default=0)
+    current_balance = db.Column(db.Numeric(10, 2), default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # 关系定义
+    owner = db.relationship('User', backref='accounts', lazy=True)
+    balance_records = db.relationship('AccountBalance', backref='account', lazy=True,
+                                     order_by='AccountBalance.record_month.desc()')
+
+    def __repr__(self):
+        return f"<Account {self.id}: {self.name}>"
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'type_id': self.type_id,
+            'type_name': self.account_type.name if self.account_type else None,
+            'category': self.account_type.category if self.account_type else None,
+            'initial_balance': float(self.initial_balance),
+            'current_balance': float(self.current_balance),
+            'user_id': self.user_id
+        }
+
+
+class AccountBalance(db.Model):
+    """账户余额月度快照表 - 记录每月账户余额变化"""
+    __tablename__ = 'account_balance'
+
+    id = db.Column(db.Integer, primary_key=True)
+    account_id = db.Column(db.Integer, db.ForeignKey('accounts.id'), nullable=False)
+    balance = db.Column(db.Numeric(10, 2), nullable=False)
+    change_amount = db.Column(db.Numeric(10, 2), nullable=True)
+    record_month = db.Column(db.Date, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint('account_id', 'record_month', name='uq_account_month'),
+    )
+
+    def __repr__(self):
+        return f"<AccountBalance {self.id}: account={self.account_id} month={self.record_month}>"
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'account_id': self.account_id,
+            'balance': float(self.balance),
+            'change_amount': float(self.change_amount) if self.change_amount else 0,
+            'record_month': self.record_month.strftime('%Y-%m') if self.record_month else None
         }
