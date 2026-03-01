@@ -126,16 +126,30 @@
 - 依赖：无
 - 备注：已完成，支持个人/家庭视图切换、1/3/6/12 月时间范围选择
 
-### TASK-006：账户余额追踪
-- 状态：TODO
+### TASK-006：账户余额追踪 ✅
+- 状态：DONE
 - 优先级：P2
-- 规模：L（需拆分）
+- 规模：L
 - 目标（一句话）：支持多账户管理和余额记录
+- 验收标准：
+  - [x] 账户数据模型（AccountType, Account, AccountBalance）
+  - [x] 预设 5 种账户类型（银行/微众/中金/富途/中银国际）
+  - [x] 账户管理页面（创建/删除/月度快照录入）
+  - [x] 交易可选关联账户，自动更新余额
+  - [x] 资产趋势图（储蓄/投资/总资产三条曲线）
 - 涉及文件/目录：
-  - `/src/models.py`
-  - `/src/routes/account.py`
-  - `/src/templates/accounts.html`
+  - `/src/models.py`（AccountType, Account, AccountBalance 模型）
+  - `/src/database.py`（预设账户类型初始化）
+  - `/src/routes/account.py`（账户管理蓝图）
+  - `/src/templates/accounts.html`（账户管理页面）
+  - `/src/templates/index.html`（导航链接 + 交易表单账户下拉框）
+  - `/src/templates/edit_transaction.html`（编辑表单账户下拉框）
+  - `/src/routes/reports.py`（asset-trend API）
+  - `/src/templates/reports.html`（资产趋势图）
+  - `/src/main.py`（蓝图注册 + 交易余额逻辑）
+  - `/src/static/css/style.css`（账户页面样式）
 - 依赖：TASK-005
+- 备注：已完成，支持个人/家庭视图切换，编辑/删除交易时自动反向修正账户余额
 
 ---
 
