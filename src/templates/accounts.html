@@ -46,8 +46,8 @@
         {% endif %}
         {% endwith %}
 
-        <!-- 资产总览 -->
-        <div class="stats-bar">
+        <!-- 资产总览 + 操作按钮 -->
+        <div class="stats-bar stats-bar--compact">
             <div class="stat-item">
                 <div class="stat-label">储蓄资产</div>
                 <div class="stat-value income">¥{{ "%.2f"|format(savings_total) }}</div>
@@ -62,81 +62,93 @@
             </div>
         </div>
 
-        {% if savings_accounts or investment_accounts %}
-
-        <!-- 储蓄账户 -->
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">储蓄账户</h2>
-                <span class="account-count">{{ savings_accounts|length }} 个</span>
-            </div>
-            <div class="account-list">
-                {% if savings_accounts %}
-                    {% for a in savings_accounts %}
-                    <div class="account-item savings">
-                        <div class="account-info">
-                            <span class="account-name">{{ a.name }}</span>
-                            <span class="category-badge default">{{ a.account_type.name }}</span>
-                            {% if a.owner %}
-                            <span class="account-owner">{{ a.owner.nickname or a.owner.username }}</span>
-                            {% endif %}
-                        </div>
-                        <div class="account-balance">
-                            <span class="account-balance-value">¥{{ "%.2f"|format(a.current_balance|float) }}</span>
-                            {% if snapshots.get(a.id) and snapshots[a.id].change_amount is not none %}
-                            <span class="account-change {{ 'positive' if snapshots[a.id].change_amount >= 0 else 'negative' }}">
-                                {{ '+' if snapshots[a.id].change_amount >= 0 }}¥{{ "%.2f"|format(snapshots[a.id].change_amount|float|abs) }}
-                            </span>
-                            {% endif %}
-                        </div>
-                        <form action="{{ url_for('account.delete_account', account_id=a.id) }}" method="POST" class="delete-form">
-                            <button type="submit" class="btn-delete-cat" onclick="return confirm('确定删除账户「{{ a.name }}」？')">删除</button>
-                        </form>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="empty-state">
-                        <p class="empty-state-text">暂无储蓄账户</p>
-                    </div>
-                {% endif %}
-            </div>
+        <!-- 操作按钮栏 -->
+        <div class="acct-actions-bar">
+            <button class="btn-action" id="btn-add-account">+ 创建账户</button>
+            <button class="btn-action btn-action--secondary" id="btn-add-snapshot">+ 录入快照</button>
         </div>
 
-        <!-- 投资账户 -->
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">投资账户</h2>
-                <span class="account-count">{{ investment_accounts|length }} 个</span>
+        {% if savings_accounts or investment_accounts %}
+        <!-- 储蓄 + 投资账户并排 -->
+        <div class="accounts-grid">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">储蓄账户</h2>
+                    <span class="account-count">{{ savings_accounts|length }} 个</span>
+                </div>
+                <div class="account-list">
+                    {% if savings_accounts %}
+                        {% for a in savings_accounts %}
+                        <div class="account-item savings">
+                            <div class="account-info">
+                                <span class="account-name">{{ a.name }}</span>
+                                <span class="category-badge default">{{ a.account_type.name }}</span>
+                                {% if a.owner %}
+                                <span class="account-owner">{{ a.owner.nickname or a.owner.username }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="account-balance">
+                                <span class="account-balance-value">¥{{ "%.2f"|format(a.current_balance|float) }}</span>
+                                {% if latest_snapshots.get(a.id) %}
+                                <span class="account-owner">{{ latest_snapshots[a.id].record_month.strftime('%Y年%m月') }}</span>
+                                {% endif %}
+                                {% if snapshots.get(a.id) and snapshots[a.id].change_amount is not none %}
+                                <span class="account-change {{ 'positive' if snapshots[a.id].change_amount >= 0 else 'negative' }}">
+                                    {{ '+' if snapshots[a.id].change_amount >= 0 }}¥{{ "%.2f"|format(snapshots[a.id].change_amount|float|abs) }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            <form action="{{ url_for('account.delete_account', account_id=a.id) }}" method="POST" class="delete-form">
+                                <button type="submit" class="btn-delete-cat" onclick="return confirm('确定删除账户「{{ a.name }}」？')">删除</button>
+                            </form>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state empty-state--inline">
+                            <p class="empty-state-text">暂无储蓄账户</p>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
-            <div class="account-list">
-                {% if investment_accounts %}
-                    {% for a in investment_accounts %}
-                    <div class="account-item investment">
-                        <div class="account-info">
-                            <span class="account-name">{{ a.name }}</span>
-                            <span class="category-badge default">{{ a.account_type.name }}</span>
-                            {% if a.owner %}
-                            <span class="account-owner">{{ a.owner.nickname or a.owner.username }}</span>
-                            {% endif %}
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">投资账户</h2>
+                    <span class="account-count">{{ investment_accounts|length }} 个</span>
+                </div>
+                <div class="account-list">
+                    {% if investment_accounts %}
+                        {% for a in investment_accounts %}
+                        <div class="account-item investment">
+                            <div class="account-info">
+                                <span class="account-name">{{ a.name }}</span>
+                                <span class="category-badge default">{{ a.account_type.name }}</span>
+                                {% if a.owner %}
+                                <span class="account-owner">{{ a.owner.nickname or a.owner.username }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="account-balance">
+                                <span class="account-balance-value">¥{{ "%.2f"|format(a.current_balance|float) }}</span>
+                                {% if latest_snapshots.get(a.id) %}
+                                <span class="account-owner">{{ latest_snapshots[a.id].record_month.strftime('%Y年%m月') }}</span>
+                                {% endif %}
+                                {% if snapshots.get(a.id) and snapshots[a.id].change_amount is not none %}
+                                <span class="account-change {{ 'positive' if snapshots[a.id].change_amount >= 0 else 'negative' }}">
+                                    {{ '+' if snapshots[a.id].change_amount >= 0 }}¥{{ "%.2f"|format(snapshots[a.id].change_amount|float|abs) }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            <form action="{{ url_for('account.delete_account', account_id=a.id) }}" method="POST" class="delete-form">
+                                <button type="submit" class="btn-delete-cat" onclick="return confirm('确定删除账户「{{ a.name }}」？')">删除</button>
+                            </form>
                         </div>
-                        <div class="account-balance">
-                            <span class="account-balance-value">¥{{ "%.2f"|format(a.current_balance|float) }}</span>
-                            {% if snapshots.get(a.id) and snapshots[a.id].change_amount is not none %}
-                            <span class="account-change {{ 'positive' if snapshots[a.id].change_amount >= 0 else 'negative' }}">
-                                {{ '+' if snapshots[a.id].change_amount >= 0 }}¥{{ "%.2f"|format(snapshots[a.id].change_amount|float|abs) }}
-                            </span>
-                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state empty-state--inline">
+                            <p class="empty-state-text">暂无投资账户</p>
                         </div>
-                        <form action="{{ url_for('account.delete_account', account_id=a.id) }}" method="POST" class="delete-form">
-                            <button type="submit" class="btn-delete-cat" onclick="return confirm('确定删除账户「{{ a.name }}」？')">删除</button>
-                        </form>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="empty-state">
-                        <p class="empty-state-text">暂无投资账户</p>
-                    </div>
-                {% endif %}
+                    {% endif %}
+                </div>
             </div>
         </div>
 
@@ -145,109 +157,274 @@
         <div class="card">
             <div class="empty-state">
                 <div class="empty-state-icon">🏦</div>
-                <p class="empty-state-text">还没有账户，在下方创建第一个账户吧</p>
+                <p class="empty-state-text">还没有账户，点击上方按钮创建第一个账户吧</p>
             </div>
         </div>
         {% endif %}
 
-        <!-- 创建账户表单 -->
-        <div class="card form-section">
+        <!-- 快照记录 -->
+        <div class="card">
             <div class="card-header">
-                <h2 class="card-title">创建账户</h2>
+                <h2 class="card-title">快照记录</h2>
+                <span class="account-count" id="snapshot-count">{{ all_snapshots|length }} 条</span>
             </div>
-            <form action="{{ url_for('account.create_account') }}" method="POST">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">账户类型</label>
-                        <select name="type_id" class="form-select" required>
-                            <option value="">选择类型</option>
-                            <optgroup label="储蓄">
-                                {% for t in account_types if t.category == 'savings' %}
-                                <option value="{{ t.id }}">{{ t.name }}</option>
-                                {% endfor %}
-                            </optgroup>
-                            <optgroup label="投资">
-                                {% for t in account_types if t.category == 'investment' %}
-                                <option value="{{ t.id }}">{{ t.name }}</option>
-                                {% endfor %}
-                            </optgroup>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">账户名称</label>
-                        <input type="text" name="name" class="form-input" placeholder="例如：招商银行储蓄卡" required maxlength="50">
-                    </div>
-                </div>
-                <div class="form-row single">
-                    <div class="form-group">
-                        <label class="form-label">初始余额</label>
-                        <input type="number" name="initial_balance" class="form-input" placeholder="0.00" step="0.01" min="0" value="0">
-                    </div>
-                </div>
-                <button type="submit" class="btn-submit">创建账户</button>
-            </form>
-        </div>
 
-        <!-- 录入月度快照表单 -->
-        <div class="card form-section">
-            <div class="card-header">
-                <h2 class="card-title">录入月度快照</h2>
-            </div>
-            <form id="snapshot-form" action="#" method="POST">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">选择账户</label>
-                        <select id="snapshot-account" name="account_id" class="form-select" required>
-                            <option value="">选择账户</option>
-                            {% if savings_accounts %}
-                            <optgroup label="储蓄">
-                                {% for a in savings_accounts %}
-                                <option value="{{ a.id }}">{{ a.name }}</option>
-                                {% endfor %}
-                            </optgroup>
-                            {% endif %}
-                            {% if investment_accounts %}
-                            <optgroup label="投资">
-                                {% for a in investment_accounts %}
-                                <option value="{{ a.id }}">{{ a.name }}</option>
-                                {% endfor %}
-                            </optgroup>
-                            {% endif %}
+            <div id="snapshot-body">
+                {% if all_snapshots %}
+                <!-- 筛选栏 -->
+                <div class="snapshot-filters">
+                    <div class="filter-group">
+                        <label class="filter-label">账户</label>
+                        <select id="filter-account" class="form-select filter-select">
+                            <option value="">全部账户</option>
+                            {% for a in savings_accounts %}
+                            <option value="{{ a.name }}">{{ a.name }}</option>
+                            {% endfor %}
+                            {% for a in investment_accounts %}
+                            <option value="{{ a.name }}">{{ a.name }}</option>
+                            {% endfor %}
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">当前余额</label>
-                        <input type="number" name="balance" class="form-input" placeholder="0.00" step="0.01" min="0" required>
+                    <div class="filter-group">
+                        <label class="filter-label">月份</label>
+                        <input type="month" id="filter-month" class="form-input filter-select">
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">操作人</label>
+                        <select id="filter-recorder" class="form-select filter-select">
+                            <option value="">全部</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <button id="filter-reset" class="btn-delete-cat">重置</button>
                     </div>
                 </div>
-                <div class="form-row single">
-                    <div class="form-group">
-                        <label class="form-label">记录月份</label>
-                        <input type="month" name="month" class="form-input" required>
-                    </div>
+
+                <!-- 表格 -->
+                <div class="snapshot-table-wrap">
+                    <table class="snapshot-table" id="snapshot-table">
+                        <thead>
+                            <tr>
+                                <th>月份</th>
+                                <th>账户</th>
+                                <th>类型</th>
+                                <th>余额</th>
+                                <th>月度变化</th>
+                                <th>操作人</th>
+                                <th>录入时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in all_snapshots %}
+                            <tr data-account="{{ s.account.name if s.account else '' }}"
+                                data-month="{{ s.record_month.strftime('%Y-%m') }}"
+                                data-recorder="{{ s.recorder.nickname or s.recorder.username if s.recorder else '' }}">
+                                <td>{{ s.record_month.strftime('%Y年%m月') }}</td>
+                                <td>{{ s.account.name if s.account else '-' }}</td>
+                                <td><span class="category-badge {{ 'default' if s.account and s.account.account_type and s.account.account_type.category == 'savings' else 'custom' }}">{{ s.account.account_type.name if s.account and s.account.account_type else '-' }}</span></td>
+                                <td class="td-amount">¥{{ "%.2f"|format(s.balance|float) }}</td>
+                                <td class="td-amount">
+                                    {% if s.change_amount is not none %}
+                                    <span class="account-change {{ 'positive' if s.change_amount >= 0 else 'negative' }}">
+                                        {{ '+' if s.change_amount >= 0 }}¥{{ "%.2f"|format(s.change_amount|float|abs) }}
+                                    </span>
+                                    {% else %}
+                                    <span class="account-owner">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ s.recorder.nickname or s.recorder.username if s.recorder else '-' }}</td>
+                                <td class="td-meta">{{ s.created_at.strftime('%m-%d %H:%M') if s.created_at else '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-                <button type="submit" class="btn-submit">录入快照</button>
-            </form>
+                {% else %}
+                <div class="empty-state">
+                    <p class="empty-state-text">暂无快照记录</p>
+                </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 
+    <!-- ===== 浮层：创建账户 ===== -->
+    <div class="drawer-overlay" id="overlay-account"></div>
+    <div class="drawer" id="drawer-account">
+        <div class="drawer-header">
+            <h2 class="drawer-title">创建账户</h2>
+            <button class="drawer-close" id="close-account">&times;</button>
+        </div>
+        <form action="{{ url_for('account.create_account') }}" method="POST" class="drawer-body">
+            <div class="form-group">
+                <label class="form-label">账户类型</label>
+                <select name="type_id" class="form-select" required>
+                    <option value="">选择类型</option>
+                    <optgroup label="储蓄">
+                        {% for t in account_types if t.category == 'savings' %}
+                        <option value="{{ t.id }}">{{ t.name }}</option>
+                        {% endfor %}
+                    </optgroup>
+                    <optgroup label="投资">
+                        {% for t in account_types if t.category == 'investment' %}
+                        <option value="{{ t.id }}">{{ t.name }}</option>
+                        {% endfor %}
+                    </optgroup>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">账户名称</label>
+                <input type="text" name="name" class="form-input" placeholder="例如：招商银行储蓄卡" required maxlength="50">
+            </div>
+            <div class="form-group">
+                <label class="form-label">初始余额</label>
+                <input type="number" name="initial_balance" class="form-input" placeholder="0.00" step="0.01" min="0" value="0">
+            </div>
+            <button type="submit" class="btn-submit">创建账户</button>
+        </form>
+    </div>
+
+    <!-- ===== 浮层：录入快照 ===== -->
+    <div class="drawer-overlay" id="overlay-snapshot"></div>
+    <div class="drawer" id="drawer-snapshot">
+        <div class="drawer-header">
+            <h2 class="drawer-title">录入月度快照</h2>
+            <button class="drawer-close" id="close-snapshot">&times;</button>
+        </div>
+        <form id="snapshot-form" action="#" method="POST" class="drawer-body">
+            <div class="form-group">
+                <label class="form-label">选择账户</label>
+                <select id="snapshot-account" name="account_id" class="form-select" required>
+                    <option value="">选择账户</option>
+                    {% if savings_accounts %}
+                    <optgroup label="储蓄">
+                        {% for a in savings_accounts %}
+                        <option value="{{ a.id }}">{{ a.name }}</option>
+                        {% endfor %}
+                    </optgroup>
+                    {% endif %}
+                    {% if investment_accounts %}
+                    <optgroup label="投资">
+                        {% for a in investment_accounts %}
+                        <option value="{{ a.id }}">{{ a.name }}</option>
+                        {% endfor %}
+                    </optgroup>
+                    {% endif %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">当前余额</label>
+                <input type="number" name="balance" class="form-input" placeholder="0.00" step="0.01" min="0" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">记录月份</label>
+                <input type="month" name="month" class="form-input" required>
+            </div>
+            <button type="submit" class="btn-submit">录入快照</button>
+        </form>
+    </div>
+
     <script>
-        // 快照表单动态 action
-        const snapshotForm = document.getElementById('snapshot-form');
-        const accountSelect = document.getElementById('snapshot-account');
+        // ===== 抽屉浮层 =====
+        function openDrawer(drawerId, overlayId) {
+            document.getElementById(overlayId).classList.add('open');
+            document.getElementById(drawerId).classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeDrawer(drawerId, overlayId) {
+            document.getElementById(overlayId).classList.remove('open');
+            document.getElementById(drawerId).classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        // 创建账户抽屉
+        var btnAddAccount = document.getElementById('btn-add-account');
+        if (btnAddAccount) btnAddAccount.addEventListener('click', function() { openDrawer('drawer-account', 'overlay-account'); });
+        document.getElementById('close-account').addEventListener('click', function() { closeDrawer('drawer-account', 'overlay-account'); });
+        document.getElementById('overlay-account').addEventListener('click', function() { closeDrawer('drawer-account', 'overlay-account'); });
+
+        // 录入快照抽屉
+        var btnAddSnapshot = document.getElementById('btn-add-snapshot');
+        if (btnAddSnapshot) btnAddSnapshot.addEventListener('click', function() { openDrawer('drawer-snapshot', 'overlay-snapshot'); });
+        document.getElementById('close-snapshot').addEventListener('click', function() { closeDrawer('drawer-snapshot', 'overlay-snapshot'); });
+        document.getElementById('overlay-snapshot').addEventListener('click', function() { closeDrawer('drawer-snapshot', 'overlay-snapshot'); });
+
+        // ESC 关闭
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeDrawer('drawer-account', 'overlay-account');
+                closeDrawer('drawer-snapshot', 'overlay-snapshot');
+            }
+        });
+
+        // ===== 快照表单动态 action =====
+        var snapshotForm = document.getElementById('snapshot-form');
+        var accountSelect = document.getElementById('snapshot-account');
         if (snapshotForm && accountSelect) {
             accountSelect.addEventListener('change', function() {
-                const accountId = this.value;
+                var accountId = this.value;
                 if (accountId) {
                     snapshotForm.action = '/accounts/' + accountId + '/snapshot';
                 }
             });
-            // 默认月份为当前月
-            const monthInput = document.querySelector('input[name="month"]');
+            var monthInput = snapshotForm.querySelector('input[name="month"]');
             if (monthInput) {
-                const now = new Date();
+                var now = new Date();
                 monthInput.value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
             }
+        }
+
+        // ===== 快照表格筛选 =====
+        var filterAccount = document.getElementById('filter-account');
+        var filterMonth = document.getElementById('filter-month');
+        var filterRecorder = document.getElementById('filter-recorder');
+        var filterReset = document.getElementById('filter-reset');
+        var snapshotTable = document.getElementById('snapshot-table');
+        var snapshotCount = document.getElementById('snapshot-count');
+
+        if (snapshotTable) {
+            var recorders = new Set();
+            snapshotTable.querySelectorAll('tbody tr').forEach(function(row) {
+                var r = row.getAttribute('data-recorder');
+                if (r) recorders.add(r);
+            });
+            recorders.forEach(function(name) {
+                var opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                filterRecorder.appendChild(opt);
+            });
+
+            function applyFilters() {
+                var accVal = filterAccount.value;
+                var monthVal = filterMonth.value;
+                var recVal = filterRecorder.value;
+                var visible = 0;
+
+                snapshotTable.querySelectorAll('tbody tr').forEach(function(row) {
+                    var matchAcc = !accVal || row.getAttribute('data-account') === accVal;
+                    var matchMonth = !monthVal || row.getAttribute('data-month') === monthVal;
+                    var matchRec = !recVal || row.getAttribute('data-recorder') === recVal;
+
+                    if (matchAcc && matchMonth && matchRec) {
+                        row.style.display = '';
+                        visible++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                snapshotCount.textContent = visible + ' 条';
+            }
+
+            filterAccount.addEventListener('change', applyFilters);
+            filterMonth.addEventListener('change', applyFilters);
+            filterRecorder.addEventListener('change', applyFilters);
+            filterReset.addEventListener('click', function() {
+                filterAccount.value = '';
+                filterMonth.value = '';
+                filterRecorder.value = '';
+                applyFilters();
+            });
         }
     </script>
 </body>

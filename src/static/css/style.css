@@ -985,6 +985,253 @@ body::before {
 
 /* ===== 账户管理页面样式 ===== */
 
+/* -- 账户卡片 Tab 头部 -- */
+.acct-card {
+    padding-bottom: 0;
+}
+
+.acct-header {
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+}
+
+.acct-tabs {
+    display: flex;
+    gap: 0;
+    position: relative;
+}
+
+.acct-tab {
+    padding: 10px 20px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.acct-tab:hover {
+    color: var(--color-text-primary);
+}
+
+.acct-tab.active {
+    color: var(--color-text-primary);
+    font-weight: 600;
+    border-bottom-color: var(--color-accent);
+}
+
+.acct-tab-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    background: var(--color-border-light);
+    color: var(--color-text-muted);
+}
+
+.acct-tab.active .acct-tab-count {
+    background: var(--color-accent);
+    color: white;
+}
+
+/* -- 操作按钮栏 -- */
+.acct-actions-bar {
+    display: flex;
+    gap: var(--space-sm);
+    justify-content: flex-end;
+    margin-bottom: var(--space-lg);
+}
+
+.btn-action {
+    padding: 8px 16px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+    background: var(--color-accent);
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    white-space: nowrap;
+}
+
+.btn-action:hover {
+    background: var(--color-accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(232, 153, 141, 0.3);
+}
+
+.btn-action--secondary {
+    background: transparent;
+    color: var(--color-accent);
+    border: 1px solid var(--color-accent);
+}
+
+.btn-action--secondary:hover {
+    background: rgba(232, 153, 141, 0.08);
+    color: var(--color-accent-hover);
+    border-color: var(--color-accent-hover);
+    box-shadow: none;
+}
+
+/* -- 账户面板 -- */
+.acct-panel {
+    display: none;
+    padding: var(--space-lg) 0 var(--space-lg);
+    animation: fadeInPanel 0.25s ease-out;
+}
+
+.acct-panel.active {
+    display: block;
+}
+
+@keyframes fadeInPanel {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* -- 抽屉浮层 -- */
+.drawer-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(45, 42, 46, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 900;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.drawer-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.drawer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--color-bg-card);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    padding: 0;
+    z-index: 950;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 -8px 40px rgba(45, 42, 46, 0.15);
+}
+
+.drawer.open {
+    transform: translateY(0);
+}
+
+.drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-lg) var(--space-xl);
+    border-bottom: 1px solid var(--color-border-light);
+    position: sticky;
+    top: 0;
+    background: var(--color-bg-card);
+    z-index: 1;
+}
+
+.drawer-title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.drawer-close {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: var(--color-bg);
+    border-radius: var(--radius-full);
+    font-size: 20px;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-fast);
+    line-height: 1;
+}
+
+.drawer-close:hover {
+    background: var(--color-border);
+    color: var(--color-text-primary);
+}
+
+.drawer-body {
+    padding: var(--space-xl);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+/* -- 紧凑统计栏 -- */
+.stats-bar--compact .stat-item {
+    padding: var(--space-sm) var(--space-md);
+}
+
+.stats-bar--compact .stat-label {
+    font-size: 10px;
+    margin-bottom: 2px;
+}
+
+.stats-bar--compact .stat-value {
+    font-size: 18px;
+}
+
+/* -- 内联空状态（更紧凑） -- */
+.empty-state--inline {
+    padding: var(--space-lg) var(--space-md);
+}
+
+/* -- 桌面端抽屉居中面板样式 -- */
+@media (min-width: 640px) {
+    .drawer {
+        left: 50%;
+        right: auto;
+        transform: translate(-50%, 100%);
+        width: 480px;
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        max-height: 80vh;
+    }
+}
+
+/* 确保 open 状态覆盖所有断点的 transform */
+.drawer.open {
+    transform: translateY(0);
+}
+
+@media (min-width: 640px) {
+    .drawer.open {
+        transform: translate(-50%, 0);
+    }
+}
+
 .account-list {
     display: flex;
     flex-direction: column;
@@ -1062,4 +1309,152 @@ body::before {
 .account-count {
     font-size: 13px;
     color: var(--color-text-muted);
+}
+
+/* ===== 快照记录表格 ===== */
+
+.snapshot-filters {
+    display: flex;
+    gap: var(--space-md);
+    align-items: flex-end;
+    flex-wrap: wrap;
+    padding: 0 0 var(--space-lg);
+    border-bottom: 1px solid var(--color-border-light);
+    margin-bottom: var(--space-lg);
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.filter-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-text-muted);
+}
+
+.filter-select {
+    min-width: 140px;
+    padding: 8px 12px;
+    font-size: 13px;
+}
+
+.snapshot-table-wrap {
+    overflow-x: auto;
+}
+
+.snapshot-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.snapshot-table thead th {
+    text-align: left;
+    padding: 10px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--color-border);
+    white-space: nowrap;
+}
+
+.snapshot-table tbody tr {
+    transition: var(--transition-fast);
+}
+
+.snapshot-table tbody tr:hover {
+    background: var(--color-bg);
+}
+
+.snapshot-table tbody td {
+    padding: 12px 12px;
+    border-bottom: 1px solid var(--color-border-light);
+    color: var(--color-text-primary);
+}
+
+.snapshot-table .td-amount {
+    font-weight: 600;
+    font-feature-settings: 'tnum';
+    white-space: nowrap;
+}
+
+.snapshot-table .td-meta {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+}
+
+/* ===== 账户页面并排网格布局（保留用于可能的双列场景） ===== */
+
+.accounts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-lg);
+    margin-bottom: var(--space-lg);
+}
+
+.accounts-grid > .card {
+    margin-bottom: 0;
+}
+
+/* ===== 可折叠卡片 ===== */
+
+.collapsible-card {
+    /* 继承 .card 样式 */
+}
+
+.collapsible-header {
+    cursor: pointer;
+    user-select: none;
+    transition: var(--transition-fast);
+}
+
+.collapsible-header:hover {
+    opacity: 0.8;
+}
+
+.collapse-icon {
+    font-size: 16px;
+    color: var(--color-text-muted);
+    transition: var(--transition-fast);
+    line-height: 1;
+}
+
+.collapsible-body {
+    transition: var(--transition-normal);
+    overflow: hidden;
+}
+
+.collapsible-body.collapsed {
+    display: none;
+}
+
+/* 删除表单内联 */
+.delete-form {
+    flex-shrink: 0;
+}
+
+/* ===== 响应式：账户页面 ===== */
+
+@media (max-width: 768px) {
+    .accounts-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .snapshot-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-select {
+        min-width: unset;
+        width: 100%;
+    }
 }
