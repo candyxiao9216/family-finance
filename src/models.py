@@ -253,11 +253,14 @@ class AccountBalance(db.Model):
     balance = db.Column(db.Numeric(10, 2), nullable=False)
     change_amount = db.Column(db.Numeric(10, 2), nullable=True)
     record_month = db.Column(db.Date, nullable=False)
+    recorded_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     __table_args__ = (
         db.UniqueConstraint('account_id', 'record_month', name='uq_account_month'),
     )
+
+    recorder = db.relationship('User', foreign_keys=[recorded_by])
 
     def __repr__(self):
         return f"<AccountBalance {self.id}: account={self.account_id} month={self.record_month}>"

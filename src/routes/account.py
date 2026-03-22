@@ -55,6 +55,22 @@ def account_list():
         for r in records:
             snapshots[r.account_id] = r
 
+    # 获取每个账户的最新快照（用于显示余额对应的月份）
+    latest_snapshots = {}
+    for a in accounts:
+        latest = AccountBalance.query.filter_by(
+            account_id=a.id
+        ).order_by(AccountBalance.record_month.desc()).first()
+        if latest:
+            latest_snapshots[a.id] = latest
+
+    # 获取所有快照记录（按月份降序），用于展示历史记录
+    all_snapshots = []
+    if account_ids:
+        all_snapshots = AccountBalance.query.filter(
+            AccountBalance.account_id.in_(account_ids)
+        ).order_by(AccountBalance.record_month.desc(), AccountBalance.created_at.desc()).all()
+
     return render_template('accounts.html',
                            savings_accounts=savings_accounts,
                            investment_accounts=investment_accounts,
@@ -62,6 +78,8 @@ def account_list():
                            investment_total=investment_total,
                            account_types=account_types,
                            snapshots=snapshots,
+                           latest_snapshots=latest_snapshots,
+                           all_snapshots=all_snapshots,
                            current_view=current_view,
                            family=family,
                            username=session.get('nickname', session.get('username', '用户')))
@@ -127,15 +145,25 @@ def add_snapshot(account_id):
     if existing:
         existing.balance = balance
         existing.change_amount = change_amount
+        existing.recorded_by = user_id
     else:
         snapshot = AccountBalance(
             account_id=account_id, balance=balance,
-            change_amount=change_amount, record_month=record_month
+            change_amount=change_amount, record_month=record_month,
+            recorded_by=user_id
         )
         db.session.add(snapshot)
 
-    # 更新账户当前余额
-    account.current_balance = balance
+    # 只有录入的月份是最新的，才更新账户当前余额
+    latest_snapshot = AccountBalance.query.filter_by(
+        account_id=account_id
+    ).order_by(AccountBalance.record_month.desc()).first()
+
+    if latest_snapshot and latest_snapshot.record_month <= record_month:
+        account.current_balance = balance
+    elif not latest_snapshot:
+        account.current_balance = balance
+
     db.session.commit()
 
     return redirect(url_for('account.account_list'))
