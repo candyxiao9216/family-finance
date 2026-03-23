@@ -12,6 +12,7 @@ from routes.category import category_bp
 from routes.reports import reports_bp
 from routes.account import account_bp
 from routes.savings import savings_bp
+from routes.baby_fund import baby_fund_bp
 from flask import session
 
 app = create_app()
@@ -23,6 +24,7 @@ app.register_blueprint(category_bp)
 app.register_blueprint(reports_bp)
 app.register_blueprint(account_bp)
 app.register_blueprint(savings_bp)
+app.register_blueprint(baby_fund_bp)
 
 @app.before_request
 def require_login():
