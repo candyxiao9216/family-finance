@@ -1,7 +1,7 @@
 # Phase 3 设计文档：储蓄计划 + 宝宝基金 + 批量导入
 
 **日期：** 2026-03-22
-**状态：** 待审查
+**状态：** 审查通过（v2）
 **范围：** 三个功能同步设计、按独立蓝图实施
 
 ---
@@ -39,8 +39,14 @@ Phase 3 为家庭财务管理系统新增三个功能模块：
 | created_at | DATETIME | DEFAULT now | 创建时间 |
 
 **业务规则：**
-- 月度计划：`month` 必填，进度 = 该月所有 savings_records 的 amount 之和 / target_amount
-- 年度计划：`month` 为空，进度 = 该年所有 savings_records 的 amount 之和 / target_amount
+- 月度计划：`month` 必填（1-12），进度 = 该月所有 savings_records 的 amount 之和 / target_amount
+- 年度计划：`month` 为空（后端强制置 NULL），进度 = 该年所有 savings_records 的 amount 之和 / target_amount
+- 验证规则：`month` 仅接受 1-12，年度计划时后端忽略前端传入的 month 值
+
+**家庭视图逻辑：**
+- 个人视图：只显示 `created_by = 当前用户` 的计划
+- 家庭视图：显示所有家庭成员创建的计划（`SavingsPlan.created_by.in_(family_member_ids)`）
+- 家庭视图下，进度聚合所有家庭成员在该计划下的储蓄记录
 
 ### 2.2 新增表：`savings_records`（储蓄记录）
 
@@ -50,6 +56,7 @@ Phase 3 为家庭财务管理系统新增三个功能模块：
 | plan_id | INTEGER | FK → savings_plans.id, NOT NULL | 关联计划 |
 | user_id | INTEGER | FK → users.id, NOT NULL | 录入人 |
 | amount | DECIMAL(10,2) | NOT NULL | 储蓄金额 |
+| account_id | INTEGER | FK → accounts.id, NULLABLE | 存入账户 |
 | record_date | DATE | NOT NULL | 储蓄日期 |
 | description | TEXT | NULLABLE | 备注 |
 | created_at | DATETIME | DEFAULT now | 创建时间 |
@@ -63,7 +70,7 @@ Phase 3 为家庭财务管理系统新增三个功能模块：
 | amount | DECIMAL(10,2) | NOT NULL | 金额 |
 | account_id | INTEGER | FK → accounts.id, NULLABLE | 存入账户 |
 | event_date | DATE | NOT NULL | 日期 |
-| event_type | VARCHAR(20) | NULLABLE | 事件类型（满月/生日/红包/自定义） |
+| event_type | VARCHAR(20) | NULLABLE | 事件类型，限定值：`满月`/`生日`/`红包`/`其他` |
 | notes | TEXT | NULLABLE | 备注 |
 | transaction_id | INTEGER | FK → transactions.id, NULLABLE | 关联自动生成的交易 |
 | created_by | INTEGER | FK → users.id | 创建人 |
@@ -72,7 +79,12 @@ Phase 3 为家庭财务管理系统新增三个功能模块：
 **业务规则：**
 - 创建宝宝基金记录时，自动创建一笔收入类型的 Transaction（description 包含给钱人和事件类型）
 - `transaction_id` 存储关联交易的 ID
-- 删除宝宝基金时，同步删除关联的交易记录
+- 删除宝宝基金时：先删除关联交易的 `TransactionModification` 记录（如有），再删除 `Transaction`，最后删除 `BabyFund`
+- `event_type` 校验：模型层定义 `VALID_EVENT_TYPES = ['满月', '生日', '红包', '其他']`，路由层做校验
+
+**家庭视图逻辑：**
+- 宝宝基金默认展示当前用户家庭的所有记录（`BabyFund.created_by.in_(family_member_ids)`）
+- 支持个人/家庭视图切换
 
 ### 2.4 新增表：`import_records`（导入记录）
 
@@ -91,7 +103,7 @@ Phase 3 为家庭财务管理系统新增三个功能模块：
 
 ### 2.5 现有表不做修改
 
-`transactions` 表不新增字段。去重逻辑基于 `transaction_date + amount + description` 组合在内存中比对。
+`transactions` 表不新增字段。去重逻辑优先使用微信/支付宝账单中的交易单号，回退到 `transaction_date + amount + description` 组合比对。详见第 5.4 节。
 
 ---
 
@@ -104,7 +116,9 @@ Phase 3 为家庭财务管理系统新增三个功能模块：
 | `/savings` | GET | 储蓄计划列表页（含进度计算） |
 | `/savings/plan/add` | POST | 创建储蓄计划 |
 | `/savings/plan/<id>/delete` | POST | 删除储蓄计划（级联删除关联记录） |
+| `/savings/plan/<id>/edit` | POST | 编辑储蓄计划（修改名称、目标金额等） |
 | `/savings/record/add` | POST | 录入储蓄记录 |
+| `/savings/record/<id>/delete` | POST | 删除储蓄记录 |
 
 ### 3.2 宝宝基金蓝图 `baby_fund_bp`（prefix: `/baby-fund`）
 
@@ -112,6 +126,7 @@ Phase 3 为家庭财务管理系统新增三个功能模块：
 |------|------|------|
 | `/baby-fund` | GET | 宝宝基金列表页 |
 | `/baby-fund/add` | POST | 添加宝宝基金（同时创建交易） |
+| `/baby-fund/<id>/edit` | POST | 编辑宝宝基金记录 |
 | `/baby-fund/<id>/delete` | POST | 删除宝宝基金（同时删除交易） |
 
 ### 3.3 批量导入蓝图 `upload_bp`（prefix: `/upload`）
@@ -199,11 +214,50 @@ Phase 3 为家庭财务管理系统新增三个功能模块：
 
 ### 5.4 去重逻辑
 
-基于 `transaction_date + amount + description` 三个字段的组合：
-1. 解析文件后生成每条记录的去重键（三字段拼接的哈希）
-2. 查询数据库中当前用户的所有交易，生成同样的去重键集合
+**优先使用交易单号去重（微信/支付宝账单）：**
+- 微信账单：使用"交易单号"字段
+- 支付宝账单：使用"交易订单号"字段
+- 解析时将订单号存入 Transaction 的 `description` 字段末尾（格式：`原描述 [单号:xxx]`）
+- 去重时先提取订单号匹配
+
+**回退方案（标准模板或无单号时）：**
+- 基于 `transaction_date + amount + description` 组合
+- `description` 为 NULL 时视为空字符串参与比对
+- 完全相同的合法交易会被标记为"疑似重复"，由用户手动确认
+
+**去重流程：**
+1. 解析文件后，对每条记录生成去重键
+2. 查询数据库中当前用户近 6 个月的交易（避免全表扫描），生成去重键集合
 3. 比对找出重复项
 4. 前端展示重复项，用户交互式选择：跳过 / 覆盖 / 保留两条
+
+---
+
+## 5.5 导入状态管理
+
+**parse 和 confirm 之间的数据流：**
+- `/upload/parse` 解析文件后，将全量解析结果作为 JSON 返回给前端
+- 前端在内存中持有解析数据，展示预览表格
+- 用户在前端完成重复项决策后，`/upload/confirm` 提交最终确认的记录列表（JSON body）
+- 后端接收记录列表，逐条写入数据库
+
+**文件大小和安全限制：**
+- 最大文件大小：10MB
+- 仅接受 `.csv` 和 `.xlsx` 后缀
+- CSV 内容安全清洗：去除以 `=`, `+`, `-`, `@` 开头的单元格内容（防止 CSV 注入）
+- Flask 配置：`MAX_CONTENT_LENGTH = 10 * 1024 * 1024`
+
+---
+
+## 5.6 分类映射逻辑
+
+**导入时如何确定交易分类：**
+1. **标准模板：** 用户在模板中填写分类名，按名称精确匹配系统 `categories` 表
+2. **微信/支付宝账单：** 原始账单的"交易分类"字段做模糊匹配：
+   - 包含"餐饮/美食"→ 匹配系统"餐饮"分类
+   - 包含"交通/出行"→ 匹配系统"交通"分类
+   - 无法匹配时设为 `NULL`（未分类）
+3. **预览页允许用户手动调整：** 每条记录旁显示分类下拉框，用户可修改
 
 ---
 
@@ -231,6 +285,10 @@ Phase 3 为家庭财务管理系统新增三个功能模块：
 | `src/templates/baby_fund.html` | 模板 | 宝宝基金页面 |
 | `src/templates/upload.html` | 模板 | 批量导入页面 |
 | `src/static/import_template.csv` | 静态 | 标准导入模板文件 |
+| `tests/test_savings.py` | 测试 | 储蓄计划单元测试 |
+| `tests/test_baby_fund.py` | 测试 | 宝宝基金单元测试 |
+| `tests/test_upload.py` | 测试 | 批量导入单元测试 |
+| `tests/test_importers.py` | 测试 | 文件解析器单元测试 |
 
 **修改文件：**
 
@@ -271,3 +329,13 @@ Phase 3 为家庭财务管理系统新增三个功能模块：
 - [ ] 重复项检测正确，支持交互式处理
 - [ ] 导入记录表正确记录每次导入的统计信息
 - [ ] 可下载标准导入模板
+
+---
+
+## 9. 模型规范
+
+所有新增模型必须遵循现有代码风格：
+- 实现 `__repr__()` 方法
+- 实现 `to_dict()` 方法
+- 定义必要的 relationship 和 backref
+- `BabyFund` 模型定义常量：`VALID_EVENT_TYPES = ['满月', '生日', '红包', '其他']`
