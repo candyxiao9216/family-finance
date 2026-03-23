@@ -273,3 +273,142 @@ class AccountBalance(db.Model):
             'change_amount': float(self.change_amount) if self.change_amount else 0,
             'record_month': self.record_month.strftime('%Y-%m') if self.record_month else None
         }
+
+
+class SavingsPlan(db.Model):
+    """储蓄计划表"""
+    __tablename__ = 'savings_plans'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    type = db.Column(db.String(10), nullable=False)  # 'monthly' 或 'annual'
+    target_amount = db.Column(db.Numeric(10, 2), nullable=False)
+    year = db.Column(db.Integer, nullable=False)
+    month = db.Column(db.Integer, nullable=True)  # 仅月度计划，1-12
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    creator = db.relationship('User', foreign_keys=[created_by], backref='savings_plans')
+    records = db.relationship('SavingsRecord', backref='plan', lazy=True,
+                              cascade='all, delete-orphan')
+
+    def __repr__(self):
+        return f"<SavingsPlan {self.id}: {self.name}>"
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'type': self.type,
+            'target_amount': float(self.target_amount),
+            'year': self.year,
+            'month': self.month,
+            'created_by': self.created_by,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+
+class SavingsRecord(db.Model):
+    """储蓄记录表"""
+    __tablename__ = 'savings_records'
+
+    id = db.Column(db.Integer, primary_key=True)
+    plan_id = db.Column(db.Integer, db.ForeignKey('savings_plans.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    amount = db.Column(db.Numeric(10, 2), nullable=False)
+    account_id = db.Column(db.Integer, db.ForeignKey('accounts.id'), nullable=True)
+    record_date = db.Column(db.Date, nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    recorder = db.relationship('User', foreign_keys=[user_id], backref='savings_records')
+    account = db.relationship('Account', foreign_keys=[account_id])
+
+    def __repr__(self):
+        return f"<SavingsRecord {self.id}: plan={self.plan_id} amount={self.amount}>"
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'plan_id': self.plan_id,
+            'user_id': self.user_id,
+            'amount': float(self.amount),
+            'account_id': self.account_id,
+            'record_date': self.record_date.isoformat() if self.record_date else None,
+            'description': self.description,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+
+class BabyFund(db.Model):
+    """宝宝基金表"""
+    __tablename__ = 'baby_funds'
+
+    VALID_EVENT_TYPES = ['满月', '生日', '红包', '其他']
+
+    id = db.Column(db.Integer, primary_key=True)
+    giver_name = db.Column(db.String(50), nullable=False)
+    amount = db.Column(db.Numeric(10, 2), nullable=False)
+    account_id = db.Column(db.Integer, db.ForeignKey('accounts.id'), nullable=True)
+    event_date = db.Column(db.Date, nullable=False)
+    event_type = db.Column(db.String(20), nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+    transaction_id = db.Column(db.Integer, db.ForeignKey('transactions.id'), nullable=True)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    creator = db.relationship('User', foreign_keys=[created_by], backref='baby_funds')
+    account = db.relationship('Account', foreign_keys=[account_id])
+    transaction = db.relationship('Transaction', foreign_keys=[transaction_id])
+
+    def __repr__(self):
+        return f"<BabyFund {self.id}: {self.giver_name} ¥{self.amount}>"
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'giver_name': self.giver_name,
+            'amount': float(self.amount),
+            'account_id': self.account_id,
+            'event_date': self.event_date.isoformat() if self.event_date else None,
+            'event_type': self.event_type,
+            'notes': self.notes,
+            'transaction_id': self.transaction_id,
+            'created_by': self.created_by,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+
+class ImportRecord(db.Model):
+    """导入记录表"""
+    __tablename__ = 'import_records'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    file_name = db.Column(db.String(200), nullable=False)
+    import_time = db.Column(db.DateTime, default=datetime.utcnow)
+    total_rows = db.Column(db.Integer, nullable=True)
+    imported_count = db.Column(db.Integer, nullable=True)
+    skipped_count = db.Column(db.Integer, nullable=True)
+    duplicate_count = db.Column(db.Integer, nullable=True)
+    source_type = db.Column(db.String(20), nullable=True)  # 'wechat'/'alipay'/'template'
+    status = db.Column(db.String(20), default='completed')
+
+    importer = db.relationship('User', foreign_keys=[user_id], backref='import_records')
+
+    def __repr__(self):
+        return f"<ImportRecord {self.id}: {self.file_name}>"
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'file_name': self.file_name,
+            'import_time': self.import_time.isoformat() if self.import_time else None,
+            'total_rows': self.total_rows,
+            'imported_count': self.imported_count,
+            'skipped_count': self.skipped_count,
+            'duplicate_count': self.duplicate_count,
+            'source_type': self.source_type,
+            'status': self.status
+        }
