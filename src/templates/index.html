@@ -21,12 +21,23 @@
             <div class="user-info">
                 <span class="username">{{ username }}</span>
                 <div class="user-actions">
-                    <a href="{{ url_for('category.category_list') }}" class="nav-link">分类</a>
+                    <a href="{{ url_for('index') }}" class="nav-link">首页</a>
+                    <div class="nav-dropdown">
+                        <a href="#" class="nav-link nav-dropdown-trigger">账户 ▾</a>
+                        <div class="nav-dropdown-menu">
+                            <a href="{{ url_for('account.account_list') }}" class="nav-dropdown-item">账户管理</a>
+                            <a href="{{ url_for('savings.savings_list') }}" class="nav-dropdown-item">储蓄计划</a>
+                            <a href="{{ url_for('baby_fund.baby_fund_list') }}" class="nav-dropdown-item">宝宝基金</a>
+                        </div>
+                    </div>
                     <a href="{{ url_for('reports.reports_page', view=current_view) }}" class="nav-link">报表</a>
-                    <a href="{{ url_for('account.account_list', view=current_view) }}" class="nav-link">账户</a>
-                    <a href="{{ url_for('savings.savings_list') }}" class="nav-link">储蓄</a>
-                    <a href="{{ url_for('baby_fund.baby_fund_list') }}" class="nav-link">宝宝</a>
-                    <a href="{{ url_for('upload.upload_page') }}" class="nav-link">导入</a>
+                    <div class="nav-dropdown">
+                        <a href="#" class="nav-link nav-dropdown-trigger">设置 ▾</a>
+                        <div class="nav-dropdown-menu">
+                            <a href="{{ url_for('category.category_list') }}" class="nav-dropdown-item">分类管理</a>
+                            <a href="{{ url_for('upload.upload_page') }}" class="nav-dropdown-item">批量导入</a>
+                        </div>
+                    </div>
                     {% if family %}
                     <a href="{{ url_for('family.family_info') }}" class="nav-link">家庭</a>
                     {% endif %}
