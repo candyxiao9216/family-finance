@@ -35,6 +35,7 @@ def create_app() -> Flask:
     app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = SQLALCHEMY_TRACK_MODIFICATIONS
     app.config['SECRET_KEY'] = SECRET_KEY
+    app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB
 
     # 初始化数据库
     db.init_app(app)
