@@ -153,6 +153,45 @@
 
 ---
 
+## Phase 3 - 储蓄计划 + 宝宝基金 + 批量导入（2026-03-24）
+
+### TASK-007：储蓄计划管理 ✅
+- 状态：DONE
+- 优先级：P1
+- 规模：M
+- 目标：创建月度/年度储蓄计划，手动录入储蓄记录，自动计算进度
+- 涉及文件：
+  - `/src/models.py`（SavingsPlan, SavingsRecord 模型）
+  - `/src/routes/savings.py`（储蓄蓝图）
+  - `/src/templates/savings.html`（卡片式布局 + 进度条）
+  - `/tests/test_savings.py`（5 个测试）
+
+### TASK-008：宝宝基金记录 ✅
+- 状态：DONE
+- 优先级：P1
+- 规模：M
+- 目标：记录宝宝红包/礼金，自动生成收入交易，编辑/删除联动
+- 涉及文件：
+  - `/src/models.py`（BabyFund 模型）
+  - `/src/routes/baby_fund.py`（宝宝基金蓝图）
+  - `/src/templates/baby_fund.html`
+  - `/tests/test_baby_fund.py`（4 个测试）
+
+### TASK-009：CSV/Excel 批量导入 ✅
+- 状态：DONE
+- 优先级：P1
+- 规模：L
+- 目标：支持微信/支付宝账单和标准模板导入，含去重检测和交互确认
+- 涉及文件：
+  - `/src/models.py`（ImportRecord 模型）
+  - `/src/utils/importers.py`（7 个解析函数）
+  - `/src/routes/upload.py`（上传蓝图）
+  - `/src/templates/upload.html`（三步流程）
+  - `/tests/test_importers.py`（7 个测试）
+  - `/tests/test_upload.py`（3 个测试）
+
+---
+
 ## 已完成任务
 
 ### TASK-P0-001：交易记录基本功能
