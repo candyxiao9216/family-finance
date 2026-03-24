@@ -1458,3 +1458,263 @@ body::before {
         width: 100%;
     }
 }
+
+/* ===== Phase 3: 储蓄计划 ===== */
+.savings-card {
+    background: var(--color-bg-card);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow-card);
+}
+
+.savings-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.savings-card-name {
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.savings-card-target {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+}
+
+.progress-bar {
+    background: var(--color-border-light);
+    border-radius: 6px;
+    height: 8px;
+    overflow: hidden;
+    margin: 8px 0;
+}
+
+.progress-fill {
+    height: 100%;
+    border-radius: 6px;
+    background: linear-gradient(90deg, var(--color-income), var(--color-accent));
+    transition: width 0.3s ease;
+}
+
+.progress-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+}
+
+/* ===== Phase 3: 宝宝基金 ===== */
+.fund-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    background: var(--color-bg-card);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    box-shadow: var(--shadow-soft);
+}
+
+.fund-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.fund-icon {
+    font-size: 1.4rem;
+}
+
+.fund-giver {
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.fund-event {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+}
+
+.fund-amount {
+    font-weight: 600;
+    color: var(--color-income);
+}
+
+.fund-date {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    margin-left: 8px;
+}
+
+.fund-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ===== Phase 3: 批量导入 ===== */
+.upload-zone {
+    border: 2px dashed var(--color-border);
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 20px;
+}
+
+.upload-zone:hover,
+.upload-zone.drag-over {
+    border-color: var(--color-accent);
+    background: rgba(232, 153, 141, 0.05);
+}
+
+.upload-zone-icon {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+.upload-zone-text {
+    color: var(--color-text-primary);
+    font-weight: 500;
+}
+
+.upload-zone-hint {
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+    margin-top: 4px;
+}
+
+.source-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.source-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-bg-card);
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.source-btn:hover,
+.source-btn.active {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+    background: rgba(232, 153, 141, 0.08);
+}
+
+.step-indicator {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.step-number {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.85rem;
+    background: var(--color-border-light);
+    color: var(--color-text-muted);
+}
+
+.step.active .step-number {
+    background: var(--color-accent);
+    color: white;
+}
+
+.step.done .step-number {
+    background: var(--color-income);
+    color: white;
+}
+
+.step-label {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.step.active .step-label {
+    color: var(--color-accent);
+    font-weight: 500;
+}
+
+.step-line {
+    width: 40px;
+    height: 1px;
+    background: var(--color-border);
+    margin-bottom: 18px;
+}
+
+.preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.preview-table th {
+    text-align: left;
+    padding: 8px;
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    font-weight: 500;
+}
+
+.preview-table td {
+    padding: 8px;
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.preview-table tr.duplicate {
+    background: rgba(232, 153, 141, 0.1);
+}
+
+.preview-table tr.duplicate td {
+    color: var(--color-text-muted);
+}
+
+.import-history-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--color-border-light);
+    font-size: 0.85rem;
+}
+
+.import-result {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.import-result-icon {
+    font-size: 3rem;
+    margin-bottom: 12px;
+}
+
+.import-result-count {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-income);
+}
