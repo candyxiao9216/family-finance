@@ -422,12 +422,12 @@ python src/main.py
 | 云服务商 | 腾讯云 Lighthouse |
 | 账号 | candyxiao 个人账号 |
 | 地域 | 广州 |
-| IP 地址 | 119.17.114.83 |
+| IP 地址 | 119.91.205.137 |
 | 系统 | Ubuntu |
 | SSH 用户名 | ubuntu（密钥登录） |
 | SSH 密钥 | `~/.ssh/candyworkbench.pem` |
 | 应用目录 | `/opt/family-finance` |
-| 访问地址 | http://119.17.114.83 |
+| 访问地址 | http://119.91.205.137 |
 
 ### 部署架构
 
@@ -444,7 +444,7 @@ python src/main.py
 ### SSH 登录服务器
 
 ```bash
-ssh -i ~/.ssh/candyworkbench.pem ubuntu@119.17.114.83
+ssh -i ~/.ssh/candyworkbench.pem ubuntu@119.91.205.137
 sudo -i  # 切换到 root
 ```
 
