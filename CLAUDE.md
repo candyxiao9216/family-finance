@@ -317,6 +317,44 @@ python src/main.py
 
 ## 功能实现记录
 
+### 2026-03-24: Phase 3 — 储蓄计划 + 宝宝基金 + 批量导入 ✅
+
+**实现内容:**
+- 新增 4 个数据模型：SavingsPlan、SavingsRecord、BabyFund、ImportRecord
+- 新增 3 个 Flask 蓝图：savings_bp、baby_fund_bp、upload_bp
+- 新增 3 个页面模板 + 文件解析工具模块
+- 导航栏重构为二级下拉菜单
+
+**新增路由:**
+- 储蓄计划：列表(GET) + 创建/编辑/删除计划(POST) + 录入/删除记录(POST)
+- 宝宝基金：列表(GET) + 添加/编辑/删除(POST)，创建时自动生成收入交易，删除时级联删除
+- 批量导入：页面(GET) + 解析文件(POST→JSON) + 确认导入(POST→JSON) + 模板下载(GET)
+
+**文件解析器 (`src/utils/importers.py`):**
+- `parse_wechat_csv()` — 微信账单（跳过前 16 行概要，清洗 ¥ 符号）
+- `parse_alipay_csv()` — 支付宝账单（自动检测表头行）
+- `parse_template_csv()` / `parse_excel()` — 标准模板 CSV/Excel
+- `detect_source_type()` — 自动识别文件来源
+- `map_category()` — 分类模糊匹配
+- `sanitize_cell()` — CSV 注入防护
+
+**导航栏结构（二级下拉）:**
+```
+首页 | 账户 ▾ | 报表 | 设置 ▾ | [家庭] | 退出
+       ├── 账户管理    ├── 分类管理
+       ├── 储蓄计划    └── 批量导入
+       └── 宝宝基金
+```
+
+**测试覆盖:** 19 个测试全部通过
+- test_savings.py: 5 tests（模型、路由、进度计算、编辑）
+- test_baby_fund.py: 4 tests（创建联动、删除级联、编辑同步、类型校验）
+- test_importers.py: 7 tests（4种解析器 + 检测 + 映射 + 安全）
+- test_upload.py: 3 tests（解析、确认导入、去重检测）
+
+**设计文档:** `docs/superpowers/specs/2026-03-22-phase3-design.md`
+**实施计划:** `docs/superpowers/plans/2026-03-22-phase3-implementation.md`
+
 ### 2026-02-27: User-Family 关联功能 ✅
 
 **实现内容:**
@@ -346,6 +384,17 @@ python src/main.py
 
 ## 经验教训
 
+### 2026-03-24: Phase 3 实施经验
+
+**问题 1:** upload.html 中 `url_for('account.accounts_page')` endpoint 名写错，应为 `account.account_list`
+**原因:** 子 agent 创建模板时用了错误的 endpoint 名，测试只验证了路由返回码而没有渲染模板
+**解决:** 修正 endpoint 名。教训：模板中的 url_for 也需要在集成测试中覆盖
+
+**问题 2:** 导航栏 7 个一级项目过多，层级关系不清晰
+**原因:** Phase 1-3 逐步添加功能时每个都直接加到一级导航，没有整体规划
+**解决:** 重构为二级下拉导航（账户 ▾ / 设置 ▾），一级缩减到 4 项
+**经验:** 新增功能时应优先考虑归入已有导航分组，而非增加一级导航项
+
 ### 2026-02-27: User-Family 关联实现经验
 
 **问题:** 测试过程中出现 invite_code 唯一约束冲突
@@ -364,5 +413,5 @@ python src/main.py
 
 ---
 
-**最后更新:** 2026-02-27
-**文档版本:** 1.1.0
+**最后更新:** 2026-03-24
+**文档版本:** 1.2.0
