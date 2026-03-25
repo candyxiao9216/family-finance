@@ -413,5 +413,88 @@ python src/main.py
 
 ---
 
-**最后更新:** 2026-03-24
-**文档版本:** 1.2.0
+## 服务器部署信息
+
+### 服务器实例
+
+| 项目 | 信息 |
+|------|------|
+| 云服务商 | 腾讯云 Lighthouse |
+| 账号 | candyxiao 个人账号 |
+| 地域 | 广州 |
+| IP 地址 | 119.17.114.83 |
+| 系统 | Ubuntu |
+| SSH 用户名 | ubuntu（密钥登录） |
+| SSH 密钥 | `~/.ssh/candyworkbench.pem` |
+| 应用目录 | `/opt/family-finance` |
+| 访问地址 | http://119.17.114.83 |
+
+### 部署架构
+
+```
+用户浏览器
+    ↓ HTTP (80)
+  Nginx (反向代理 + 静态文件缓存)
+    ↓ 127.0.0.1:5001
+  Gunicorn (WSGI 生产服务器, 2 workers)
+    ↓
+  Flask App + SQLite (/opt/family-finance/data/family_finance.db)
+```
+
+### SSH 登录服务器
+
+```bash
+ssh -i ~/.ssh/candyworkbench.pem ubuntu@119.17.114.83
+sudo -i  # 切换到 root
+```
+
+### 日常更新流程
+
+**本地开发完成后：**
+```bash
+# 1. 本地推送代码
+git add . && git commit -m "feat: xxx" && git push
+
+# 2. SSH 登录服务器后执行一条命令
+cd /opt/family-finance && git pull origin main && systemctl restart family-finance
+```
+
+### 常用运维命令
+
+| 操作 | 命令 |
+|------|------|
+| 查看服务状态 | `systemctl status family-finance` |
+| 查看实时日志 | `journalctl -u family-finance -f` |
+| 重启服务 | `systemctl restart family-finance` |
+| 停止服务 | `systemctl stop family-finance` |
+| 查看 Nginx 日志 | `tail -f /var/log/nginx/error.log` |
+| 查看应用日志 | `tail -f /opt/family-finance/data/error.log` |
+| 查看访问日志 | `tail -f /opt/family-finance/data/access.log` |
+
+### 故障排查
+
+```bash
+# 服务启动失败
+systemctl status family-finance    # 看错误信息
+journalctl -u family-finance -n 50 # 看最近 50 行日志
+
+# Nginx 报错
+nginx -t                           # 检查配置语法
+systemctl restart nginx            # 重启 Nginx
+
+# 数据库问题
+ls -la /opt/family-finance/data/   # 确认数据库文件存在
+```
+
+### 重新部署（从零开始）
+
+```bash
+# SSH 登录服务器后
+sudo -i
+curl -sSL https://raw.githubusercontent.com/candyxiao9216/family-finance/main/deploy.sh -o /tmp/deploy.sh && bash /tmp/deploy.sh
+```
+
+---
+
+**最后更新:** 2026-03-25
+**文档版本:** 1.3.0

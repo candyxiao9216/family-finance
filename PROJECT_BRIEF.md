@@ -65,15 +65,16 @@
 5. 数据导出功能（CSV/PDF 报表导出）
 
 ## 7. 运行方式（可复制粘贴的命令）
-- 初始化/安装：
-  - `python3 -m venv venv && source venv/bin/activate`
+- 本地开发：
   - `pip install -r requirements.txt`
-- 本地开发启动：
-  - `python src/main.py`
-- 访问应用：
-  - http://localhost:5001
-- 初始化数据库（如需要）：
-  - 访问 http://localhost:5001/init-db
+  - `python3 src/main.py`
+  - 访问 http://localhost:5001
+- 线上地址：
+  - http://119.17.114.83
+- 服务器更新：
+  - `ssh -i ~/.ssh/candyworkbench.pem ubuntu@119.17.114.83`
+  - `sudo -i`
+  - `cd /opt/family-finance && git pull origin main && systemctl restart family-finance`
 
 ## 8. 关键路径（只列重要的）
 - `/src/main.py` - 应用入口，主路由
@@ -89,3 +90,5 @@
 - 端口：5001（避免与 macOS AirPlay Receiver 冲突）
 - 密码存储：使用 pbkdf2:sha256 哈希方法
 - 会话管理：基于 Flask session
+- 服务器：腾讯云 Lighthouse 广州（119.17.114.83），candyxiao 个人账号
+- GitHub 仓库：https://github.com/candyxiao9216/family-finance（private）
