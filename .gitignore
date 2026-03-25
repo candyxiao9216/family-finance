@@ -24,3 +24,14 @@ Thumbs.db
 cookies.txt
 newuser_cookies.txt
 *.bak
+
+# 环境变量
+.env
+.env.local
+
+# Playwright / Superpowers 临时文件
+.playwright-mcp/
+.superpowers/
+
+# 数据目录（运行时生成）
+data/
