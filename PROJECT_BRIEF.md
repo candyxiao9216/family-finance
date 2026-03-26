@@ -38,7 +38,7 @@
 - 数据库：SQLite 3，包含 users、categories、transactions 三张表
 
 ## 5. 当前状态（必须随时更新）
-- 当前里程碑：Phase 3 已完成
+- 当前里程碑：Phase 4 UI 优化已完成
 - 已可用能力：
   - [x] 用户注册/登录（密码哈希加密）
   - [x] 交易记录（添加、编辑、删除、列表展示）
@@ -54,15 +54,21 @@
   - [x] 储蓄计划管理（月度/年度目标 + 进度追踪 + 手动录入）
   - [x] 宝宝基金记录（自动生成收入交易 + 级联删除 + 编辑联动）
   - [x] CSV/Excel 批量导入（微信/支付宝账单 + 标准模板 + 去重检测）
+  - [x] 移动端适配（底部 Tab 栏 + 汉堡侧滑菜单 + 响应式断点）
+  - [x] base.html 模板重构（消除 12 个模板的重复代码）
+  - [x] Toast 消息提示（成功/错误分类 + 自动消失）
+  - [x] 自定义删除确认弹窗
+  - [x] 空状态友好提示（4 个页面）
+  - [x] 表单提交 loading 防重复
 - 已知问题 / 技术债：
   - 无重大已知问题
 
 ## 6. 下一步 5 件事（只保留 5 条）
-1. UI 体验优化（移动端适配、交互细节）
-2. 贷款管理模块
-3. 储蓄计划页面图表（储蓄趋势折线图）
-4. 导入功能优化（支持更多银行账单格式）
-5. 数据导出功能（CSV/PDF 报表导出）
+1. 贷款管理模块
+2. 储蓄计划页面图表（储蓄趋势折线图）
+3. 导入功能优化（支持更多银行账单格式）
+4. 数据导出功能（CSV/PDF 报表导出）
+5. 暗色模式
 
 ## 7. 运行方式（可复制粘贴的命令）
 - 本地开发：
@@ -70,9 +76,9 @@
   - `python3 src/main.py`
   - 访问 http://localhost:5001
 - 线上地址：
-  - http://119.17.114.83
+  - http://119.91.205.137
 - 服务器更新：
-  - `ssh -i ~/.ssh/candyworkbench.pem ubuntu@119.17.114.83`
+  - `ssh -i ~/.ssh/candyworkbench.pem ubuntu@119.91.205.137`
   - `sudo -i`
   - `cd /opt/family-finance && git pull origin main && systemctl restart family-finance`
 
@@ -90,5 +96,5 @@
 - 端口：5001（避免与 macOS AirPlay Receiver 冲突）
 - 密码存储：使用 pbkdf2:sha256 哈希方法
 - 会话管理：基于 Flask session
-- 服务器：腾讯云 Lighthouse 广州（119.17.114.83），candyxiao 个人账号
+- 服务器：腾讯云 Lighthouse 广州（119.91.205.137），candyxiao 个人账号
 - GitHub 仓库：https://github.com/candyxiao9216/family-finance（private）
