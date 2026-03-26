@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
     .progress-bar {
         width: 100%;
@@ -49,6 +50,18 @@
             </div>
         </div>
 
+        <!-- 储蓄趋势图 -->
+        {% if chart_labels %}
+        <div class="card chart-section">
+            <div class="card-header">
+                <h2 class="card-title">储蓄趋势</h2>
+            </div>
+            <div style="position: relative; height: 250px; padding: 16px;">
+                <canvas id="savingsTrendChart"></canvas>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- 操作按钮栏 -->
         <div class="acct-actions-bar">
             <button class="btn-action" id="btn-add-plan">+ 创建储蓄计划</button>
@@ -79,6 +92,11 @@
                     <div class="progress-bar">
                         <div class="progress-fill" style="width: {{ item.progress }}%"></div>
                     </div>
+                    {% if item.chart_data %}
+                    <div style="position: relative; height: 80px; margin-top: 8px;">
+                        <canvas id="miniChart{{ item.plan.id }}"></canvas>
+                    </div>
+                    {% endif %}
                     <div class="plan-actions">
                         <button class="btn-delete-cat" onclick="openEditPlan({{ item.plan.id }}, '{{ item.plan.name }}', '{{ item.plan.target_amount }}')">编辑</button>
                         <form action="{{ url_for('savings.delete_plan', plan_id=item.plan.id) }}" method="POST" style="display:inline">
@@ -205,6 +223,91 @@
 
 {% block scripts %}
     <script>
+        // ===== 储蓄趋势图（汇总） =====
+        {% if chart_labels %}
+        (function() {
+            var ctx = document.getElementById('savingsTrendChart');
+            if (!ctx) return;
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: {{ chart_labels | tojson }},
+                    datasets: [{
+                        label: '累计储蓄',
+                        data: {{ chart_cumulative | tojson }},
+                        borderColor: '#D4A574',
+                        backgroundColor: 'rgba(212, 165, 116, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#D4A574'
+                    }, {
+                        label: '总目标',
+                        data: {{ chart_labels | tojson }}.map(function() { return {{ total_target }}; }),
+                        borderColor: '#E8998D',
+                        borderDash: [6, 4],
+                        pointRadius: 0,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { font: { size: 12 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) { return ctx.dataset.label + ': ¥' + ctx.parsed.y.toLocaleString(); }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { callback: function(v) { return '¥' + v.toLocaleString(); } }
+                        }
+                    }
+                }
+            });
+        })();
+        {% endif %}
+
+        // ===== 计划迷你图 =====
+        {% for item in plan_data %}
+        {% if item.chart_data %}
+        (function() {
+            var ctx = document.getElementById('miniChart{{ item.plan.id }}');
+            if (!ctx) return;
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: {{ item.chart_labels | tojson }},
+                    datasets: [{
+                        data: {{ item.chart_data | tojson }},
+                        borderColor: '#D4A574',
+                        backgroundColor: 'rgba(212, 165, 116, 0.08)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 2,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: {
+                        callbacks: { label: function(ctx) { return '¥' + ctx.parsed.y.toLocaleString(); } }
+                    }},
+                    scales: {
+                        x: { display: false },
+                        y: { display: false, beginAtZero: true }
+                    }
+                }
+            });
+        })();
+        {% endif %}
+        {% endfor %}
+
         // ===== 抽屉浮层 =====
         function openDrawer(drawerId, overlayId) {
             document.getElementById(overlayId).classList.add('open');

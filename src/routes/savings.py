@@ -1,6 +1,7 @@
 """储蓄计划路由模块"""
 from datetime import datetime
 from decimal import Decimal
+from collections import defaultdict
 
 from flask import Blueprint, redirect, render_template, request, session, url_for, flash
 from sqlalchemy import func
@@ -54,12 +55,50 @@ def savings_list():
 
     accounts = Account.query.filter(Account.user_id.in_(member_ids)).all()
 
+    # === 图表数据：按月汇总储蓄趋势 ===
+    all_records = SavingsRecord.query.filter(
+        SavingsRecord.plan_id.in_([item['plan'].id for item in plan_data])
+    ).order_by(SavingsRecord.record_date).all()
+
+    # 汇总趋势（所有计划合计，按月累计）
+    monthly_totals = defaultdict(lambda: Decimal('0'))
+    for rec in all_records:
+        month_key = rec.record_date.strftime('%Y-%m')
+        monthly_totals[month_key] += rec.amount
+
+    # 排序月份，计算累计值
+    sorted_months = sorted(monthly_totals.keys())
+    chart_labels = sorted_months
+    chart_cumulative = []
+    running_total = Decimal('0')
+    for m in sorted_months:
+        running_total += monthly_totals[m]
+        chart_cumulative.append(float(running_total))
+
+    # 每个计划的迷你图数据（按月累计）
+    for item in plan_data:
+        plan_records = [r for r in all_records if r.plan_id == item['plan'].id]
+        plan_monthly = defaultdict(lambda: Decimal('0'))
+        for rec in plan_records:
+            mk = rec.record_date.strftime('%Y-%m')
+            plan_monthly[mk] += rec.amount
+        p_months = sorted(plan_monthly.keys())
+        p_cumulative = []
+        p_running = Decimal('0')
+        for mk in p_months:
+            p_running += plan_monthly[mk]
+            p_cumulative.append(float(p_running))
+        item['chart_labels'] = p_months
+        item['chart_data'] = p_cumulative
+
     return render_template('savings.html',
                            plan_data=plan_data,
                            total_target=float(total_target),
                            total_saved=float(total_saved),
                            overall_progress=min(overall_progress, 100),
                            accounts=accounts,
+                           chart_labels=chart_labels,
+                           chart_cumulative=chart_cumulative,
                            current_view=current_view,
                            family=family,
                            username=session.get('nickname', session.get('username', '用户')))
