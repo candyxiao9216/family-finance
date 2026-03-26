@@ -411,6 +411,28 @@ python src/main.py
 
 ## 经验教训
 
+### 2026-03-26: Phase 4 UI 优化经验
+
+**问题 1:** 模板重构时 `<div class="container">` 嵌套错误
+**原因:** base.html 中已有 `<div class="container">`，但部分子模板没有删除自己的 container 包裹，导致双层嵌套
+**解决:** 逐个模板检查，确保子模板只输出 content block 内的内容
+**经验:** 大规模模板重构时，先改造 1 个模板验证通过，再批量改造其余模板
+
+**问题 2:** flash 消息 with_categories 不兼容
+**原因:** base.html 使用 `get_flashed_messages(with_categories=true)` 返回 (category, message) 元组，但 auth 页面仍用旧的 `get_flashed_messages()` 返回纯字符串
+**解决:** auth 页面继承 auth_base.html（无 Toast），保留自己的 flash 渲染方式
+**经验:** 公共模板中的 flash 格式变更会影响所有子模板，不继承公共模板的页面需要单独处理
+
+**问题 3:** 移动端 CSS 断点与旧断点冲突
+**原因:** 新增 768px 断点时，旧的 640px 断点仍然存在，部分样式互相覆盖
+**解决:** 在 style.css 末尾追加新断点，后续清理旧断点
+**经验:** 添加响应式断点时，应先明确"替代"还是"共存"策略，避免样式冲突
+
+**问题 4:** 删除确认弹窗需要同时支持 form 和非 form 场景
+**原因:** 大部分删除按钮在 `<form>` 内，但 family/info.html 的某些操作用的是 JS confirm()
+**解决:** app.js 同时支持 form.submit() 和 data-url 跳转两种方式；纯 JS 的 confirm 保持不变
+**经验:** 统一交互组件时，需要先盘点所有现有的实现方式，不能假设所有页面都用同一种模式
+
 ### 2026-03-24: Phase 3 实施经验
 
 **问题 1:** upload.html 中 `url_for('account.accounts_page')` endpoint 名写错，应为 `account.account_list`
