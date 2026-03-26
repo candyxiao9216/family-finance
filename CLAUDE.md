@@ -4,7 +4,7 @@
 
 **项目名称:** 0225-FamilyFinance
 **项目类型:** 个人财务管理 Web 应用
-**状态:** 设计完成，待开发 (v1.0.0)
+**状态:** Phase 4 已完成 (v1.4.0)
 **创建日期:** 2026-02-25
 
 ## 项目目标
@@ -23,7 +23,7 @@
 |------|---------|
 | 后端框架 | Python Flask |
 | 数据库 | SQLite (开发) / PostgreSQL (生产) |
-| 前端样式 | Tailwind CSS |
+| 前端样式 | 原生 CSS（CSS 变量 + 媒体查询） |
 | 数据可视化 | Chart.js |
 | 文件处理 | CSV/Excel 导入导出 |
 
@@ -206,37 +206,34 @@ CREATE TABLE import_records (
 ```
 src/
 ├── main.py                # Flask 应用入口
-├── config.py              # 配置管理
+├── models.py              # 所有数据模型（12 个）
 ├── database.py            # 数据库连接和初始化
-├── models/                # SQLAlchemy 模型
-│   ├── user.py
-│   ├── transaction.py
-│   ├── account.py
-│   ├── savings.py
-│   └── baby_fund.py
-├── routes/                # 路由层
+├── routes/                # 路由层（Flask 蓝图）
 │   ├── auth.py            # 认证路由
-│   ├── transaction.py     # 交易路由
 │   ├── account.py         # 账户路由
+│   ├── category.py        # 分类路由
 │   ├── savings.py         # 储蓄路由
 │   ├── baby_fund.py       # 宝宝基金路由
-│   └── upload.py          # 文件上传路由
-├── services/              # 业务逻辑层
-│   ├── transaction_service.py
-│   ├── account_service.py
-│   ├── savings_service.py
-│   ├── dashboard_service.py
-│   └── import_service.py
+│   ├── upload.py          # 文件上传路由
+│   └── family.py          # 家庭路由
 ├── utils/                 # 工具函数
-│   ├── auth.py            # 密码哈希、JWT
-│   ├── deduplication.py   # 去重逻辑
-│   └── validators.py      # 数据验证
-└── templates/             # HTML 模板
-    ├── layout.html
-    ├── dashboard.html
-    ├── transactions.html
-    ├── accounts.html
-    └── ...
+│   └── importers.py       # CSV/Excel 解析
+├── static/
+│   ├── css/style.css      # 全局样式（含移动端响应式）
+│   └── js/app.js          # 公共交互 JS
+└── templates/             # HTML 模板（Jinja2 继承）
+    ├── base.html          # 公共模板（导航、Tab、Toast、确认弹窗）
+    ├── auth_base.html     # 认证页公共模板
+    ├── index.html         # 首页
+    ├── accounts.html      # 账户管理
+    ├── reports.html       # 数据报表
+    ├── categories.html    # 分类管理
+    ├── savings.html       # 储蓄计划
+    ├── baby_fund.html     # 宝宝基金
+    ├── upload.html        # 批量导入
+    ├── edit_transaction.html
+    ├── auth/              # 登录/注册
+    └── family/            # 家庭信息/成员
 ```
 
 ### API 路由设计
@@ -283,11 +280,14 @@ src/
 - ✅ 宝宝基金记录
 - ✅ 基础数据可视化
 - ✅ CSV/Excel 批量导入
+- ✅ 移动端适配（底部 Tab + 汉堡菜单）
+- ✅ 交互优化（Toast、确认弹窗、空状态、loading）
 
 **暂不包含：**
 - ❌ 银行流水自动同步
 - ❌ 贷款管理模块
 - ❌ 用户权限隔离
+- ❌ 暗色模式
 
 ## 开发环境
 
@@ -311,11 +311,38 @@ python src/main.py
 - 端口：5000
 
 ### 云部署
-- PostgreSQL 数据库
-- Gunicorn/Nginx
-- Docker 容器化部署
+- SQLite 数据库
+- Gunicorn + Nginx 反向代理
+- systemd 服务管理
+- 端口：5001（Gunicorn）→ 80（Nginx）
 
 ## 功能实现记录
+
+### 2026-03-26: Phase 4 — UI 体验优化 ✅
+
+**实现内容:**
+- 模板重构：抽取 base.html + auth_base.html 公共模板，12 个子模板改为继承，消除约 450 行重复代码
+- 移动端适配：底部 Tab 栏（首页/账户/报表/更多）+ 汉堡侧滑菜单 + 768px/1024px 响应式断点
+- Toast 消息：基于 Flask flash（with_categories=true），成功绿色 3 秒自动消失，错误红色手动关闭
+- 自定义删除确认弹窗：替代浏览器原生 confirm()，data-confirm-delete 属性统一拦截
+- 空状态提示：首页/账户/储蓄/宝宝基金 4 个页面，无数据时显示图标+文案+引导按钮
+- 表单 loading：data-loading 属性，提交时按钮禁用+"处理中..."
+- Flash 分类：所有路由 flash 添加 success/error 类别
+
+**新增文件:**
+- `src/templates/base.html` — 公共模板（导航、Tab、Toast、确认弹窗）
+- `src/templates/auth_base.html` — 认证页公共模板
+- `src/static/js/app.js` — 公共交互 JS
+
+**导航结构（移动端）:**
+```
+顶部栏：💰 家庭财务 + ☰ 汉堡按钮
+底部 Tab：🏠首页 | 💳账户 | 📊报表 | ⚙️更多
+汉堡菜单（侧滑）：所有导航项 + 退出
+```
+
+**设计文档:** `docs/superpowers/specs/2026-03-26-ui-optimization-design.md`
+**实施计划:** `docs/superpowers/plans/2026-03-26-ui-optimization-plan.md`
 
 ### 2026-03-24: Phase 3 — 储蓄计划 + 宝宝基金 + 批量导入 ✅
 
@@ -496,5 +523,5 @@ curl -sSL https://raw.githubusercontent.com/candyxiao9216/family-finance/main/de
 
 ---
 
-**最后更新:** 2026-03-25
-**文档版本:** 1.3.0
+**最后更新:** 2026-03-26
+**文档版本:** 1.4.0

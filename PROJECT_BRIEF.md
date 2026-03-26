@@ -10,8 +10,7 @@
   - 不集成第三方支付平台
   - 不处理多币种
 - 不在本阶段范围：
-  - 移动端适配（待 Phase 4）
-  - 贷款管理模块（待 Phase 4）
+  - 贷款管理模块（待 Phase 5）
 
 ## 2. 用户与场景
 - 核心用户：家庭用户，需要简单记账和收支统计
@@ -87,8 +86,10 @@
 - `/src/models.py` - 数据模型（User, Category, Transaction, SavingsPlan, BabyFund 等 12 个模型）
 - `/src/database.py` - 数据库配置和初始化
 - `/src/routes/auth.py` - 认证路由（登录/注册）
-- `/src/templates/index.html` - 主页模板
-- `/src/templates/auth/` - 认证相关模板
+- `/src/templates/base.html` - 公共模板（导航、Tab栏、Toast、确认弹窗）
+- `/src/templates/auth_base.html` - 认证页公共模板
+- `/src/static/js/app.js` - 公共交互 JS（菜单、Toast、loading、确认弹窗）
+- `/src/static/css/style.css` - 全局样式（含移动端响应式）
 - `/data/family_finance.db` - SQLite 数据库文件
 
 ## 9. 备注（保持简短）
