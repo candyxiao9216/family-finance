@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}家庭财务管理{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="container">
+        <!-- 桌面端导航 -->
+        <header class="header desktop-nav">
+            <div class="header-main">
+                <h1>家庭财务</h1>
+                <p id="current-date"></p>
+            </div>
+            <div class="user-info">
+                <span class="username">{{ username }}</span>
+                <div class="user-actions">
+                    <a href="{{ url_for('index') }}" class="nav-link">首页</a>
+                    <div class="nav-dropdown">
+                        <a href="#" class="nav-link nav-dropdown-trigger">账户 ▾</a>
+                        <div class="nav-dropdown-menu">
+                            <a href="{{ url_for('account.account_list') }}" class="nav-dropdown-item">账户管理</a>
+                            <a href="{{ url_for('savings.savings_list') }}" class="nav-dropdown-item">储蓄计划</a>
+                            <a href="{{ url_for('baby_fund.baby_fund_list') }}" class="nav-dropdown-item">宝宝基金</a>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('reports.reports_page', view=current_view) }}" class="nav-link">报表</a>
+                    <div class="nav-dropdown">
+                        <a href="#" class="nav-link nav-dropdown-trigger">设置 ▾</a>
+                        <div class="nav-dropdown-menu">
+                            <a href="{{ url_for('category.category_list') }}" class="nav-dropdown-item">分类管理</a>
+                            <a href="{{ url_for('upload.upload_page') }}" class="nav-dropdown-item">批量导入</a>
+                        </div>
+                    </div>
+                    {% if family %}
+                    <a href="{{ url_for('family.family_info') }}" class="nav-link">家庭</a>
+                    {% endif %}
+                    <a href="{{ url_for('auth.logout') }}" class="logout-btn">退出</a>
+                </div>
+            </div>
+        </header>
+
+        <!-- 移动端头部 -->
+        <header class="mobile-header">
+            <div class="mobile-header-left">
+                <span class="mobile-logo">💰</span>
+                <h1>{% block mobile_title %}家庭财务{% endblock %}</h1>
+            </div>
+            <button class="hamburger-btn" id="hamburger-btn" aria-label="打开菜单">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </header>
+
+        <!-- 侧边菜单 -->
+        <div class="side-menu-overlay" id="side-menu-overlay"></div>
+        <nav class="side-menu" id="side-menu">
+            <div class="side-menu-header">
+                <span class="side-menu-user">{{ username }}</span>
+                <button class="side-menu-close" id="side-menu-close" aria-label="关闭菜单">&times;</button>
+            </div>
+            <div class="side-menu-items">
+                <a href="{{ url_for('index') }}" class="side-menu-item">🏠 首页</a>
+                <div class="side-menu-divider"></div>
+                <a href="{{ url_for('account.account_list') }}" class="side-menu-item">💳 账户管理</a>
+                <a href="{{ url_for('savings.savings_list') }}" class="side-menu-item">🎯 储蓄计划</a>
+                <a href="{{ url_for('baby_fund.baby_fund_list') }}" class="side-menu-item">👶 宝宝基金</a>
+                <div class="side-menu-divider"></div>
+                <a href="{{ url_for('reports.reports_page', view=current_view) }}" class="side-menu-item">📊 报表</a>
+                <div class="side-menu-divider"></div>
+                <a href="{{ url_for('category.category_list') }}" class="side-menu-item">🏷️ 分类管理</a>
+                <a href="{{ url_for('upload.upload_page') }}" class="side-menu-item">📥 批量导入</a>
+                {% if family %}
+                <div class="side-menu-divider"></div>
+                <a href="{{ url_for('family.family_info') }}" class="side-menu-item">👨‍👩‍👧 家庭</a>
+                {% endif %}
+            </div>
+            <div class="side-menu-footer">
+                <a href="{{ url_for('auth.logout') }}" class="side-menu-item side-menu-logout">🚪 退出登录</a>
+            </div>
+        </nav>
+
+        <!-- Toast 通知 -->
+        <div class="toast-container" id="toast-container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="toast toast-{{ category }}" data-auto-dismiss="true">
+                <span class="toast-message">{{ message }}</span>
+                <button class="toast-close" aria-label="关闭">&times;</button>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+        </div>
+
+        <!-- 确认弹窗 -->
+        <div class="confirm-modal" id="confirm-modal">
+            <div class="confirm-modal-overlay"></div>
+            <div class="confirm-modal-content">
+                <p class="confirm-modal-message" id="confirm-modal-message"></p>
+                <div class="confirm-modal-actions">
+                    <button class="btn btn-secondary" id="confirm-modal-cancel">取消</button>
+                    <button class="btn btn-danger" id="confirm-modal-confirm">确认删除</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主内容 -->
+        <main class="main-content">{% block content %}{% endblock %}</main>
+
+        <!-- 移动端底部标签栏 -->
+        <nav class="bottom-tabs">
+            <a href="{{ url_for('index') }}" class="bottom-tab {% if request.path == '/' %}active{% endif %}">
+                <span class="bottom-tab-icon">🏠</span>
+                <span class="bottom-tab-label">首页</span>
+            </a>
+            <a href="{{ url_for('account.account_list') }}" class="bottom-tab {% if '/accounts' in request.path %}active{% endif %}">
+                <span class="bottom-tab-icon">💳</span>
+                <span class="bottom-tab-label">账户</span>
+            </a>
+            <a href="{{ url_for('reports.reports_page', view=current_view) }}" class="bottom-tab {% if '/reports' in request.path %}active{% endif %}">
+                <span class="bottom-tab-icon">📊</span>
+                <span class="bottom-tab-label">报表</span>
+            </a>
+            <button class="bottom-tab" id="more-tab-btn" type="button">
+                <span class="bottom-tab-icon">⚙️</span>
+                <span class="bottom-tab-label">更多</span>
+            </button>
+        </nav>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
