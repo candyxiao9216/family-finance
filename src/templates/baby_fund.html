@@ -1,50 +1,6 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>宝宝基金 - 家庭财务</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css">
-</head>
-<body>
-    <div class="container">
-        <!-- 头部 -->
-        <header class="header">
-            <div class="header-main">
-                <h1>宝宝基金</h1>
-                <p>记录宝宝收到的每一份心意</p>
-            </div>
-            <div class="user-info">
-                <span class="username">{{ username }}</span>
-                <div class="user-actions">
-                    <a href="{{ url_for('index') }}" class="nav-link">首页</a>
-                    <div class="nav-dropdown">
-                        <a href="#" class="nav-link nav-dropdown-trigger">账户 ▾</a>
-                        <div class="nav-dropdown-menu">
-                            <a href="{{ url_for('account.account_list') }}" class="nav-dropdown-item">账户管理</a>
-                            <a href="{{ url_for('savings.savings_list') }}" class="nav-dropdown-item">储蓄计划</a>
-                            <a href="{{ url_for('baby_fund.baby_fund_list') }}" class="nav-dropdown-item">宝宝基金</a>
-                        </div>
-                    </div>
-                    <a href="{{ url_for('reports.reports_page', view=current_view) }}" class="nav-link">报表</a>
-                    <div class="nav-dropdown">
-                        <a href="#" class="nav-link nav-dropdown-trigger">设置 ▾</a>
-                        <div class="nav-dropdown-menu">
-                            <a href="{{ url_for('category.category_list') }}" class="nav-dropdown-item">分类管理</a>
-                            <a href="{{ url_for('upload.upload_page') }}" class="nav-dropdown-item">批量导入</a>
-                        </div>
-                    </div>
-                    {% if family %}
-                    <a href="{{ url_for('family.family_info') }}" class="nav-link">家庭</a>
-                    {% endif %}
-                    <a href="{{ url_for('auth.logout') }}" class="logout-btn">退出</a>
-                </div>
-            </div>
-        </header>
+{% extends "base.html" %}
 
+{% block content %}
         <!-- 视图切换 -->
         {% if family %}
         <div class="view-switcher">
@@ -52,17 +8,6 @@
             <a href="/baby-fund?view=family" class="view-btn {{ 'active' if current_view == 'family' }}">家庭</a>
         </div>
         {% endif %}
-
-        <!-- 闪存消息 -->
-        {% with messages = get_flashed_messages() %}
-        {% if messages %}
-        <div class="flash-messages">
-            {% for msg in messages %}
-            <div class="flash-message">{{ msg }}</div>
-            {% endfor %}
-        </div>
-        {% endif %}
-        {% endwith %}
 
         <!-- 统计栏 -->
         <div class="stats-bar stats-bar--compact">
@@ -114,7 +59,7 @@
                     <div class="fund-actions" style="display:flex;gap:4px;align-items:center;">
                         <button class="btn-delete-cat" onclick="openEditDrawer({{ f.id }}, '{{ f.giver_name }}', '{{ f.amount|float }}', '{{ f.event_date.strftime('%Y-%m-%d') }}', '{{ f.event_type or '' }}', '{{ f.notes or '' }}')">编辑</button>
                         <form action="{{ url_for('baby_fund.delete_fund', fund_id=f.id) }}" method="POST" class="delete-form">
-                            <button type="submit" class="btn-delete-cat" onclick="return confirm('确定删除此记录？')">删除</button>
+                            <button type="submit" class="btn-delete-cat" data-confirm-delete data-confirm-message="确定删除此记录？">删除</button>
                         </form>
                     </div>
                 </div>
@@ -134,7 +79,6 @@
             </div>
         </div>
         {% endif %}
-    </div>
 
     <!-- ===== 浮层：记录宝宝基金 ===== -->
     <div class="drawer-overlay" id="overlay-fund"></div>
@@ -220,7 +164,9 @@
             <button type="submit" class="btn-submit">保存修改</button>
         </form>
     </div>
+{% endblock %}
 
+{% block scripts %}
     <script>
         // ===== 抽屉浮层 =====
         function openDrawer(drawerId, overlayId) {
@@ -268,5 +214,4 @@
             dateInput.value = new Date().toISOString().slice(0, 10);
         }
     </script>
-</body>
-</html>
+{% endblock %}

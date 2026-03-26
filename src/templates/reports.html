@@ -1,51 +1,10 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>财务报表 - 家庭财务</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-</head>
-<body>
-    <div class="container">
-        <!-- 头部 -->
-        <header class="header">
-            <div class="header-main">
-                <h1>财务报表</h1>
-                <p>收支趋势与分类分析</p>
-            </div>
-            <div class="user-info">
-                <span class="username">{{ username }}</span>
-                <div class="user-actions">
-                    <a href="{{ url_for('index') }}" class="nav-link">首页</a>
-                    <div class="nav-dropdown">
-                        <a href="#" class="nav-link nav-dropdown-trigger">账户 ▾</a>
-                        <div class="nav-dropdown-menu">
-                            <a href="{{ url_for('account.account_list') }}" class="nav-dropdown-item">账户管理</a>
-                            <a href="{{ url_for('savings.savings_list') }}" class="nav-dropdown-item">储蓄计划</a>
-                            <a href="{{ url_for('baby_fund.baby_fund_list') }}" class="nav-dropdown-item">宝宝基金</a>
-                        </div>
-                    </div>
-                    <a href="{{ url_for('reports.reports_page', view=current_view) }}" class="nav-link">报表</a>
-                    <div class="nav-dropdown">
-                        <a href="#" class="nav-link nav-dropdown-trigger">设置 ▾</a>
-                        <div class="nav-dropdown-menu">
-                            <a href="{{ url_for('category.category_list') }}" class="nav-dropdown-item">分类管理</a>
-                            <a href="{{ url_for('upload.upload_page') }}" class="nav-dropdown-item">批量导入</a>
-                        </div>
-                    </div>
-                    {% if family %}
-                    <a href="{{ url_for('family.family_info') }}" class="nav-link">家庭</a>
-                    {% endif %}
-                    <a href="{{ url_for('auth.logout') }}" class="logout-btn">退出</a>
-                </div>
-            </div>
-        </header>
+{% extends "base.html" %}
 
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+{% endblock %}
+
+{% block content %}
         <!-- 视图切换 -->
         {% if family %}
         <div class="view-switcher">
@@ -101,8 +60,9 @@
                 <canvas id="assetTrendChart"></canvas>
             </div>
         </div>
-    </div>
+{% endblock %}
 
+{% block scripts %}
     <script>
         // 当前视图和时间范围
         var currentView = '{{ current_view }}';
@@ -433,5 +393,4 @@
         // 页面加载时初始化图表
         loadAllCharts();
     </script>
-</body>
-</html>
+{% endblock %}

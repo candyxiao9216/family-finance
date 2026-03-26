@@ -1,12 +1,6 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>登录 - 家庭财务管理</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
+{% extends "auth_base.html" %}
+
+{% block content %}
     <div class="auth-container">
         <div class="auth-card">
             <div class="auth-header">
@@ -61,5 +55,4 @@
             }
         });
     </script>
-</body>
-</html>
+{% endblock %}

@@ -1,50 +1,6 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>账户管理 - 家庭财务</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css">
-</head>
-<body>
-    <div class="container">
-        <!-- 头部 -->
-        <header class="header">
-            <div class="header-main">
-                <h1>账户管理</h1>
-                <p>管理储蓄和投资账户</p>
-            </div>
-            <div class="user-info">
-                <span class="username">{{ username }}</span>
-                <div class="user-actions">
-                    <a href="{{ url_for('index') }}" class="nav-link">首页</a>
-                    <div class="nav-dropdown">
-                        <a href="#" class="nav-link nav-dropdown-trigger">账户 ▾</a>
-                        <div class="nav-dropdown-menu">
-                            <a href="{{ url_for('account.account_list') }}" class="nav-dropdown-item">账户管理</a>
-                            <a href="{{ url_for('savings.savings_list') }}" class="nav-dropdown-item">储蓄计划</a>
-                            <a href="{{ url_for('baby_fund.baby_fund_list') }}" class="nav-dropdown-item">宝宝基金</a>
-                        </div>
-                    </div>
-                    <a href="{{ url_for('reports.reports_page', view=current_view) }}" class="nav-link">报表</a>
-                    <div class="nav-dropdown">
-                        <a href="#" class="nav-link nav-dropdown-trigger">设置 ▾</a>
-                        <div class="nav-dropdown-menu">
-                            <a href="{{ url_for('category.category_list') }}" class="nav-dropdown-item">分类管理</a>
-                            <a href="{{ url_for('upload.upload_page') }}" class="nav-dropdown-item">批量导入</a>
-                        </div>
-                    </div>
-                    {% if family %}
-                    <a href="{{ url_for('family.family_info') }}" class="nav-link">家庭</a>
-                    {% endif %}
-                    <a href="{{ url_for('auth.logout') }}" class="logout-btn">退出</a>
-                </div>
-            </div>
-        </header>
+{% extends "base.html" %}
 
+{% block content %}
         <!-- 视图切换 -->
         {% if family %}
         <div class="view-switcher">
@@ -52,17 +8,6 @@
             <a href="/accounts?view=family" class="view-btn {{ 'active' if current_view == 'family' }}">家庭</a>
         </div>
         {% endif %}
-
-        <!-- 闪存消息 -->
-        {% with messages = get_flashed_messages() %}
-        {% if messages %}
-        <div class="flash-messages">
-            {% for msg in messages %}
-            <div class="flash-message">{{ msg }}</div>
-            {% endfor %}
-        </div>
-        {% endif %}
-        {% endwith %}
 
         <!-- 资产总览 + 操作按钮 -->
         <div class="stats-bar stats-bar--compact">
@@ -117,7 +62,7 @@
                                 {% endif %}
                             </div>
                             <form action="{{ url_for('account.delete_account', account_id=a.id) }}" method="POST" class="delete-form">
-                                <button type="submit" class="btn-delete-cat" onclick="return confirm('确定删除账户「{{ a.name }}」？')">删除</button>
+                                <button type="submit" class="btn-delete-cat" data-confirm-delete data-confirm-message="确定删除账户「{{ a.name }}」？">删除</button>
                             </form>
                         </div>
                         {% endfor %}
@@ -157,7 +102,7 @@
                                 {% endif %}
                             </div>
                             <form action="{{ url_for('account.delete_account', account_id=a.id) }}" method="POST" class="delete-form">
-                                <button type="submit" class="btn-delete-cat" onclick="return confirm('确定删除账户「{{ a.name }}」？')">删除</button>
+                                <button type="submit" class="btn-delete-cat" data-confirm-delete data-confirm-message="确定删除账户「{{ a.name }}」？">删除</button>
                             </form>
                         </div>
                         {% endfor %}
@@ -264,7 +209,6 @@
                 {% endif %}
             </div>
         </div>
-    </div>
 
     <!-- ===== 浮层：创建账户 ===== -->
     <div class="drawer-overlay" id="overlay-account"></div>
@@ -341,7 +285,9 @@
             <button type="submit" class="btn-submit">录入快照</button>
         </form>
     </div>
+{% endblock %}
 
+{% block scripts %}
     <script>
         // ===== 抽屉浮层 =====
         function openDrawer(drawerId, overlayId) {
@@ -445,5 +391,4 @@
             });
         }
     </script>
-</body>
-</html>
+{% endblock %}

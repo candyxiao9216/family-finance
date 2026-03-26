@@ -1,61 +1,6 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>分类管理 - 家庭财务</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css">
-</head>
-<body>
-    <div class="container">
-        <!-- 头部 -->
-        <header class="header">
-            <div class="header-main">
-                <h1>分类管理</h1>
-                <p>管理收入和支出的分类</p>
-            </div>
-            <div class="user-info">
-                <span class="username">{{ username }}</span>
-                <div class="user-actions">
-                    <a href="{{ url_for('index') }}" class="nav-link">首页</a>
-                    <div class="nav-dropdown">
-                        <a href="#" class="nav-link nav-dropdown-trigger">账户 ▾</a>
-                        <div class="nav-dropdown-menu">
-                            <a href="{{ url_for('account.account_list') }}" class="nav-dropdown-item">账户管理</a>
-                            <a href="{{ url_for('savings.savings_list') }}" class="nav-dropdown-item">储蓄计划</a>
-                            <a href="{{ url_for('baby_fund.baby_fund_list') }}" class="nav-dropdown-item">宝宝基金</a>
-                        </div>
-                    </div>
-                    <a href="{{ url_for('reports.reports_page') }}" class="nav-link">报表</a>
-                    <div class="nav-dropdown">
-                        <a href="#" class="nav-link nav-dropdown-trigger">设置 ▾</a>
-                        <div class="nav-dropdown-menu">
-                            <a href="{{ url_for('category.category_list') }}" class="nav-dropdown-item">分类管理</a>
-                            <a href="{{ url_for('upload.upload_page') }}" class="nav-dropdown-item">批量导入</a>
-                        </div>
-                    </div>
-                    {% if family is defined and family %}
-                    <a href="{{ url_for('family.family_info') }}" class="nav-link">家庭</a>
-                    {% endif %}
-                    <a href="{{ url_for('auth.logout') }}" class="logout-btn">退出</a>
-                </div>
-            </div>
-        </header>
+{% extends "base.html" %}
 
-        <!-- 闪存消息 -->
-        {% with messages = get_flashed_messages() %}
-        {% if messages %}
-        <div class="flash-messages">
-            {% for msg in messages %}
-            <div class="flash-message">{{ msg }}</div>
-            {% endfor %}
-        </div>
-        {% endif %}
-        {% endwith %}
-
+{% block content %}
         <!-- 添加分类表单 -->
         <div class="card form-section">
             <div class="card-header">
@@ -100,7 +45,7 @@
                         </div>
                         {% if not c.is_default %}
                         <form action="{{ url_for('category.category_delete', category_id=c.id) }}" method="POST" class="delete-form">
-                            <button type="submit" class="btn-delete-cat" onclick="return confirm('确定删除分类「{{ c.name }}」？关联的交易将变为未分类。')">删除</button>
+                            <button type="submit" class="btn-delete-cat" data-confirm-delete data-confirm-message="确定删除分类「{{ c.name }}」？关联的交易将变为未分类。">删除</button>
                         </form>
                         {% endif %}
                     </div>
@@ -131,7 +76,7 @@
                         </div>
                         {% if not c.is_default %}
                         <form action="{{ url_for('category.category_delete', category_id=c.id) }}" method="POST" class="delete-form">
-                            <button type="submit" class="btn-delete-cat" onclick="return confirm('确定删除分类「{{ c.name }}」？关联的交易将变为未分类。')">删除</button>
+                            <button type="submit" class="btn-delete-cat" data-confirm-delete data-confirm-message="确定删除分类「{{ c.name }}」？关联的交易将变为未分类。">删除</button>
                         </form>
                         {% endif %}
                     </div>
@@ -143,6 +88,4 @@
                 {% endif %}
             </div>
         </div>
-    </div>
-</body>
-</html>
+{% endblock %}

@@ -1,115 +1,74 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>批量导入 - 家庭财务</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css">
-    <style>
-        /* 步骤指示器 */
-        .steps-indicator {
-            display: flex; gap: 1rem; margin-bottom: 1.5rem;
-        }
-        .step-dot {
-            display: flex; align-items: center; gap: .5rem;
-            color: var(--text-secondary, #888); font-size: .9rem;
-        }
-        .step-dot.active { color: var(--primary, #2563eb); font-weight: 600; }
-        .step-dot.done { color: var(--success, #16a34a); }
-        .step-dot .num {
-            width: 24px; height: 24px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: .8rem; border: 2px solid currentColor;
-        }
-        .step-dot.active .num { background: var(--primary, #2563eb); color: #fff; border-color: var(--primary, #2563eb); }
-        .step-dot.done .num { background: var(--success, #16a34a); color: #fff; border-color: var(--success, #16a34a); }
+{% extends "base.html" %}
 
-        /* 上传区域 */
-        .upload-zone {
-            border: 2px dashed var(--border, #ddd); border-radius: 12px;
-            padding: 3rem 2rem; text-align: center; cursor: pointer;
-            transition: border-color .2s, background .2s;
-        }
-        .upload-zone:hover, .upload-zone.dragover {
-            border-color: var(--primary, #2563eb); background: rgba(37,99,235,.04);
-        }
-        .upload-zone-icon { font-size: 2.5rem; margin-bottom: .5rem; }
-        .upload-zone-text { color: var(--text-secondary, #888); margin-bottom: .5rem; }
-        .upload-zone-hint { font-size: .8rem; color: var(--text-muted, #aaa); }
+{% block extra_head %}
+<style>
+    /* 步骤指示器 */
+    .steps-indicator {
+        display: flex; gap: 1rem; margin-bottom: 1.5rem;
+    }
+    .step-dot {
+        display: flex; align-items: center; gap: .5rem;
+        color: var(--text-secondary, #888); font-size: .9rem;
+    }
+    .step-dot.active { color: var(--primary, #2563eb); font-weight: 600; }
+    .step-dot.done { color: var(--success, #16a34a); }
+    .step-dot .num {
+        width: 24px; height: 24px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: .8rem; border: 2px solid currentColor;
+    }
+    .step-dot.active .num { background: var(--primary, #2563eb); color: #fff; border-color: var(--primary, #2563eb); }
+    .step-dot.done .num { background: var(--success, #16a34a); color: #fff; border-color: var(--success, #16a34a); }
 
-        /* 来源按钮 */
-        .source-btns { display: flex; gap: .75rem; margin-top: 1rem; justify-content: center; flex-wrap: wrap; }
-        .source-btn {
-            padding: .4rem 1rem; border-radius: 20px; border: 1px solid var(--border, #ddd);
-            background: #fff; cursor: pointer; font-size: .85rem; transition: all .2s;
-        }
-        .source-btn.active { border-color: var(--primary, #2563eb); color: var(--primary, #2563eb); background: rgba(37,99,235,.06); }
+    /* 上传区域 */
+    .upload-zone {
+        border: 2px dashed var(--border, #ddd); border-radius: 12px;
+        padding: 3rem 2rem; text-align: center; cursor: pointer;
+        transition: border-color .2s, background .2s;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+        border-color: var(--primary, #2563eb); background: rgba(37,99,235,.04);
+    }
+    .upload-zone-icon { font-size: 2.5rem; margin-bottom: .5rem; }
+    .upload-zone-text { color: var(--text-secondary, #888); margin-bottom: .5rem; }
+    .upload-zone-hint { font-size: .8rem; color: var(--text-muted, #aaa); }
 
-        /* 预览表格 */
-        .preview-table-wrap { overflow-x: auto; margin: 1rem 0; }
-        .preview-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
-        .preview-table th { background: var(--bg-secondary, #f8f9fa); padding: .5rem .75rem; text-align: left; white-space: nowrap; }
-        .preview-table td { padding: .5rem .75rem; border-bottom: 1px solid var(--border, #eee); }
-        .preview-table tr.duplicate { background: #fef3c7; }
-        .preview-table tr.skipped { opacity: .4; text-decoration: line-through; }
+    /* 来源按钮 */
+    .source-btns { display: flex; gap: .75rem; margin-top: 1rem; justify-content: center; flex-wrap: wrap; }
+    .source-btn {
+        padding: .4rem 1rem; border-radius: 20px; border: 1px solid var(--border, #ddd);
+        background: #fff; cursor: pointer; font-size: .85rem; transition: all .2s;
+    }
+    .source-btn.active { border-color: var(--primary, #2563eb); color: var(--primary, #2563eb); background: rgba(37,99,235,.06); }
 
-        /* 操作栏 */
-        .preview-actions { display: flex; gap: .75rem; margin: 1rem 0; flex-wrap: wrap; align-items: center; }
-        .preview-summary { font-size: .9rem; color: var(--text-secondary, #666); }
+    /* 预览表格 */
+    .preview-table-wrap { overflow-x: auto; margin: 1rem 0; }
+    .preview-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    .preview-table th { background: var(--bg-secondary, #f8f9fa); padding: .5rem .75rem; text-align: left; white-space: nowrap; }
+    .preview-table td { padding: .5rem .75rem; border-bottom: 1px solid var(--border, #eee); }
+    .preview-table tr.duplicate { background: #fef3c7; }
+    .preview-table tr.skipped { opacity: .4; text-decoration: line-through; }
 
-        /* 结果 */
-        .result-box { text-align: center; padding: 2rem; }
-        .result-icon { font-size: 3rem; margin-bottom: .5rem; }
-        .result-title { font-size: 1.3rem; font-weight: 600; margin-bottom: 1rem; }
-        .result-stats { display: flex; gap: 2rem; justify-content: center; margin-bottom: 1.5rem; }
-        .result-stat-label { font-size: .8rem; color: var(--text-secondary, #888); }
-        .result-stat-value { font-size: 1.5rem; font-weight: 700; }
+    /* 操作栏 */
+    .preview-actions { display: flex; gap: .75rem; margin: 1rem 0; flex-wrap: wrap; align-items: center; }
+    .preview-summary { font-size: .9rem; color: var(--text-secondary, #666); }
 
-        .step-panel { display: none; }
-        .step-panel.active { display: block; }
+    /* 结果 */
+    .result-box { text-align: center; padding: 2rem; }
+    .result-icon { font-size: 3rem; margin-bottom: .5rem; }
+    .result-title { font-size: 1.3rem; font-weight: 600; margin-bottom: 1rem; }
+    .result-stats { display: flex; gap: 2rem; justify-content: center; margin-bottom: 1.5rem; }
+    .result-stat-label { font-size: .8rem; color: var(--text-secondary, #888); }
+    .result-stat-value { font-size: 1.5rem; font-weight: 700; }
 
-        .template-link { display: inline-block; margin-top: .75rem; font-size: .85rem; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <!-- 头部 -->
-        <header class="header">
-            <div class="header-main">
-                <h1>批量导入</h1>
-                <p>导入账单文件，快速录入交易</p>
-            </div>
-            <div class="user-info">
-                <span class="username">{{ username }}</span>
-                <div class="user-actions">
-                    <a href="{{ url_for('index') }}" class="nav-link">首页</a>
-                    <div class="nav-dropdown">
-                        <a href="#" class="nav-link nav-dropdown-trigger">账户 ▾</a>
-                        <div class="nav-dropdown-menu">
-                            <a href="{{ url_for('account.account_list') }}" class="nav-dropdown-item">账户管理</a>
-                            <a href="{{ url_for('savings.savings_list') }}" class="nav-dropdown-item">储蓄计划</a>
-                            <a href="{{ url_for('baby_fund.baby_fund_list') }}" class="nav-dropdown-item">宝宝基金</a>
-                        </div>
-                    </div>
-                    <a href="{{ url_for('reports.reports_page', view=current_view) }}" class="nav-link">报表</a>
-                    <div class="nav-dropdown">
-                        <a href="#" class="nav-link nav-dropdown-trigger">设置 ▾</a>
-                        <div class="nav-dropdown-menu">
-                            <a href="{{ url_for('category.category_list') }}" class="nav-dropdown-item">分类管理</a>
-                            <a href="{{ url_for('upload.upload_page') }}" class="nav-dropdown-item">批量导入</a>
-                        </div>
-                    </div>
-                    {% if family is defined and family %}
-                    <a href="{{ url_for('family.family_info') }}" class="nav-link">家庭</a>
-                    {% endif %}
-                    <a href="{{ url_for('auth.logout') }}" class="logout-btn">退出</a>
-                </div>
-            </div>
-        </header>
+    .step-panel { display: none; }
+    .step-panel.active { display: block; }
 
+    .template-link { display: inline-block; margin-top: .75rem; font-size: .85rem; }
+</style>
+{% endblock %}
+
+{% block content %}
         <!-- 步骤指示器 -->
         <div class="steps-indicator" id="steps-indicator">
             <div class="step-dot active" data-step="1"><span class="num">1</span> 上传文件</div>
@@ -228,8 +187,9 @@
             </div>
         </div>
         {% endif %}
-    </div>
+{% endblock %}
 
+{% block scripts %}
     <script>
     (function() {
         // 状态
@@ -410,5 +370,4 @@
         });
     })();
     </script>
-</body>
-</html>
+{% endblock %}
