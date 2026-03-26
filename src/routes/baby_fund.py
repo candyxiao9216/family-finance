@@ -67,18 +67,18 @@ def add_fund():
     notes = request.form.get('notes')
 
     if not all([giver_name, amount, event_date_str]):
-        flash('请填写所有必填字段')
+        flash('请填写所有必填字段', 'error')
         return redirect(url_for('baby_fund.baby_fund_list'))
 
     # event_type 校验
     if event_type and event_type not in BabyFund.VALID_EVENT_TYPES:
-        flash('无效的事件类型')
+        flash('无效的事件类型', 'error')
         return redirect(url_for('baby_fund.baby_fund_list'))
 
     try:
         event_date = datetime.strptime(event_date_str, '%Y-%m-%d').date()
     except ValueError:
-        flash('日期格式错误')
+        flash('日期格式错误', 'error')
         return redirect(url_for('baby_fund.baby_fund_list'))
 
     cat = _get_or_create_baby_category()
@@ -126,13 +126,13 @@ def edit_fund(fund_id):
     new_event_type = request.form.get('event_type', fund.event_type)
 
     if new_event_type and new_event_type not in BabyFund.VALID_EVENT_TYPES:
-        flash('无效的事件类型')
+        flash('无效的事件类型', 'error')
         return redirect(url_for('baby_fund.baby_fund_list'))
 
     try:
         new_event_date = datetime.strptime(new_event_date_str, '%Y-%m-%d').date() if new_event_date_str else fund.event_date
     except ValueError:
-        flash('日期格式错误')
+        flash('日期格式错误', 'error')
         return redirect(url_for('baby_fund.baby_fund_list'))
 
     fund.giver_name = new_giver

@@ -40,7 +40,7 @@ def category_add():
     cat_type = request.form.get('type')
 
     if not name or cat_type not in ('income', 'expense'):
-        flash('请输入分类名称并选择类型')
+        flash('请输入分类名称并选择类型', 'error')
         return redirect(url_for('category.category_list'))
 
     # 检查同名分类是否已存在（同用户 + 系统预设范围内）
@@ -51,7 +51,7 @@ def category_add():
     ).first()
 
     if existing:
-        flash('该分类已存在')
+        flash('该分类已存在', 'error')
         return redirect(url_for('category.category_list'))
 
     category = Category(
@@ -63,7 +63,7 @@ def category_add():
     db.session.add(category)
     db.session.commit()
 
-    flash(f'分类「{name}」添加成功')
+    flash(f'分类「{name}」添加成功', 'success')
     return redirect(url_for('category.category_list'))
 
 
@@ -78,12 +78,12 @@ def category_delete(category_id):
 
     # 系统默认分类不可删除
     if category.is_default:
-        flash('系统默认分类不可删除')
+        flash('系统默认分类不可删除', 'error')
         return redirect(url_for('category.category_list'))
 
     # 只能删除自己创建的分类
     if category.user_id != user_id:
-        flash('无权删除此分类')
+        flash('无权删除此分类', 'error')
         return redirect(url_for('category.category_list'))
 
     # 将关联交易的 category_id 设为 NULL
@@ -93,5 +93,5 @@ def category_delete(category_id):
     db.session.delete(category)
     db.session.commit()
 
-    flash(f'分类「{cat_name}」已删除，关联交易已变为未分类')
+    flash(f'分类「{cat_name}」已删除，关联交易已变为未分类', 'success')
     return redirect(url_for('category.category_list'))

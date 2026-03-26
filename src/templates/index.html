@@ -47,7 +47,7 @@
         </div>
 
         <!-- 添加交易表单 -->
-        <div class="card form-section">
+        <div class="card form-section" id="add-form">
             <div class="card-header">
                 <h2 class="card-title">添加交易</h2>
             </div>
@@ -164,7 +164,8 @@
                 {% else %}
                     <div class="empty-state">
                         <div class="empty-state-icon">📝</div>
-                        <p class="empty-state-text">还没有交易记录，试试添加一条吧</p>
+                        <p class="empty-state-text">还没有交易记录，开始记一笔吧</p>
+                        <a href="#" class="empty-state-btn" onclick="document.getElementById('add-form').scrollIntoView()">+ 添加交易</a>
                     </div>
                 {% endif %}
             </div>

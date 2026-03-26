@@ -16,22 +16,22 @@ def family_info():
     """获取家庭信息"""
     user_id = session.get('user_id')
     if not user_id:
-        flash('请先登录')
+        flash('请先登录', 'error')
         return redirect(url_for('auth.login'))
 
     user = User.query.get(user_id)
     if not user:
         session.clear()
-        flash('用户不存在')
+        flash('用户不存在', 'error')
         return redirect(url_for('auth.login'))
 
     if not user.family_id:
-        flash('您尚未加入任何家庭')
+        flash('您尚未加入任何家庭', 'error')
         return redirect(url_for('index'))
 
     family = Family.query.get(user.family_id)
     if not family:
-        flash('家庭信息不存在')
+        flash('家庭信息不存在', 'error')
         return redirect(url_for('index'))
 
     return render_template('family/info.html',
@@ -44,22 +44,22 @@ def family_members():
     """获取家庭成员列表"""
     user_id = session.get('user_id')
     if not user_id:
-        flash('请先登录')
+        flash('请先登录', 'error')
         return redirect(url_for('auth.login'))
 
     user = User.query.get(user_id)
     if not user:
         session.clear()
-        flash('用户不存在')
+        flash('用户不存在', 'error')
         return redirect(url_for('auth.login'))
 
     if not user.family_id:
-        flash('您尚未加入任何家庭')
+        flash('您尚未加入任何家庭', 'error')
         return redirect(url_for('index'))
 
     family = Family.query.get(user.family_id)
     if not family:
-        flash('家庭信息不存在')
+        flash('家庭信息不存在', 'error')
         return redirect(url_for('index'))
 
     # 获取家庭成员，按创建时间排序

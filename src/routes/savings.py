@@ -76,13 +76,13 @@ def add_plan():
     month = request.form.get('month', type=int)
 
     if not all([name, plan_type, target_amount, year]):
-        flash('请填写所有必填字段')
+        flash('请填写所有必填字段', 'error')
         return redirect(url_for('savings.savings_list'))
 
     if plan_type == 'annual':
         month = None
     elif plan_type == 'monthly' and (not month or month < 1 or month > 12):
-        flash('月度计划需要选择有效月份(1-12)')
+        flash('月度计划需要选择有效月份(1-12)', 'error')
         return redirect(url_for('savings.savings_list'))
 
     plan = SavingsPlan(
@@ -127,13 +127,13 @@ def add_record():
     account_id = request.form.get('account_id', type=int)
 
     if not all([plan_id, amount, record_date_str]):
-        flash('请填写所有必填字段')
+        flash('请填写所有必填字段', 'error')
         return redirect(url_for('savings.savings_list'))
 
     try:
         record_date = datetime.strptime(record_date_str, '%Y-%m-%d').date()
     except ValueError:
-        flash('日期格式错误')
+        flash('日期格式错误', 'error')
         return redirect(url_for('savings.savings_list'))
 
     record = SavingsRecord(

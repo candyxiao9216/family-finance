@@ -69,21 +69,21 @@ def register():
 
         # 基本验证
         if not username or not password:
-            flash('用户名和密码不能为空')
+            flash('用户名和密码不能为空', 'error')
             return render_template('auth/register-redesigned.html')
 
         if len(username) < 3 or len(username) > 20:
-            flash('用户名长度必须在3-20个字符之间')
+            flash('用户名长度必须在3-20个字符之间', 'error')
             return render_template('auth/register-redesigned.html')
 
         if len(password) < 6:
-            flash('密码长度不能少于6个字符')
+            flash('密码长度不能少于6个字符', 'error')
             return render_template('auth/register-redesigned.html')
 
         # 检查用户名是否已存在
         existing_user = User.query.filter_by(username=username).first()
         if existing_user:
-            flash('用户名已存在，请选择其他用户名')
+            flash('用户名已存在，请选择其他用户名', 'error')
             return render_template('auth/register-redesigned.html')
 
         # 创建新用户
@@ -102,14 +102,14 @@ def register():
                 family, error = join_family_with_invite_code(user, invite_code)
                 if error:
                     db.session.rollback()
-                    flash(error)
+                    flash(error, 'error')
                     return render_template('auth/register-redesigned.html')
 
-                flash(f'注册成功！您已加入 {family.name}')
+                flash(f'注册成功！您已加入 {family.name}', 'success')
             else:
                 # 第一个用户自动创建家庭
                 family = create_family_for_first_user(user)
-                flash(f'注册成功！已为您创建家庭 {family.name}，邀请码：{family.invite_code}')
+                flash(f'注册成功！已为您创建家庭 {family.name}，邀请码：{family.invite_code}', 'success')
 
             db.session.commit()
 
@@ -123,7 +123,7 @@ def register():
 
         except Exception as e:
             db.session.rollback()
-            flash(f'注册失败：{str(e)}')
+            flash(f'注册失败：{str(e)}', 'error')
             return render_template('auth/register-redesigned.html')
 
     return render_template('auth/register-redesigned.html')
@@ -141,7 +141,7 @@ def login():
         password = request.form.get('password')
 
         if not username or not password:
-            flash('用户名和密码不能为空')
+            flash('用户名和密码不能为空', 'error')
             return render_template('auth/login-redesigned.html')
 
         # 验证用户
@@ -153,10 +153,10 @@ def login():
             session['nickname'] = user.nickname
             session['family_id'] = user.family_id
 
-            flash(f'欢迎回来，{user.nickname}！')
+            flash(f'欢迎回来，{user.nickname}！', 'success')
             return redirect(url_for('index'))
         else:
-            flash('用户名或密码错误')
+            flash('用户名或密码错误', 'error')
             return render_template('auth/login-redesigned.html')
 
     return render_template('auth/login-redesigned.html')
@@ -171,7 +171,7 @@ def logout():
     session.pop('nickname', None)
     session.pop('family_id', None)
 
-    flash('您已成功登出')
+    flash('您已成功登出', 'success')
     return redirect(url_for('auth.login'))
 
 
