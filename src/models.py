@@ -412,3 +412,48 @@ class ImportRecord(db.Model):
             'source_type': self.source_type,
             'status': self.status
         }
+
+
+class TransactionTemplate(db.Model):
+    """常用交易模板"""
+    __tablename__ = 'transaction_templates'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    name = db.Column(db.String(50), nullable=False)
+    amount = db.Column(db.Numeric(10, 2), nullable=False)
+    type = db.Column(db.String(10), nullable=False)  # 'income' / 'expense'
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=True)
+    description = db.Column(db.Text, nullable=True)
+    account_id = db.Column(db.Integer, db.ForeignKey('accounts.id'), nullable=True)
+    use_count = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    creator = db.relationship('User', foreign_keys=[user_id])
+    category = db.relationship('Category', foreign_keys=[category_id])
+    account = db.relationship('Account', foreign_keys=[account_id])
+
+
+class RecurringTransaction(db.Model):
+    """定期交易"""
+    __tablename__ = 'recurring_transactions'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    amount = db.Column(db.Numeric(10, 2), nullable=False)
+    type = db.Column(db.String(10), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=True)
+    description = db.Column(db.Text, nullable=True)
+    account_id = db.Column(db.Integer, db.ForeignKey('accounts.id'), nullable=True)
+    frequency = db.Column(db.String(20), nullable=False)  # 'monthly' / 'weekly' / 'custom'
+    interval_days = db.Column(db.Integer, nullable=True)
+    day_of_month = db.Column(db.Integer, nullable=True)  # 1-28
+    day_of_week = db.Column(db.Integer, nullable=True)   # 0=周一
+    next_run_date = db.Column(db.Date, nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    creator = db.relationship('User', foreign_keys=[user_id])
+    category = db.relationship('Category', foreign_keys=[category_id])
+    account = db.relationship('Account', foreign_keys=[account_id])
