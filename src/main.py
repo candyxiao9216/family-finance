@@ -15,7 +15,8 @@ from routes.savings import savings_bp
 from routes.baby_fund import baby_fund_bp
 from routes.upload import upload_bp
 from routes.template import template_bp
-from flask import session
+from routes.recurring import recurring_bp
+from flask import session, flash
 
 app = create_app()
 
@@ -29,6 +30,7 @@ app.register_blueprint(savings_bp)
 app.register_blueprint(baby_fund_bp)
 app.register_blueprint(upload_bp)
 app.register_blueprint(template_bp)
+app.register_blueprint(recurring_bp)
 
 @app.before_request
 def require_login():
@@ -52,6 +54,12 @@ def init_db_route():
 def index():
     """首页 - 交易列表，支持个人/家庭视图切换"""
     user_id = session.get('user_id')
+
+    # 自动执行到期的定期交易
+    from routes.recurring import process_recurring_transactions
+    recurring_count = process_recurring_transactions(user_id)
+    if recurring_count:
+        flash(f'已自动创建 {recurring_count} 笔定期交易', 'success')
 
     # 获取当前用户和家庭信息
     user = User.query.get(user_id)

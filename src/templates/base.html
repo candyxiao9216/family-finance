@@ -37,6 +37,7 @@
                             <a href="{{ url_for('category.category_list') }}" class="nav-dropdown-item">分类管理</a>
                             <a href="{{ url_for('upload.upload_page') }}" class="nav-dropdown-item">批量导入</a>
                             <a href="{{ url_for('template.template_list') }}" class="nav-dropdown-item">快捷模板</a>
+                            <a href="{{ url_for('recurring.recurring_list') }}" class="nav-dropdown-item">定期交易</a>
                         </div>
                     </div>
                     {% if family %}
@@ -79,6 +80,7 @@
                 <a href="{{ url_for('category.category_list') }}" class="side-menu-item">🏷️ 分类管理</a>
                 <a href="{{ url_for('upload.upload_page') }}" class="side-menu-item">📥 批量导入</a>
                 <a href="{{ url_for('template.template_list') }}" class="side-menu-item">⚡ 快捷模板</a>
+                <a href="{{ url_for('recurring.recurring_list') }}" class="side-menu-item">🔄 定期交易</a>
                 {% if family %}
                 <div class="side-menu-divider"></div>
                 <a href="{{ url_for('family.family_info') }}" class="side-menu-item">👨‍👩‍👧 家庭</a>

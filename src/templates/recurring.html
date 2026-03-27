@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}定期交易{% endblock %}
+
+{% block content %}
+        <!-- 统计栏 -->
+        <div class="stats-bar stats-bar--compact">
+            <div class="stat-item">
+                <div class="stat-label">定期交易</div>
+                <div class="stat-value balance">{{ items|length }} 个</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">启用中</div>
+                <div class="stat-value income">{{ items|selectattr('is_active')|list|length }} 个</div>
+            </div>
+        </div>
+
+        <!-- 操作按钮栏 -->
+        <div class="acct-actions-bar">
+            <button class="btn-action" id="btn-add-recurring">+ 添加定期交易</button>
+        </div>
+
+        {% if items %}
+        <!-- 定期交易列表 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">定期交易</h2>
+                <span class="account-count">{{ items|length }} 个</span>
+            </div>
+            <div class="account-list">
+                {% for item in items %}
+                <div class="account-item" style="{% if not item.is_active %}opacity:0.5{% endif %}">
+                    <div class="account-info">
+                        <span class="account-name">{{ item.name }}</span>
+                        <span class="category-badge {{ 'default' if item.type == 'income' else 'custom' }}">
+                            {{ '收入' if item.type == 'income' else '支出' }}
+                        </span>
+                        {% if item.category %}
+                        <span class="account-owner">{{ item.category.name }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="account-balance">
+                        <span class="account-balance-value">¥{{ "%.2f"|format(item.amount) }}</span>
+                        <span class="account-owner">
+                            {% if item.frequency == 'monthly' %}
+                                每月{{ item.day_of_month or 1 }}号
+                            {% elif item.frequency == 'weekly' %}
+                                {% set weekdays = ['周一','周二','周三','周四','周五','周六','周日'] %}
+                                每{{ weekdays[item.day_of_week or 0] }}
+                            {% elif item.frequency == 'custom' %}
+                                每{{ item.interval_days }}天
+                            {% endif %}
+                        </span>
+                        <span class="account-owner">下次：{{ item.next_run_date }}</span>
+                    </div>
+                    <div class="plan-actions" style="display:flex;gap:8px;margin-top:4px;">
+                        <form action="{{ url_for('recurring.toggle_recurring', item_id=item.id) }}" method="POST" style="display:inline">
+                            <button type="submit" class="btn-delete-cat" style="color:{{ '#22c55e' if item.is_active else '#9ca3af' }}">
+                                {{ '● 启用' if item.is_active else '○ 暂停' }}
+                            </button>
+                        </form>
+                        <form action="{{ url_for('recurring.delete_recurring', item_id=item.id) }}" method="POST" style="display:inline">
+                            <button type="submit" class="btn-delete-cat" data-confirm-delete data-confirm-message="确定删除定期交易「{{ item.name }}」？">删除</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <!-- 空状态 -->
+        <div class="card">
+            <div class="empty-state">
+                <div class="empty-state-icon">🔄</div>
+                <p class="empty-state-text">还没有定期交易</p>
+                <a href="#" class="empty-state-btn" onclick="document.getElementById('btn-add-recurring').click()">+ 添加</a>
+            </div>
+        </div>
+        {% endif %}
+
+    <!-- ===== 浮层：添加定期交易 ===== -->
+    <div class="drawer-overlay" id="overlay-recurring"></div>
+    <div class="drawer" id="drawer-recurring">
+        <div class="drawer-header">
+            <h2 class="drawer-title">添加定期交易</h2>
+            <button class="drawer-close" id="close-recurring">&times;</button>
+        </div>
+        <form action="{{ url_for('recurring.add_recurring') }}" method="POST" class="drawer-body">
+            <div class="form-group">
+                <label class="form-label">名称</label>
+                <input type="text" name="name" class="form-input" placeholder="例如：房租" required maxlength="100">
+            </div>
+            <div class="form-group">
+                <label class="form-label">金额</label>
+                <input type="number" name="amount" class="form-input" placeholder="0.00" step="0.01" min="0.01" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">类型</label>
+                <div class="type-selector">
+                    <label class="type-option">
+                        <input type="radio" name="type" value="expense" checked required>
+                        <span class="type-label expense">支出</span>
+                    </label>
+                    <label class="type-option">
+                        <input type="radio" name="type" value="income" required>
+                        <span class="type-label income">收入</span>
+                    </label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">频率</label>
+                <select name="frequency" id="freq-select" class="form-select" required>
+                    <option value="monthly">每月</option>
+                    <option value="weekly">每周</option>
+                    <option value="custom">自定义天数</option>
+                </select>
+            </div>
+            <div class="form-group" id="field-day-of-month">
+                <label class="form-label">每月几号</label>
+                <select name="day_of_month" class="form-select">
+                    {% for d in range(1, 29) %}
+                    <option value="{{ d }}">{{ d }}号</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group" id="field-day-of-week" style="display:none">
+                <label class="form-label">每周几</label>
+                <select name="day_of_week" class="form-select">
+                    <option value="0">周一</option>
+                    <option value="1">周二</option>
+                    <option value="2">周三</option>
+                    <option value="3">周四</option>
+                    <option value="4">周五</option>
+                    <option value="5">周六</option>
+                    <option value="6">周日</option>
+                </select>
+            </div>
+            <div class="form-group" id="field-interval-days" style="display:none">
+                <label class="form-label">间隔天数</label>
+                <input type="number" name="interval_days" class="form-input" placeholder="例如：14" min="1" max="365">
+            </div>
+            <div class="form-group">
+                <label class="form-label">分类（选填）</label>
+                <select name="category_id" class="form-select">
+                    <option value="">不指定分类</option>
+                    <optgroup label="收入">
+                        {% for c in categories if c.type == 'income' %}
+                        <option value="{{ c.id }}">{{ c.name }}</option>
+                        {% endfor %}
+                    </optgroup>
+                    <optgroup label="支出">
+                        {% for c in categories if c.type == 'expense' %}
+                        <option value="{{ c.id }}">{{ c.name }}</option>
+                        {% endfor %}
+                    </optgroup>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">账户（选填）</label>
+                <select name="account_id" class="form-select">
+                    <option value="">不指定账户</option>
+                    {% for a in accounts %}
+                    <option value="{{ a.id }}">{{ a.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">备注（选填）</label>
+                <input type="text" name="description" class="form-input" placeholder="备注说明" maxlength="200">
+            </div>
+            <button type="submit" class="btn-submit">创建定期交易</button>
+        </form>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        // ===== 抽屉浮层 =====
+        function openDrawer(drawerId, overlayId) {
+            document.getElementById(overlayId).classList.add('open');
+            document.getElementById(drawerId).classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeDrawer(drawerId, overlayId) {
+            document.getElementById(overlayId).classList.remove('open');
+            document.getElementById(drawerId).classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        // 添加定期交易抽屉
+        document.getElementById('btn-add-recurring').addEventListener('click', function() { openDrawer('drawer-recurring', 'overlay-recurring'); });
+        document.getElementById('close-recurring').addEventListener('click', function() { closeDrawer('drawer-recurring', 'overlay-recurring'); });
+        document.getElementById('overlay-recurring').addEventListener('click', function() { closeDrawer('drawer-recurring', 'overlay-recurring'); });
+
+        // 频率切换显示对应字段
+        document.getElementById('freq-select').addEventListener('change', function() {
+            var v = this.value;
+            document.getElementById('field-day-of-month').style.display = v === 'monthly' ? '' : 'none';
+            document.getElementById('field-day-of-week').style.display = v === 'weekly' ? '' : 'none';
+            document.getElementById('field-interval-days').style.display = v === 'custom' ? '' : 'none';
+        });
+
+        // ESC 关闭
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeDrawer('drawer-recurring', 'overlay-recurring');
+            }
+        });
+    </script>
+{% endblock %}
