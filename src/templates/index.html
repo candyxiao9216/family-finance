@@ -46,6 +46,30 @@
             </div>
         </div>
 
+        <!-- 快捷录入 -->
+        {% if quick_templates %}
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">快捷录入</h2>
+                <a href="{{ url_for('template.template_list') }}" class="chart-detail-link">管理模板</a>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; padding: 16px;">
+                {% for tpl in quick_templates %}
+                <button class="quick-tpl-btn" type="button"
+                        data-amount="{{ tpl.amount }}"
+                        data-type="{{ tpl.type }}"
+                        data-category="{{ tpl.category_id or '' }}"
+                        data-description="{{ tpl.description or '' }}"
+                        data-account="{{ tpl.account_id or '' }}"
+                        data-id="{{ tpl.id }}"
+                        onclick="applyTemplate(this)">
+                    {{ tpl.name }} <span style="opacity:0.6">¥{{ "%.0f"|format(tpl.amount) }}</span>
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
         <!-- 添加交易表单 -->
         <div class="card form-section" id="add-form">
             <div class="card-header">
@@ -261,6 +285,23 @@
         setCurrentDate();
         setDefaultDate();
         updateCategories('expense');
+
+        // 快捷模板应用
+        function applyTemplate(btn) {
+            var form = document.querySelector('#add-form form');
+            var typeRadios = form.querySelectorAll('input[name="type"]');
+            typeRadios.forEach(function(r) { r.checked = r.value === btn.dataset.type; });
+            updateCategories(btn.dataset.type);
+            form.querySelector('input[name="amount"]').value = btn.dataset.amount;
+            var catSelect = form.querySelector('select[name="category"]');
+            if (catSelect && btn.dataset.category) catSelect.value = btn.dataset.category;
+            var descInput = form.querySelector('input[name="description"]');
+            if (descInput && btn.dataset.description) descInput.value = btn.dataset.description;
+            var acctSelect = form.querySelector('select[name="account_id"]');
+            if (acctSelect && btn.dataset.account) acctSelect.value = btn.dataset.account;
+            form.scrollIntoView({behavior: 'smooth'});
+            fetch('/templates/' + btn.dataset.id + '/use', {method: 'POST'});
+        }
 
         // 迷你趋势图（近 6 个月）
         (async function() {

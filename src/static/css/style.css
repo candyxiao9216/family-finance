@@ -2305,3 +2305,20 @@ button.loading::after {
         display: none !important;
     }
 }
+
+/* --- 快捷模板按钮 --- */
+.quick-tpl-btn {
+    padding: 8px 16px;
+    background: var(--color-income-light);
+    border: 1px solid var(--color-income);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--color-text-primary);
+    transition: background var(--transition-fast);
+    min-height: 36px;
+}
+.quick-tpl-btn:hover {
+    background: var(--color-income);
+    color: white;
+}

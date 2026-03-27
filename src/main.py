@@ -5,7 +5,7 @@ from flask import Flask, redirect, render_template, request, url_for
 from sqlalchemy import func, extract, case
 
 from database import create_app, init_database
-from models import db, Transaction, Category, User, Family, TransactionModification, Account
+from models import db, Transaction, Category, User, Family, TransactionModification, Account, TransactionTemplate
 from routes.auth import auth_bp
 from routes.family import family_bp
 from routes.category import category_bp
@@ -14,6 +14,7 @@ from routes.account import account_bp
 from routes.savings import savings_bp
 from routes.baby_fund import baby_fund_bp
 from routes.upload import upload_bp
+from routes.template import template_bp
 from flask import session
 
 app = create_app()
@@ -27,6 +28,7 @@ app.register_blueprint(account_bp)
 app.register_blueprint(savings_bp)
 app.register_blueprint(baby_fund_bp)
 app.register_blueprint(upload_bp)
+app.register_blueprint(template_bp)
 
 @app.before_request
 def require_login():
@@ -103,6 +105,10 @@ def index():
     # 获取当前用户的账户列表（用于交易表单）
     accounts = Account.query.filter_by(user_id=user_id).all()
 
+    # 获取快捷模板（按使用次数排序，最多 6 个）
+    quick_templates = TransactionTemplate.query.filter_by(user_id=user_id)\
+        .order_by(TransactionTemplate.use_count.desc()).limit(6).all()
+
     return render_template('index.html',
                           transactions=transactions,
                           monthly_income=float(monthly_income),
@@ -112,6 +118,7 @@ def index():
                           stat_month=current_month,
                           categories=categories,
                           accounts=accounts,
+                          quick_templates=quick_templates,
                           current_view=current_view,
                           family=family,
                           family_members=family_members,

@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}快捷模板{% endblock %}
+
+{% block content %}
+        <!-- 统计栏 -->
+        <div class="stats-bar stats-bar--compact">
+            <div class="stat-item">
+                <div class="stat-label">模板数量</div>
+                <div class="stat-value balance">{{ templates|length }} 个</div>
+            </div>
+        </div>
+
+        <!-- 操作按钮栏 -->
+        <div class="acct-actions-bar">
+            <button class="btn-action" id="btn-add-tpl">+ 创建模板</button>
+        </div>
+
+        {% if templates %}
+        <!-- 模板列表 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">快捷模板</h2>
+                <span class="account-count">{{ templates|length }} 个</span>
+            </div>
+            <div class="account-list">
+                {% for tpl in templates %}
+                <div class="account-item">
+                    <div class="account-info">
+                        <span class="account-name">{{ tpl.name }}</span>
+                        <span class="category-badge {{ 'default' if tpl.type == 'income' else 'custom' }}">
+                            {{ '收入' if tpl.type == 'income' else '支出' }}
+                        </span>
+                        {% if tpl.category %}
+                        <span class="account-owner">{{ tpl.category.name }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="account-balance">
+                        <span class="account-balance-value">¥{{ "%.2f"|format(tpl.amount) }}</span>
+                        <span class="account-owner">已使用 {{ tpl.use_count or 0 }} 次</span>
+                    </div>
+                    <div class="plan-actions" style="display:flex;gap:8px;margin-top:4px;">
+                        <button class="btn-delete-cat" onclick="openEditTpl({{ tpl.id }}, '{{ tpl.name }}', '{{ tpl.amount }}', '{{ tpl.type }}', '{{ tpl.category_id or '' }}', '{{ tpl.account_id or '' }}', '{{ tpl.description or '' }}')">编辑</button>
+                        <form action="{{ url_for('template.delete_template', tpl_id=tpl.id) }}" method="POST" style="display:inline">
+                            <button type="submit" class="btn-delete-cat" data-confirm-delete data-confirm-message="确定删除模板「{{ tpl.name }}」？">删除</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <!-- 空状态 -->
+        <div class="card">
+            <div class="empty-state">
+                <div class="empty-state-icon">⚡</div>
+                <p class="empty-state-text">还没有快捷模板</p>
+                <a href="#" class="empty-state-btn" onclick="document.getElementById('btn-add-tpl').click()">+ 创建模板</a>
+            </div>
+        </div>
+        {% endif %}
+
+    <!-- ===== 浮层：创建模板 ===== -->
+    <div class="drawer-overlay" id="overlay-tpl"></div>
+    <div class="drawer" id="drawer-tpl">
+        <div class="drawer-header">
+            <h2 class="drawer-title">创建快捷模板</h2>
+            <button class="drawer-close" id="close-tpl">&times;</button>
+        </div>
+        <form action="{{ url_for('template.add_template') }}" method="POST" class="drawer-body">
+            <div class="form-group">
+                <label class="form-label">模板名称</label>
+                <input type="text" name="name" class="form-input" placeholder="例如：午餐" required maxlength="50">
+            </div>
+            <div class="form-group">
+                <label class="form-label">金额</label>
+                <input type="number" name="amount" class="form-input" placeholder="0.00" step="0.01" min="0.01" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">类型</label>
+                <div class="type-selector">
+                    <label class="type-option">
+                        <input type="radio" name="type" value="expense" checked required>
+                        <span class="type-label expense">支出</span>
+                    </label>
+                    <label class="type-option">
+                        <input type="radio" name="type" value="income" required>
+                        <span class="type-label income">收入</span>
+                    </label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">分类（选填）</label>
+                <select name="category_id" class="form-select">
+                    <option value="">不指定分类</option>
+                    <optgroup label="收入">
+                        {% for c in categories if c.type == 'income' %}
+                        <option value="{{ c.id }}">{{ c.name }}</option>
+                        {% endfor %}
+                    </optgroup>
+                    <optgroup label="支出">
+                        {% for c in categories if c.type == 'expense' %}
+                        <option value="{{ c.id }}">{{ c.name }}</option>
+                        {% endfor %}
+                    </optgroup>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">账户（选填）</label>
+                <select name="account_id" class="form-select">
+                    <option value="">不指定账户</option>
+                    {% for a in accounts %}
+                    <option value="{{ a.id }}">{{ a.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">备注（选填）</label>
+                <input type="text" name="description" class="form-input" placeholder="备注说明" maxlength="200">
+            </div>
+            <button type="submit" class="btn-submit">创建模板</button>
+        </form>
+    </div>
+
+    <!-- ===== 浮层：编辑模板 ===== -->
+    <div class="drawer-overlay" id="overlay-edit-tpl"></div>
+    <div class="drawer" id="drawer-edit-tpl">
+        <div class="drawer-header">
+            <h2 class="drawer-title">编辑快捷模板</h2>
+            <button class="drawer-close" id="close-edit-tpl">&times;</button>
+        </div>
+        <form id="edit-tpl-form" action="#" method="POST" class="drawer-body">
+            <div class="form-group">
+                <label class="form-label">模板名称</label>
+                <input type="text" name="name" id="edit-tpl-name" class="form-input" required maxlength="50">
+            </div>
+            <div class="form-group">
+                <label class="form-label">金额</label>
+                <input type="number" name="amount" id="edit-tpl-amount" class="form-input" step="0.01" min="0.01" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">类型</label>
+                <div class="type-selector">
+                    <label class="type-option">
+                        <input type="radio" name="type" value="expense" id="edit-tpl-type-expense" required>
+                        <span class="type-label expense">支出</span>
+                    </label>
+                    <label class="type-option">
+                        <input type="radio" name="type" value="income" id="edit-tpl-type-income" required>
+                        <span class="type-label income">收入</span>
+                    </label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">分类（选填）</label>
+                <select name="category_id" id="edit-tpl-category" class="form-select">
+                    <option value="">不指定分类</option>
+                    <optgroup label="收入">
+                        {% for c in categories if c.type == 'income' %}
+                        <option value="{{ c.id }}">{{ c.name }}</option>
+                        {% endfor %}
+                    </optgroup>
+                    <optgroup label="支出">
+                        {% for c in categories if c.type == 'expense' %}
+                        <option value="{{ c.id }}">{{ c.name }}</option>
+                        {% endfor %}
+                    </optgroup>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">账户（选填）</label>
+                <select name="account_id" id="edit-tpl-account" class="form-select">
+                    <option value="">不指定账户</option>
+                    {% for a in accounts %}
+                    <option value="{{ a.id }}">{{ a.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">备注（选填）</label>
+                <input type="text" name="description" id="edit-tpl-desc" class="form-input" maxlength="200">
+            </div>
+            <button type="submit" class="btn-submit">保存修改</button>
+        </form>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        // ===== 抽屉浮层 =====
+        function openDrawer(drawerId, overlayId) {
+            document.getElementById(overlayId).classList.add('open');
+            document.getElementById(drawerId).classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeDrawer(drawerId, overlayId) {
+            document.getElementById(overlayId).classList.remove('open');
+            document.getElementById(drawerId).classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        // 创建模板抽屉
+        document.getElementById('btn-add-tpl').addEventListener('click', function() { openDrawer('drawer-tpl', 'overlay-tpl'); });
+        document.getElementById('close-tpl').addEventListener('click', function() { closeDrawer('drawer-tpl', 'overlay-tpl'); });
+        document.getElementById('overlay-tpl').addEventListener('click', function() { closeDrawer('drawer-tpl', 'overlay-tpl'); });
+
+        // 编辑模板抽屉
+        document.getElementById('close-edit-tpl').addEventListener('click', function() { closeDrawer('drawer-edit-tpl', 'overlay-edit-tpl'); });
+        document.getElementById('overlay-edit-tpl').addEventListener('click', function() { closeDrawer('drawer-edit-tpl', 'overlay-edit-tpl'); });
+
+        function openEditTpl(id, name, amount, type, categoryId, accountId, description) {
+            document.getElementById('edit-tpl-form').action = '/templates/' + id + '/edit';
+            document.getElementById('edit-tpl-name').value = name;
+            document.getElementById('edit-tpl-amount').value = amount;
+            if (type === 'income') {
+                document.getElementById('edit-tpl-type-income').checked = true;
+            } else {
+                document.getElementById('edit-tpl-type-expense').checked = true;
+            }
+            document.getElementById('edit-tpl-category').value = categoryId;
+            document.getElementById('edit-tpl-account').value = accountId;
+            document.getElementById('edit-tpl-desc').value = description;
+            openDrawer('drawer-edit-tpl', 'overlay-edit-tpl');
+        }
+
+        // ESC 关闭
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeDrawer('drawer-tpl', 'overlay-tpl');
+                closeDrawer('drawer-edit-tpl', 'overlay-edit-tpl');
+            }
+        });
+    </script>
+{% endblock %}
