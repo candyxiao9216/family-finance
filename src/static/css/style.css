@@ -1832,7 +1832,7 @@ body::before {
     transition: opacity var(--transition-normal);
 }
 
-.side-menu-overlay.active {
+.side-menu-overlay.open {
     display: block;
     opacity: 1;
 }
@@ -1852,7 +1852,7 @@ body::before {
     -webkit-overflow-scrolling: touch;
 }
 
-.side-menu.active {
+.side-menu.open {
     right: 0;
 }
 
@@ -2075,7 +2075,7 @@ body::before {
     justify-content: center;
 }
 
-.confirm-modal.active {
+.confirm-modal.open {
     display: flex;
 }
 
