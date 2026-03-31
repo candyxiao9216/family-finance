@@ -17,8 +17,14 @@ from routes.upload import upload_bp
 from routes.template import template_bp
 from routes.recurring import recurring_bp
 from flask import session, flash
+from datetime import timedelta
 
 app = create_app()
+
+
+@app.context_processor
+def inject_timedelta():
+    return dict(timedelta=timedelta)
 
 # 注册蓝图
 app.register_blueprint(auth_bp)

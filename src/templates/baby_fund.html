@@ -63,6 +63,9 @@
                         </form>
                     </div>
                 </div>
+                <div style="padding:0 16px 4px 40px;font-size:12px;color:var(--color-text-muted, #999);">
+                    {{ f.creator.nickname or f.creator.username if f.creator else '-' }} · {{ (f.created_at + timedelta(hours=8)).strftime('%Y-%m-%d %H:%M') if f.created_at else '' }}
+                </div>
                 {% if f.notes %}
                 <div style="padding:0 16px 8px 40px;color:#888;font-size:13px;">{{ f.notes }}</div>
                 {% endif %}
