@@ -85,19 +85,26 @@
                         <div class="account-item investment">
                             <div class="account-info">
                                 <span class="account-name">{{ a.name }}</span>
-                                <span class="category-badge default">{{ a.account_type.name }}</span>
+                                <span class="category-badge custom">{{ a.currency or 'CNY' }}</span>
                                 {% if a.owner %}
                                 <span class="account-owner">{{ a.owner.nickname or a.owner.username }}</span>
                                 {% endif %}
                             </div>
                             <div class="account-balance">
-                                <span class="account-balance-value">¥{{ "%.2f"|format(a.current_balance|float) }}</span>
+                                <span class="account-balance-value">
+                                    {% if a.currency and a.currency != 'CNY' %}
+                                    {{ a.currency }} {{ "%.2f"|format(a.current_balance|float) }}
+                                    <span style="font-size:12px;color:var(--color-text-muted);">≈¥{{ "%.0f"|format(a.current_balance|float * exchange_rates.get(a.currency, 1)) }}</span>
+                                    {% else %}
+                                    ¥{{ "%.2f"|format(a.current_balance|float) }}
+                                    {% endif %}
+                                </span>
                                 {% if latest_snapshots.get(a.id) %}
                                 <span class="account-owner">{{ latest_snapshots[a.id].record_month.strftime('%Y年%m月') }}</span>
                                 {% endif %}
                                 {% if snapshots.get(a.id) and snapshots[a.id].change_amount is not none %}
                                 <span class="account-change {{ 'positive' if snapshots[a.id].change_amount >= 0 else 'negative' }}">
-                                    {{ '+' if snapshots[a.id].change_amount >= 0 }}¥{{ "%.2f"|format(snapshots[a.id].change_amount|float|abs) }}
+                                    {{ '+' if snapshots[a.id].change_amount >= 0 }}{{ "%.2f"|format(snapshots[a.id].change_amount|float|abs) }}
                                 </span>
                                 {% endif %}
                             </div>
@@ -239,6 +246,14 @@
                 <label class="form-label">账户名称</label>
                 <input type="text" name="name" class="form-input" placeholder="例如：招商银行储蓄卡" required maxlength="50">
             </div>
+            <div class="form-group" id="currency-group" style="display:none;">
+                <label class="form-label">币种</label>
+                <select name="currency" id="account-currency" class="form-select">
+                    <option value="CNY">人民币 (CNY)</option>
+                    <option value="HKD">港币 (HKD)</option>
+                    <option value="USD">美元 (USD)</option>
+                </select>
+            </div>
             <div class="form-group">
                 <label class="form-label">初始余额</label>
                 <input type="number" name="initial_balance" class="form-input" placeholder="0.00" step="0.01" min="0" value="0">
@@ -292,23 +307,30 @@
                 {% for a in investment_accounts %}
                 <div style="padding:12px 0;border-bottom:1px solid var(--color-border-light);">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                        <span style="font-weight:500;font-size:15px;">{{ a.name }}
-                            <span style="font-size:10px;padding:1px 6px;background:var(--color-expense-light);color:var(--color-expense);border-radius:10px;margin-left:4px;">{{ a.currency or 'CNY' }}</span>
-                        </span>
+                        <span style="font-weight:500;font-size:15px;">{{ a.name }}</span>
                         {% if prev_snapshots.get(a.id) %}
                         <span style="font-size:12px;color:var(--color-text-muted);">上月 {{ "%.2f"|format(prev_snapshots[a.id].balance|float) }}</span>
                         {% endif %}
                     </div>
-                    <div style="display:flex;gap:8px;">
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <select name="currency_{{ a.id }}" class="form-select" style="width:80px;padding:8px 4px;font-size:13px;"
+                                data-aid="{{ a.id }}" onchange="updateCurrencyDisplay(this)">
+                            <option value="HKD" {{ 'selected' if (a.currency or 'HKD') == 'HKD' }}>港币</option>
+                            <option value="CNY" {{ 'selected' if a.currency == 'CNY' }}>人民币</option>
+                            <option value="USD" {{ 'selected' if a.currency == 'USD' }}>美元</option>
+                        </select>
                         <input type="number" name="balance_{{ a.id }}" class="form-input" placeholder="本月余额" step="0.01" min="0"
                                style="flex:1;"
                                data-prev="{{ prev_snapshots[a.id].balance|float if prev_snapshots.get(a.id) else '' }}"
-                               data-currency="{{ a.currency or 'CNY' }}" data-aid="{{ a.id }}"
+                               data-currency="{{ a.currency or 'HKD' }}" data-aid="{{ a.id }}"
                                oninput="calcChange(this)">
+                    </div>
+                    <div style="display:flex;gap:8px;margin-top:6px;">
                         <input type="text" name="note_{{ a.id }}" class="form-input" placeholder="备注" maxlength="200"
                                style="flex:1;font-size:13px;">
                     </div>
                     <div id="change_{{ a.id }}" style="font-size:12px;margin-top:4px;min-height:16px;"></div>
+                    <div id="cny_{{ a.id }}" style="font-size:12px;color:var(--color-text-muted);min-height:16px;"></div>
                 </div>
                 {% endfor %}
                 {% endif %}
@@ -368,9 +390,18 @@
         function calcChange(input) {
             var aid = input.dataset.aid;
             var el = document.getElementById('change_' + aid);
+            var cnyEl = document.getElementById('cny_' + aid);
             var prev = parseFloat(input.dataset.prev);
             var curr = parseFloat(input.value);
             var currency = input.dataset.currency || 'CNY';
+
+            // 人民币换算显示
+            if (cnyEl && currency !== 'CNY' && !isNaN(curr) && curr > 0) {
+                var rate = RATES[currency] || 1;
+                cnyEl.innerHTML = '≈ ¥' + Math.round(curr * rate).toLocaleString() + ' (汇率 ' + rate + ')';
+            } else if (cnyEl) {
+                cnyEl.innerHTML = '';
+            }
 
             if (isNaN(curr) || input.value === '') { el.innerHTML = ''; return; }
             if (isNaN(prev)) { el.innerHTML = '<span style="color:var(--color-text-muted);">首次录入</span>'; return; }
@@ -387,6 +418,27 @@
             }
 
             el.innerHTML = '<span style="color:' + color + ';font-weight:500;">' + text + '</span>';
+        }
+
+        // 币种切换时更新 data-currency 并重新计算
+        function updateCurrencyDisplay(select) {
+            var aid = select.dataset.aid;
+            var balInput = document.querySelector('input[name="balance_' + aid + '"]');
+            if (balInput) {
+                balInput.dataset.currency = select.value;
+                calcChange(balInput);
+            }
+        }
+
+        // 创建账户：投资类型时显示币种选择
+        var typeSelect = document.querySelector('select[name="type_id"]');
+        var currencyGroup = document.getElementById('currency-group');
+        if (typeSelect && currencyGroup) {
+            typeSelect.addEventListener('change', function() {
+                var opt = this.options[this.selectedIndex];
+                var group = opt.parentElement;
+                currencyGroup.style.display = (group && group.label === '投资') ? '' : 'none';
+            });
         }
 
         // ===== 快照表格筛选 =====

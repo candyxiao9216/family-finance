@@ -92,7 +92,7 @@ def account_list():
                            prev_snapshots=prev_snapshots,
                            latest_snapshots=latest_snapshots,
                            all_snapshots=all_snapshots,
-                           exchange_rates=EXCHANGE_RATES,
+                           exchange_rates=_get_exchange_rates(),
                            current_view=current_view,
                            family=family,
                            username=session.get('nickname', session.get('username', '用户')))
@@ -105,6 +105,7 @@ def create_account():
     name = request.form.get('name', '').strip()
     type_id = request.form.get('type_id', type=int)
     initial_balance = request.form.get('initial_balance', '0')
+    currency = request.form.get('currency', 'CNY')
 
     if not name or not type_id:
         return "缺少必填字段", 400
@@ -113,6 +114,7 @@ def create_account():
         user_id=user_id,
         name=name,
         type_id=type_id,
+        currency=currency,
         initial_balance=Decimal(initial_balance),
         current_balance=Decimal(initial_balance)
     )
@@ -182,12 +184,35 @@ def add_snapshot(account_id):
     return redirect(url_for('account.account_list'))
 
 
-# 汇率（简化版，后续可接 API）
-EXCHANGE_RATES = {
-    'CNY': 1.0,
-    'HKD': 0.923,
-    'USD': 7.25,
-}
+# 汇率（带缓存，每小时刷新一次）
+import time
+import urllib.request
+import json
+
+_rate_cache = {'rates': {'CNY': 1.0, 'HKD': 0.923, 'USD': 7.25}, 'ts': 0}
+
+
+def _get_exchange_rates():
+    """获取实时汇率（CNY 为基准），失败时用缓存"""
+    now = time.time()
+    if now - _rate_cache['ts'] < 3600:  # 1 小时缓存
+        return _rate_cache['rates']
+    try:
+        url = 'https://api.exchangerate-api.com/v4/latest/CNY'
+        req = urllib.request.Request(url, headers={'User-Agent': 'FamilyFinance/1.0'})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read())
+            # API 返回的是 1 CNY = X 外币，我们需要 1 外币 = X CNY
+            rates = {
+                'CNY': 1.0,
+                'HKD': round(1.0 / data['rates'].get('HKD', 0.1083), 4),
+                'USD': round(1.0 / data['rates'].get('USD', 0.1379), 4),
+            }
+            _rate_cache['rates'] = rates
+            _rate_cache['ts'] = now
+            return rates
+    except Exception:
+        return _rate_cache['rates']
 
 
 @account_bp.route('/batch-snapshot', methods=['POST'])
@@ -211,9 +236,14 @@ def batch_snapshot():
     for account in accounts:
         balance_str = request.form.get(f'balance_{account.id}', '').strip()
         note = request.form.get(f'note_{account.id}', '').strip()
+        currency = request.form.get(f'currency_{account.id}', '').strip()
 
         if not balance_str:
             continue  # 跳过未填写的账户
+
+        # 更新投资账户币种
+        if currency and currency in ('CNY', 'HKD', 'USD'):
+            account.currency = currency
 
         balance = Decimal(balance_str)
 
