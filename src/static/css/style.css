@@ -2323,7 +2323,12 @@ button.loading::after {
     color: white;
 }
 
-/* --- 批量录入快照面板 --- */
+/* --- 宽抽屉（批量录入用） --- */
+.drawer-wide {
+    max-width: 520px;
+}
+
+/* --- 批量录入快照面板（已废弃，保留兼容） --- */
 .batch-snapshot-table {
     padding: 0 var(--space-md);
 }

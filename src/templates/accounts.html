@@ -28,7 +28,7 @@
         <!-- 操作按钮栏 -->
         <div class="acct-actions-bar">
             <button class="btn-action" id="btn-add-account">+ 创建账户</button>
-            <button class="btn-action btn-action--secondary" id="btn-add-snapshot" onclick="openBatchPanel()">📊 批量录入快照</button>
+            <button class="btn-action btn-action--secondary" id="btn-batch-snapshot">📊 批量录入快照</button>
         </div>
 
         {% if savings_accounts or investment_accounts %}
@@ -123,103 +123,6 @@
                 <p class="empty-state-text">还没有添加账户</p>
                 <a href="#" class="empty-state-btn" onclick="document.getElementById('btn-add-account').click()">+ 添加账户</a>
             </div>
-        </div>
-        {% endif %}
-
-        <!-- ===== 批量录入快照面板 ===== -->
-        {% if savings_accounts or investment_accounts %}
-        <div class="card" id="batch-snapshot-panel" style="display:none;">
-            <div class="card-header">
-                <h2 class="card-title">📊 批量录入快照</h2>
-                <div style="display:flex;gap:8px;align-items:center;">
-                    <input type="month" id="batch-month" class="form-input" style="width:auto;padding:6px 10px;font-size:13px;">
-                    <button class="btn-action btn-action--secondary" onclick="closeBatchPanel()" style="padding:6px 12px;font-size:13px;">收起</button>
-                </div>
-            </div>
-            <form action="{{ url_for('account.batch_snapshot') }}" method="POST">
-                <input type="hidden" name="month" id="batch-month-hidden">
-                <input type="hidden" name="view" value="{{ current_view }}">
-
-                <div class="batch-snapshot-table">
-                    <!-- 表头 -->
-                    <div class="batch-row batch-header">
-                        <div class="batch-cell batch-name">账户</div>
-                        <div class="batch-cell batch-prev">上月余额</div>
-                        <div class="batch-cell batch-balance">本月余额</div>
-                        <div class="batch-cell batch-change">变化</div>
-                        <div class="batch-cell batch-note">备注</div>
-                    </div>
-
-                    {% if savings_accounts %}
-                    <div class="batch-group-label" style="color:var(--color-income);">储蓄账户</div>
-                    {% for a in savings_accounts %}
-                    <div class="batch-row">
-                        <div class="batch-cell batch-name">
-                            <span class="batch-account-name">{{ a.name }}</span>
-                        </div>
-                        <div class="batch-cell batch-prev">
-                            {% if prev_snapshots.get(a.id) %}
-                            <span class="batch-prev-value">¥{{ "%.2f"|format(prev_snapshots[a.id].balance|float) }}</span>
-                            {% else %}
-                            <span class="batch-prev-value" style="color:var(--color-text-muted);">—</span>
-                            {% endif %}
-                        </div>
-                        <div class="batch-cell batch-balance">
-                            <input type="number" name="balance_{{ a.id }}" class="batch-input"
-                                   placeholder="输入余额" step="0.01" min="0"
-                                   data-prev="{{ prev_snapshots[a.id].balance|float if prev_snapshots.get(a.id) else '' }}"
-                                   data-currency="CNY"
-                                   oninput="updateChange(this)">
-                        </div>
-                        <div class="batch-cell batch-change">
-                            <span class="batch-change-value" id="change_{{ a.id }}">—</span>
-                        </div>
-                        <div class="batch-cell batch-note">
-                            <input type="text" name="note_{{ a.id }}" class="batch-input batch-note-input"
-                                   placeholder="本月大事..." maxlength="200">
-                        </div>
-                    </div>
-                    {% endfor %}
-                    {% endif %}
-
-                    {% if investment_accounts %}
-                    <div class="batch-group-label" style="color:var(--color-expense);">投资账户</div>
-                    {% for a in investment_accounts %}
-                    <div class="batch-row">
-                        <div class="batch-cell batch-name">
-                            <span class="batch-account-name">{{ a.name }}</span>
-                            <span class="batch-currency-tag">{{ a.currency or 'CNY' }}</span>
-                        </div>
-                        <div class="batch-cell batch-prev">
-                            {% if prev_snapshots.get(a.id) %}
-                            <span class="batch-prev-value">{{ a.currency or 'CNY' }} {{ "%.2f"|format(prev_snapshots[a.id].balance|float) }}</span>
-                            {% else %}
-                            <span class="batch-prev-value" style="color:var(--color-text-muted);">—</span>
-                            {% endif %}
-                        </div>
-                        <div class="batch-cell batch-balance">
-                            <input type="number" name="balance_{{ a.id }}" class="batch-input"
-                                   placeholder="输入余额" step="0.01" min="0"
-                                   data-prev="{{ prev_snapshots[a.id].balance|float if prev_snapshots.get(a.id) else '' }}"
-                                   data-currency="{{ a.currency or 'CNY' }}"
-                                   oninput="updateChange(this)">
-                        </div>
-                        <div class="batch-cell batch-change">
-                            <span class="batch-change-value" id="change_{{ a.id }}">—</span>
-                        </div>
-                        <div class="batch-cell batch-note">
-                            <input type="text" name="note_{{ a.id }}" class="batch-input batch-note-input"
-                                   placeholder="本月大事..." maxlength="200">
-                        </div>
-                    </div>
-                    {% endfor %}
-                    {% endif %}
-                </div>
-
-                <div class="batch-footer">
-                    <button type="submit" class="btn-action" style="width:100%;">全部提交</button>
-                </div>
-            </form>
         </div>
         {% endif %}
 
@@ -344,7 +247,78 @@
         </form>
     </div>
 
-    <!-- ===== 浮层：录入快照（已由批量面板替代） ===== -->
+    <!-- ===== 抽屉：批量录入快照 ===== -->
+    <div class="drawer-overlay" id="overlay-batch"></div>
+    <div class="drawer drawer-wide" id="drawer-batch">
+        <div class="drawer-header">
+            <h2 class="drawer-title">📊 批量录入快照</h2>
+            <button class="drawer-close" id="close-batch">&times;</button>
+        </div>
+        <form action="{{ url_for('account.batch_snapshot') }}" method="POST" class="drawer-body" style="padding:0;">
+            <!-- 月份选择 -->
+            <div style="padding:16px 20px;border-bottom:1px solid var(--color-border-light);display:flex;align-items:center;gap:12px;">
+                <label style="font-size:14px;font-weight:500;white-space:nowrap;">记录月份</label>
+                <input type="month" name="month" id="batch-month" class="form-input" style="flex:1;" required>
+            </div>
+            <input type="hidden" name="view" value="{{ current_view }}">
+
+            <div style="padding:12px 20px;overflow-y:auto;max-height:60vh;">
+                {% if savings_accounts %}
+                <div style="font-size:12px;font-weight:600;color:var(--color-income);padding:8px 0 4px;text-transform:uppercase;letter-spacing:0.5px;">储蓄账户</div>
+                {% for a in savings_accounts %}
+                <div style="padding:12px 0;border-bottom:1px solid var(--color-border-light);">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                        <span style="font-weight:500;font-size:15px;">{{ a.name }}</span>
+                        {% if prev_snapshots.get(a.id) %}
+                        <span style="font-size:12px;color:var(--color-text-muted);">上月 ¥{{ "%.2f"|format(prev_snapshots[a.id].balance|float) }}</span>
+                        {% endif %}
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <input type="number" name="balance_{{ a.id }}" class="form-input" placeholder="本月余额" step="0.01" min="0"
+                               style="flex:1;"
+                               data-prev="{{ prev_snapshots[a.id].balance|float if prev_snapshots.get(a.id) else '' }}"
+                               data-currency="CNY" data-aid="{{ a.id }}"
+                               oninput="calcChange(this)">
+                        <input type="text" name="note_{{ a.id }}" class="form-input" placeholder="备注" maxlength="200"
+                               style="flex:1;font-size:13px;">
+                    </div>
+                    <div id="change_{{ a.id }}" style="font-size:12px;margin-top:4px;min-height:16px;"></div>
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                {% if investment_accounts %}
+                <div style="font-size:12px;font-weight:600;color:var(--color-expense);padding:12px 0 4px;text-transform:uppercase;letter-spacing:0.5px;">投资账户</div>
+                {% for a in investment_accounts %}
+                <div style="padding:12px 0;border-bottom:1px solid var(--color-border-light);">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                        <span style="font-weight:500;font-size:15px;">{{ a.name }}
+                            <span style="font-size:10px;padding:1px 6px;background:var(--color-expense-light);color:var(--color-expense);border-radius:10px;margin-left:4px;">{{ a.currency or 'CNY' }}</span>
+                        </span>
+                        {% if prev_snapshots.get(a.id) %}
+                        <span style="font-size:12px;color:var(--color-text-muted);">上月 {{ "%.2f"|format(prev_snapshots[a.id].balance|float) }}</span>
+                        {% endif %}
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <input type="number" name="balance_{{ a.id }}" class="form-input" placeholder="本月余额" step="0.01" min="0"
+                               style="flex:1;"
+                               data-prev="{{ prev_snapshots[a.id].balance|float if prev_snapshots.get(a.id) else '' }}"
+                               data-currency="{{ a.currency or 'CNY' }}" data-aid="{{ a.id }}"
+                               oninput="calcChange(this)">
+                        <input type="text" name="note_{{ a.id }}" class="form-input" placeholder="备注" maxlength="200"
+                               style="flex:1;font-size:13px;">
+                    </div>
+                    <div id="change_{{ a.id }}" style="font-size:12px;margin-top:4px;min-height:16px;"></div>
+                </div>
+                {% endfor %}
+                {% endif %}
+            </div>
+
+            <div style="padding:16px 20px;border-top:1px solid var(--color-border-light);">
+                <button type="submit" class="btn-submit" style="width:100%;">全部提交</button>
+            </div>
+        </form>
+    </div>
 {% endblock %}
 
 {% block scripts %}
@@ -367,74 +341,52 @@
         document.getElementById('close-account').addEventListener('click', function() { closeDrawer('drawer-account', 'overlay-account'); });
         document.getElementById('overlay-account').addEventListener('click', function() { closeDrawer('drawer-account', 'overlay-account'); });
 
-        // 录入快照 → 批量面板
-        // (旧的单条抽屉已移除，按钮直接调用 openBatchPanel)
+        // 录入快照 → 批量抽屉
+        var btnBatch = document.getElementById('btn-batch-snapshot');
+        if (btnBatch) btnBatch.addEventListener('click', function() { openDrawer('drawer-batch', 'overlay-batch'); });
+        document.getElementById('close-batch').addEventListener('click', function() { closeDrawer('drawer-batch', 'overlay-batch'); });
+        document.getElementById('overlay-batch').addEventListener('click', function() { closeDrawer('drawer-batch', 'overlay-batch'); });
+
+        // 默认月份设为当月
+        var batchMonth = document.getElementById('batch-month');
+        if (batchMonth) {
+            var now = new Date();
+            batchMonth.value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+        }
 
         // ESC 关闭
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeDrawer('drawer-account', 'overlay-account');
+                closeDrawer('drawer-batch', 'overlay-batch');
             }
         });
 
-        // ===== 批量快照面板 =====
-        var EXCHANGE_RATES = {{ exchange_rates | tojson }};
+        // ===== 变化量实时计算 =====
+        var RATES = {{ exchange_rates | tojson }};
 
-        function openBatchPanel() {
-            var panel = document.getElementById('batch-snapshot-panel');
-            panel.style.display = '';
-            panel.scrollIntoView({behavior: 'smooth'});
-            // 同步月份
-            var monthInput = document.getElementById('batch-month');
-            var now = new Date();
-            monthInput.value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-            syncMonth();
-        }
-
-        function closeBatchPanel() {
-            document.getElementById('batch-snapshot-panel').style.display = 'none';
-        }
-
-        function syncMonth() {
-            document.getElementById('batch-month-hidden').value = document.getElementById('batch-month').value;
-        }
-        var batchMonthEl = document.getElementById('batch-month');
-        if (batchMonthEl) batchMonthEl.addEventListener('change', syncMonth);
-
-        function updateChange(input) {
-            var accountId = input.name.replace('balance_', '');
-            var changeEl = document.getElementById('change_' + accountId);
+        function calcChange(input) {
+            var aid = input.dataset.aid;
+            var el = document.getElementById('change_' + aid);
             var prev = parseFloat(input.dataset.prev);
             var curr = parseFloat(input.value);
             var currency = input.dataset.currency || 'CNY';
 
-            if (isNaN(curr) || input.value === '') {
-                changeEl.textContent = '—';
-                changeEl.className = 'batch-change-value';
-                return;
-            }
-
-            if (isNaN(prev)) {
-                changeEl.textContent = '首次';
-                changeEl.className = 'batch-change-value';
-                return;
-            }
+            if (isNaN(curr) || input.value === '') { el.innerHTML = ''; return; }
+            if (isNaN(prev)) { el.innerHTML = '<span style="color:var(--color-text-muted);">首次录入</span>'; return; }
 
             var diff = curr - prev;
             var sign = diff >= 0 ? '+' : '';
-            var cls = diff >= 0 ? 'batch-change-positive' : 'batch-change-negative';
-
-            var display = sign + diff.toLocaleString('zh-CN', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+            var color = diff >= 0 ? '#4CAF50' : '#f44336';
+            var text = sign + diff.toLocaleString('zh-CN', {minimumFractionDigits: 0, maximumFractionDigits: 0});
 
             if (currency !== 'CNY') {
-                var rate = EXCHANGE_RATES[currency] || 1;
-                var cnyDiff = diff * rate;
-                var cnySign = cnyDiff >= 0 ? '+' : '';
-                display += '<br><span class="batch-cny-hint">≈' + cnySign + '¥' + Math.round(Math.abs(cnyDiff)).toLocaleString() + '</span>';
+                var rate = RATES[currency] || 1;
+                var cny = diff * rate;
+                text += ' <span style="color:var(--color-text-muted);">≈¥' + Math.round(Math.abs(cny)).toLocaleString() + '</span>';
             }
 
-            changeEl.innerHTML = display;
-            changeEl.className = 'batch-change-value ' + cls;
+            el.innerHTML = '<span style="color:' + color + ';font-weight:500;">' + text + '</span>';
         }
 
         // ===== 快照表格筛选 =====
