@@ -257,6 +257,9 @@ def batch_snapshot():
     db.session.commit()
     flash(f'已录入 {count} 个账户的快照', 'success')
     return redirect(url_for('account.account_list'))
+
+
+@account_bp.route('/<int:account_id>/delete', methods=['POST'])
 def delete_account(account_id):
     """删除账户"""
     user_id = session.get('user_id')
