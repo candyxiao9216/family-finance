@@ -411,6 +411,13 @@ python src/main.py
 
 ## 经验教训
 
+### 2026-03-31: SQLite 新增字段部署问题（反复出现）
+
+**问题:** 模型新增字段后部署到服务器，`create_all()` 不会给已有表添加新列，导致 500 错误
+**原因:** SQLite 的 `db.create_all()` 只创建不存在的表，不会 ALTER 已有表
+**解决:** 部署时必须手动执行 `ALTER TABLE xxx ADD COLUMN yyy`
+**经验:** 每次模型新增字段，部署脚本应包含 ALTER TABLE 语句。已发生 3 次（recurring_transactions 表、transaction_templates 表、accounts.currency + account_balance.note）。未来考虑引入 Flask-Migrate 做数据库迁移管理。
+
 ### 2026-03-26: Phase 4 UI 优化经验
 
 **问题 1:** 模板重构时 `<div class="container">` 嵌套错误
