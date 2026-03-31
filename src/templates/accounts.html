@@ -262,84 +262,73 @@
         </form>
     </div>
 
-    <!-- ===== 抽屉：批量录入快照 ===== -->
-    <div class="drawer-overlay" id="overlay-batch"></div>
-    <div class="drawer drawer-wide" id="drawer-batch">
-        <div class="drawer-header">
-            <h2 class="drawer-title">📊 批量录入快照</h2>
-            <button class="drawer-close" id="close-batch">&times;</button>
-        </div>
-        <form action="{{ url_for('account.batch_snapshot') }}" method="POST" class="drawer-body" style="padding:0;">
-            <!-- 月份选择 -->
-            <div style="padding:16px 20px;border-bottom:1px solid var(--color-border-light);display:flex;align-items:center;gap:12px;">
-                <label style="font-size:14px;font-weight:500;white-space:nowrap;">记录月份</label>
-                <input type="month" name="month" id="batch-month" class="form-input" style="flex:1;" required>
-            </div>
-            <input type="hidden" name="view" value="{{ current_view }}">
-
-            <div style="padding:12px 20px;overflow-y:auto;max-height:60vh;">
-                {% if savings_accounts %}
-                <div style="font-size:12px;font-weight:600;color:var(--color-income);padding:8px 0 4px;text-transform:uppercase;letter-spacing:0.5px;">储蓄账户</div>
-                {% for a in savings_accounts %}
-                <div style="padding:12px 0;border-bottom:1px solid var(--color-border-light);">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                        <span style="font-weight:500;font-size:15px;">{{ a.name }}</span>
-                        {% if prev_snapshots.get(a.id) %}
-                        <span style="font-size:12px;color:var(--color-text-muted);">上月 ¥{{ "%.2f"|format(prev_snapshots[a.id].balance|float) }}</span>
-                        {% endif %}
+    <!-- ===== 模态框：批量录入快照 ===== -->
+    <div class="batch-modal-overlay" id="batch-modal" style="display:none;">
+        <div class="batch-modal">
+            <form action="{{ url_for('account.batch_snapshot') }}" method="POST">
+                <input type="hidden" name="view" value="{{ current_view }}">
+                <!-- 头部 -->
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <span style="font-size:17px;font-weight:600;">📊 批量录入快照</span>
+                        <input type="month" name="month" id="batch-month" class="form-input" style="width:auto;padding:6px 10px;font-size:13px;" required>
                     </div>
                     <div style="display:flex;gap:8px;">
-                        <input type="number" name="balance_{{ a.id }}" class="form-input" placeholder="本月余额" step="0.01" min="0"
-                               style="flex:1;"
-                               data-prev="{{ prev_snapshots[a.id].balance|float if prev_snapshots.get(a.id) else '' }}"
-                               data-currency="CNY" data-aid="{{ a.id }}"
-                               oninput="calcChange(this)">
-                        <input type="text" name="note_{{ a.id }}" class="form-input" placeholder="备注" maxlength="200"
-                               style="flex:1;font-size:13px;">
+                        <button type="submit" style="padding:8px 20px;background:#D4A574;color:white;border:none;border-radius:20px;font-size:13px;cursor:pointer;font-weight:500;">全部提交</button>
+                        <button type="button" onclick="closeBatchModal()" style="padding:8px 14px;background:none;border:1px solid #e0dcd7;border-radius:20px;font-size:13px;cursor:pointer;color:#666;">关闭</button>
                     </div>
-                    <div id="change_{{ a.id }}" style="font-size:12px;margin-top:4px;min-height:16px;"></div>
+                </div>
+
+                <!-- 表头 -->
+                <div style="display:grid;grid-template-columns:120px 100px 130px 80px 1fr;gap:8px;padding:8px 12px;background:#f8f5f1;border-radius:8px;font-size:12px;color:#999;margin-bottom:4px;">
+                    <div>账户</div>
+                    <div>上月余额</div>
+                    <div>本月余额</div>
+                    <div>变化</div>
+                    <div>备注</div>
+                </div>
+
+                <!-- 储蓄账户 -->
+                {% if savings_accounts %}
+                <div style="font-size:11px;color:#D4A574;padding:8px 12px 4px;font-weight:600;">储蓄账户</div>
+                {% for a in savings_accounts %}
+                <div style="display:grid;grid-template-columns:120px 100px 130px 80px 1fr;gap:8px;padding:8px 12px;align-items:center;border-bottom:1px solid #f0ece7;">
+                    <div style="font-size:13px;font-weight:500;">{{ a.name }}</div>
+                    <div style="font-size:12px;color:#999;">{% if prev_snapshots.get(a.id) %}¥{{ "%.0f"|format(prev_snapshots[a.id].balance|float) }}{% else %}—{% endif %}</div>
+                    <div><input type="number" name="balance_{{ a.id }}" style="width:100%;padding:6px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:13px;background:#fff;" placeholder="输入余额" step="0.01" min="0" data-prev="{{ prev_snapshots[a.id].balance|float if prev_snapshots.get(a.id) else '' }}" data-currency="CNY" data-aid="{{ a.id }}" oninput="calcChange(this)"></div>
+                    <div id="change_{{ a.id }}" style="font-size:12px;">—</div>
+                    <div><input type="text" name="note_{{ a.id }}" style="width:100%;padding:6px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:12px;color:#666;" placeholder="本月大事..." maxlength="200"></div>
                 </div>
                 {% endfor %}
                 {% endif %}
 
+                <!-- 投资账户 -->
                 {% if investment_accounts %}
-                <div style="font-size:12px;font-weight:600;color:var(--color-expense);padding:12px 0 4px;text-transform:uppercase;letter-spacing:0.5px;">投资账户</div>
+                <div style="font-size:11px;color:#7C8BA1;padding:8px 12px 4px;font-weight:600;">投资账户</div>
                 {% for a in investment_accounts %}
-                <div style="padding:12px 0;border-bottom:1px solid var(--color-border-light);">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                        <span style="font-weight:500;font-size:15px;">{{ a.name }}</span>
-                        {% if prev_snapshots.get(a.id) %}
-                        <span style="font-size:12px;color:var(--color-text-muted);">上月 {{ "%.2f"|format(prev_snapshots[a.id].balance|float) }}</span>
-                        {% endif %}
-                    </div>
-                    <div style="display:flex;gap:8px;align-items:center;">
-                        <select name="currency_{{ a.id }}" class="form-select" style="width:80px;padding:8px 4px;font-size:13px;flex-shrink:0;"
-                                data-aid="{{ a.id }}" onchange="updateCurrencyDisplay(this)">
+                <div style="display:grid;grid-template-columns:120px 100px 130px 80px 1fr;gap:8px;padding:8px 12px;align-items:center;border-bottom:1px solid #f0ece7;">
+                    <div style="font-size:13px;font-weight:500;">{{ a.name }}</div>
+                    <div style="font-size:12px;color:#999;">{% if prev_snapshots.get(a.id) %}{{ "%.0f"|format(prev_snapshots[a.id].balance|float) }}{% else %}—{% endif %}</div>
+                    <div style="display:flex;gap:4px;">
+                        <select name="currency_{{ a.id }}" style="width:55px;padding:4px;border:1px solid #e0dcd7;border-radius:6px;font-size:10px;" data-aid="{{ a.id }}" onchange="updateCurrencyDisplay(this)">
                             <option value="HKD" {{ 'selected' if (a.currency or 'HKD') == 'HKD' }}>港币</option>
                             <option value="CNY" {{ 'selected' if a.currency == 'CNY' }}>人民币</option>
                             <option value="USD" {{ 'selected' if a.currency == 'USD' }}>美元</option>
                         </select>
-                        <input type="number" name="balance_{{ a.id }}" class="form-input" placeholder="本月余额" step="0.01" min="0"
-                               style="flex:1.2;"
-                               data-prev="{{ prev_snapshots[a.id].balance|float if prev_snapshots.get(a.id) else '' }}"
-                               data-currency="{{ a.currency or 'HKD' }}" data-aid="{{ a.id }}"
-                               oninput="calcChange(this)">
-                        <input type="text" name="note_{{ a.id }}" class="form-input" placeholder="备注" maxlength="200"
-                               style="flex:1;font-size:13px;">
+                        <input type="number" name="balance_{{ a.id }}" style="flex:1;padding:6px 6px;border:1px solid #e0dcd7;border-radius:6px;font-size:13px;background:#fff;" placeholder="余额" step="0.01" min="0" data-prev="{{ prev_snapshots[a.id].balance|float if prev_snapshots.get(a.id) else '' }}" data-currency="{{ a.currency or 'HKD' }}" data-aid="{{ a.id }}" oninput="calcChange(this)">
                     </div>
-                    <div style="display:flex;gap:12px;margin-top:4px;">
-                        <span id="change_{{ a.id }}" style="font-size:12px;min-height:16px;"></span>
-                        <span id="cny_{{ a.id }}" style="font-size:12px;color:var(--color-text-muted);"></span>
-                    </div>
+                    <div id="change_{{ a.id }}" style="font-size:11px;line-height:1.3;">—</div>
+                    <div><input type="text" name="note_{{ a.id }}" style="width:100%;padding:6px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:12px;color:#666;" placeholder="本月大事..." maxlength="200"></div>
                 </div>
                 {% endfor %}
                 {% endif %}
-            </div>
 
-            <div style="padding:16px 20px;border-top:1px solid var(--color-border-light);">
-                <button type="submit" class="btn-submit" style="width:100%;">全部提交</button>
-            </div>
-        </form>
+                <!-- 汇总栏 -->
+                <div id="batch-summary" style="margin-top:16px;padding:12px;background:#f8f5f1;border-radius:8px;display:flex;justify-content:space-between;font-size:13px;">
+                    <div>填写完余额后自动计算汇总</div>
+                </div>
+            </form>
+        </div>
     </div>
 {% endblock %}
 
@@ -363,11 +352,22 @@
         document.getElementById('close-account').addEventListener('click', function() { closeDrawer('drawer-account', 'overlay-account'); });
         document.getElementById('overlay-account').addEventListener('click', function() { closeDrawer('drawer-account', 'overlay-account'); });
 
-        // 录入快照 → 批量抽屉
+        // 批量快照模态框
         var btnBatch = document.getElementById('btn-batch-snapshot');
-        if (btnBatch) btnBatch.addEventListener('click', function() { openDrawer('drawer-batch', 'overlay-batch'); });
-        document.getElementById('close-batch').addEventListener('click', function() { closeDrawer('drawer-batch', 'overlay-batch'); });
-        document.getElementById('overlay-batch').addEventListener('click', function() { closeDrawer('drawer-batch', 'overlay-batch'); });
+        if (btnBatch) btnBatch.addEventListener('click', function() {
+            document.getElementById('batch-modal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        });
+
+        function closeBatchModal() {
+            document.getElementById('batch-modal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        // 点击遮罩关闭
+        document.getElementById('batch-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeBatchModal();
+        });
 
         // 默认月份设为当月
         var batchMonth = document.getElementById('batch-month');
@@ -380,7 +380,7 @@
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeDrawer('drawer-account', 'overlay-account');
-                closeDrawer('drawer-batch', 'overlay-batch');
+                closeBatchModal();
             }
         });
 
@@ -390,21 +390,12 @@
         function calcChange(input) {
             var aid = input.dataset.aid;
             var el = document.getElementById('change_' + aid);
-            var cnyEl = document.getElementById('cny_' + aid);
             var prev = parseFloat(input.dataset.prev);
             var curr = parseFloat(input.value);
             var currency = input.dataset.currency || 'CNY';
 
-            // 人民币换算显示
-            if (cnyEl && currency !== 'CNY' && !isNaN(curr) && curr > 0) {
-                var rate = RATES[currency] || 1;
-                cnyEl.innerHTML = '≈ ¥' + Math.round(curr * rate).toLocaleString() + ' (汇率 ' + rate + ')';
-            } else if (cnyEl) {
-                cnyEl.innerHTML = '';
-            }
-
-            if (isNaN(curr) || input.value === '') { el.innerHTML = ''; return; }
-            if (isNaN(prev)) { el.innerHTML = '<span style="color:var(--color-text-muted);">首次录入</span>'; return; }
+            if (isNaN(curr) || input.value === '') { el.innerHTML = '—'; return; }
+            if (isNaN(prev)) { el.innerHTML = '<span style="color:#999;">首次</span>'; return; }
 
             var diff = curr - prev;
             var sign = diff >= 0 ? '+' : '';
@@ -414,7 +405,7 @@
             if (currency !== 'CNY') {
                 var rate = RATES[currency] || 1;
                 var cny = diff * rate;
-                text += ' <span style="color:var(--color-text-muted);">≈¥' + Math.round(Math.abs(cny)).toLocaleString() + '</span>';
+                text += '<br><span style="font-size:10px;color:#999;">≈¥' + Math.round(Math.abs(cny)).toLocaleString() + '</span>';
             }
 
             el.innerHTML = '<span style="color:' + color + ';font-weight:500;">' + text + '</span>';
