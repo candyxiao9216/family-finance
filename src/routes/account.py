@@ -5,7 +5,7 @@ from datetime import datetime, date
 from decimal import Decimal
 
 from dateutil.relativedelta import relativedelta
-from flask import Blueprint, redirect, render_template, request, session, url_for
+from flask import Blueprint, redirect, render_template, request, session, url_for, flash
 
 from models import db, Account, AccountType, AccountBalance, User
 
@@ -71,6 +71,17 @@ def account_list():
             AccountBalance.account_id.in_(account_ids)
         ).order_by(AccountBalance.record_month.desc(), AccountBalance.created_at.desc()).all()
 
+    # 获取上月快照（用于批量录入面板显示上月余额）
+    prev_month = this_month - relativedelta(months=1)
+    prev_snapshots = {}
+    if account_ids:
+        prev_records = AccountBalance.query.filter(
+            AccountBalance.account_id.in_(account_ids),
+            AccountBalance.record_month == prev_month
+        ).all()
+        for r in prev_records:
+            prev_snapshots[r.account_id] = r
+
     return render_template('accounts.html',
                            savings_accounts=savings_accounts,
                            investment_accounts=investment_accounts,
@@ -78,8 +89,10 @@ def account_list():
                            investment_total=investment_total,
                            account_types=account_types,
                            snapshots=snapshots,
+                           prev_snapshots=prev_snapshots,
                            latest_snapshots=latest_snapshots,
                            all_snapshots=all_snapshots,
+                           exchange_rates=EXCHANGE_RATES,
                            current_view=current_view,
                            family=family,
                            username=session.get('nickname', session.get('username', '用户')))
@@ -169,7 +182,81 @@ def add_snapshot(account_id):
     return redirect(url_for('account.account_list'))
 
 
-@account_bp.route('/<int:account_id>/delete', methods=['POST'])
+# 汇率（简化版，后续可接 API）
+EXCHANGE_RATES = {
+    'CNY': 1.0,
+    'HKD': 0.923,
+    'USD': 7.25,
+}
+
+
+@account_bp.route('/batch-snapshot', methods=['POST'])
+def batch_snapshot():
+    """批量录入月度快照"""
+    user_id = session.get('user_id')
+    user = User.query.get(user_id)
+    month_str = request.form.get('month')
+
+    if not month_str:
+        flash('请选择月份', 'error')
+        return redirect(url_for('account.account_list'))
+
+    record_month = datetime.strptime(month_str + '-01', '%Y-%m-%d').date()
+
+    # 获取所有可操作账户
+    current_view = request.form.get('view', 'personal')
+    accounts = _get_family_accounts(user_id, current_view)
+
+    count = 0
+    for account in accounts:
+        balance_str = request.form.get(f'balance_{account.id}', '').strip()
+        note = request.form.get(f'note_{account.id}', '').strip()
+
+        if not balance_str:
+            continue  # 跳过未填写的账户
+
+        balance = Decimal(balance_str)
+
+        # 计算变化量
+        prev_month = record_month - relativedelta(months=1)
+        prev_record = AccountBalance.query.filter_by(
+            account_id=account.id, record_month=prev_month
+        ).first()
+        change_amount = balance - Decimal(str(prev_record.balance)) if prev_record else None
+
+        # 插入或更新
+        existing = AccountBalance.query.filter_by(
+            account_id=account.id, record_month=record_month
+        ).first()
+
+        if existing:
+            existing.balance = balance
+            existing.change_amount = change_amount
+            existing.note = note or None
+            existing.recorded_by = user_id
+        else:
+            snapshot = AccountBalance(
+                account_id=account.id, balance=balance,
+                change_amount=change_amount, record_month=record_month,
+                note=note or None, recorded_by=user_id
+            )
+            db.session.add(snapshot)
+
+        # 更新账户当前余额
+        latest_snapshot = AccountBalance.query.filter_by(
+            account_id=account.id
+        ).order_by(AccountBalance.record_month.desc()).first()
+
+        if latest_snapshot and latest_snapshot.record_month <= record_month:
+            account.current_balance = balance
+        elif not latest_snapshot:
+            account.current_balance = balance
+
+        count += 1
+
+    db.session.commit()
+    flash(f'已录入 {count} 个账户的快照', 'success')
+    return redirect(url_for('account.account_list'))
 def delete_account(account_id):
     """删除账户"""
     user_id = session.get('user_id')

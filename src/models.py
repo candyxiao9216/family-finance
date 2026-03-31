@@ -219,6 +219,7 @@ class Account(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     type_id = db.Column(db.Integer, db.ForeignKey('account_types.id'), nullable=False)
+    currency = db.Column(db.String(3), default='CNY')  # CNY / HKD / USD
     initial_balance = db.Column(db.Numeric(10, 2), default=0)
     current_balance = db.Column(db.Numeric(10, 2), default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -253,6 +254,7 @@ class AccountBalance(db.Model):
     balance = db.Column(db.Numeric(10, 2), nullable=False)
     change_amount = db.Column(db.Numeric(10, 2), nullable=True)
     record_month = db.Column(db.Date, nullable=False)
+    note = db.Column(db.String(200), nullable=True)  # 本月备注
     recorded_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
