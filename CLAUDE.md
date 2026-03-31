@@ -4,7 +4,7 @@
 
 **项目名称:** 0225-FamilyFinance
 **项目类型:** 个人财务管理 Web 应用
-**状态:** Phase 4 已完成 (v1.4.0)
+**状态:** Phase 5 已完成 (v1.5.0)
 **创建日期:** 2026-02-25
 
 ## 项目目标
@@ -318,6 +318,49 @@ python src/main.py
 
 ## 功能实现记录
 
+### 2026-03-31: Phase 5 — 体验打磨 + 多币种 + 快捷记账 ✅
+
+**实现内容:**
+
+**快捷记账功能:**
+- 新增 TransactionTemplate 模型：常用交易一键填充，首页显示快捷按钮（按使用频率排序，最多 6 个）
+- 新增 RecurringTransaction 模型：定期交易自动生成（月/周/自定义周期），首页访问时触发，支持多日补漏
+- 新增 2 个蓝图路由 + 2 个管理页面（设置 ▾ → 快捷模板 / 定期交易）
+
+**多币种支持:**
+- Account 模型新增 currency 字段（CNY/HKD/USD）
+- AccountBalance 模型新增 note 字段（快照备注）
+- 投资账户创建时可选币种，列表显示原币余额 + 人民币换算
+- 资产总额按实时汇率（exchangerate-api.com，1 小时缓存）换算人民币后求和
+
+**批量录入快照:**
+- 全屏模态框表格式布局（860px 宽），所有账户一次性填写
+- 5 列表格：账户 | 上月余额 | 本月余额 | 变化 | 备注
+- 投资账户支持币种选择 + 实时人民币换算显示
+- 变化量输入时即时计算
+
+**页面布局统一:**
+- 账户管理：储蓄/投资账户改为表格式（账户名/类型/所属/余额/操作）
+- 储蓄计划：计划列表改为表格式（计划名/类型/年份/已储蓄/进度条/操作）
+- 储蓄记录：独立模块，表格形式（日期/计划/金额/备注/操作人/录入时间）
+- 宝宝基金：每条记录显示操作人 + UTC+8 录入时间
+- 账户名按字母排序
+
+**基础设施:**
+- Nginx 静态文件缓存改为 no-cache（解决 CSS 更新后浏览器不刷新）
+- GitHub 镜像加速（ghfast.top），解决服务器 git pull 超时
+- Drawer 添加 visibility:hidden 防止闪现
+- 所有时间显示 UTC+8（timedelta context processor）
+
+**新增文件:**
+- `src/routes/template.py` — 快捷模板 CRUD
+- `src/routes/recurring.py` — 定期交易 CRUD + 自动执行
+- `src/templates/quick_templates.html` — 快捷模板管理页面
+- `src/templates/recurring.html` — 定期交易管理页面
+
+**设计文档:** `docs/superpowers/specs/2026-03-28-quick-entry-design.md`
+**实施计划:** `docs/superpowers/plans/2026-03-28-quick-entry-plan.md`
+
 ### 2026-03-26: Phase 4 — UI 体验优化 ✅
 
 **实现内容:**
@@ -417,6 +460,23 @@ python src/main.py
 **原因:** SQLite 的 `db.create_all()` 只创建不存在的表，不会 ALTER 已有表
 **解决:** 部署时必须手动执行 `ALTER TABLE xxx ADD COLUMN yyy`
 **经验:** 每次模型新增字段，部署脚本应包含 ALTER TABLE 语句。已发生 3 次（recurring_transactions 表、transaction_templates 表、accounts.currency + account_balance.note）。未来考虑引入 Flask-Migrate 做数据库迁移管理。
+
+### 2026-03-31: Phase 5 体验打磨经验
+
+**问题 1:** Nginx 缓存导致 CSS/JS 更新后浏览器不刷新
+**原因:** deploy.sh 配置了 `expires 7d`，浏览器缓存旧的静态文件长达 7 天
+**解决:** 将 Nginx 静态文件配置改为 `expires off; add_header Cache-Control no-cache`
+**经验:** 开发阶段不应缓存静态文件。生产环境可用文件名 hash 做缓存破坏
+
+**问题 2:** 批量快照面板 grid 布局在生产环境不生效
+**原因:** 内嵌在页面中的 grid 表格被外层 CSS 覆盖，导致 5 列 grid 变成单列堆叠
+**解决:** 先改抽屉弹窗，再改全屏模态框。最终用全屏模态框 + inline style grid 解决
+**经验:** 复杂布局优先用模态框（独立层级），避免被页面其他 CSS 影响
+
+**问题 3:** 子代理并行修改 main.py 时的 timedelta context processor 冲突
+**原因:** 3 个子代理都需要添加 timedelta context processor，可能重复添加
+**解决:** 第一个完成的子代理添加了 context processor，后续子代理检测到已存在后跳过
+**经验:** 并行子代理共享文件时，需在提示词中说明"检查是否已存在再添加"
 
 ### 2026-03-26: Phase 4 UI 优化经验
 
@@ -552,5 +612,5 @@ curl -sSL https://raw.githubusercontent.com/candyxiao9216/family-finance/main/de
 
 ---
 
-**最后更新:** 2026-03-26
-**文档版本:** 1.4.0
+**最后更新:** 2026-03-31
+**文档版本:** 1.5.0
