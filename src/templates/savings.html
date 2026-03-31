@@ -103,17 +103,6 @@
                             <button type="submit" class="btn-delete-cat" data-confirm-delete data-confirm-message="确定删除计划「{{ item.plan.name }}」及其所有记录？">删除</button>
                         </form>
                     </div>
-                    {% if item.records %}
-                    <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--color-border-light);">
-                        <div style="font-size:12px;color:var(--color-text-muted);margin-bottom:4px;">录入记录</div>
-                        {% for r in item.records %}
-                        <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;color:var(--color-text-secondary);">
-                            <span>{{ r.record_date.strftime('%Y-%m-%d') }} · ¥{{ "%.2f"|format(r.amount|float) }}{% if r.description %} · {{ r.description }}{% endif %}</span>
-                            <span>{{ r.recorder.nickname or r.recorder.username if r.recorder else '-' }} · {{ (r.created_at + timedelta(hours=8)).strftime('%m-%d %H:%M') if r.created_at else '' }}</span>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
                 </div>
                 {% endfor %}
             </div>
@@ -128,6 +117,46 @@
             </div>
         </div>
         {% endif %}
+
+        <!-- 储蓄记录 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">储蓄记录</h2>
+                <span class="account-count">{{ all_records|length }} 条</span>
+            </div>
+            {% if all_records %}
+            <div class="snapshot-table-wrap">
+                <table class="snapshot-table">
+                    <thead>
+                        <tr>
+                            <th>日期</th>
+                            <th>计划</th>
+                            <th>金额</th>
+                            <th>备注</th>
+                            <th>操作人</th>
+                            <th>录入时间</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in all_records %}
+                        <tr>
+                            <td>{{ r.record_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ r.plan.name if r.plan else '-' }}</td>
+                            <td class="td-amount" style="color:var(--color-income);">¥{{ "%.2f"|format(r.amount|float) }}</td>
+                            <td>{{ r.description or '-' }}</td>
+                            <td>{{ r.recorder.nickname or r.recorder.username if r.recorder else '-' }}</td>
+                            <td class="td-meta">{{ (r.created_at + timedelta(hours=8)).strftime('%m-%d %H:%M') if r.created_at else '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <p class="empty-state-text">暂无储蓄记录</p>
+            </div>
+            {% endif %}
+        </div>
 
     <!-- ===== 浮层：创建储蓄计划 ===== -->
     <div class="drawer-overlay" id="overlay-plan"></div>

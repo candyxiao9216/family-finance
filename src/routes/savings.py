@@ -98,6 +98,7 @@ def savings_list():
                            total_saved=float(total_saved),
                            overall_progress=min(overall_progress, 100),
                            accounts=accounts,
+                           all_records=sorted(all_records, key=lambda r: r.created_at or datetime.min, reverse=True),
                            chart_labels=chart_labels,
                            chart_cumulative=chart_cumulative,
                            current_view=current_view,
