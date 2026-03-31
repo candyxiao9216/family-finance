@@ -69,42 +69,54 @@
         </div>
 
         {% if plan_data %}
-        <!-- 储蓄计划卡片 -->
+        <!-- 储蓄计划表格 -->
         <div class="card">
             <div class="card-header">
                 <h2 class="card-title">储蓄计划</h2>
                 <span class="account-count">{{ plan_data|length }} 个</span>
             </div>
-            <div class="account-list">
-                {% for item in plan_data %}
-                <div class="account-item savings">
-                    <div class="account-info">
-                        <span class="account-name">{{ item.plan.name }}</span>
-                        <span class="category-badge {{ 'default' if item.plan.type == 'monthly' else 'custom' }}">
-                            {{ '月度' if item.plan.type == 'monthly' else '年度' }}
-                        </span>
-                        <span class="account-owner">{{ item.plan.year }}年{% if item.plan.month %}{{ item.plan.month }}月{% endif %}</span>
-                    </div>
-                    <div class="account-balance">
-                        <span class="account-balance-value">¥{{ "%.2f"|format(item.saved) }} / ¥{{ "%.2f"|format(item.plan.target_amount|float) }}</span>
-                        <span class="account-owner">{{ "%.1f"|format(item.progress) }}%</span>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: {{ item.progress }}%"></div>
-                    </div>
-                    {% if item.chart_data %}
-                    <div style="position: relative; height: 80px; margin-top: 8px;">
-                        <canvas id="miniChart{{ item.plan.id }}"></canvas>
-                    </div>
-                    {% endif %}
-                    <div class="plan-actions">
-                        <button class="btn-delete-cat" onclick="openEditPlan({{ item.plan.id }}, '{{ item.plan.name }}', '{{ item.plan.target_amount }}')">编辑</button>
-                        <form action="{{ url_for('savings.delete_plan', plan_id=item.plan.id) }}" method="POST" style="display:inline">
-                            <button type="submit" class="btn-delete-cat" data-confirm-delete data-confirm-message="确定删除计划「{{ item.plan.name }}」及其所有记录？">删除</button>
-                        </form>
-                    </div>
-                </div>
-                {% endfor %}
+            <div class="snapshot-table-wrap">
+                <table class="snapshot-table">
+                    <thead>
+                        <tr>
+                            <th>计划名</th>
+                            <th>类型</th>
+                            <th>年份</th>
+                            <th>已储蓄 / 目标</th>
+                            <th>进度</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in plan_data %}
+                        <tr>
+                            <td style="font-weight:500;">{{ item.plan.name }}</td>
+                            <td><span class="category-badge {{ 'default' if item.plan.type == 'monthly' else 'custom' }}">{{ '月度' if item.plan.type == 'monthly' else '年度' }}</span></td>
+                            <td>{{ item.plan.year }}{% if item.plan.month %}年{{ item.plan.month }}月{% endif %}</td>
+                            <td class="td-amount">
+                                <div style="color:var(--color-income);">¥{{ "%.0f"|format(item.saved) }}</div>
+                                <div style="font-size:12px;color:var(--color-text-muted);">/ ¥{{ "%.0f"|format(item.plan.target_amount|float) }}</div>
+                            </td>
+                            <td style="min-width:120px;">
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <div class="progress-bar" style="flex:1;margin:0;">
+                                        <div class="progress-fill" style="width:{{ item.progress }}%"></div>
+                                    </div>
+                                    <span style="font-size:12px;color:var(--color-text-secondary);white-space:nowrap;">{{ "%.1f"|format(item.progress) }}%</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div style="display:flex;gap:4px;">
+                                    <button class="btn-delete-cat" onclick="openEditPlan({{ item.plan.id }}, '{{ item.plan.name }}', '{{ item.plan.target_amount }}')">编辑</button>
+                                    <form action="{{ url_for('savings.delete_plan', plan_id=item.plan.id) }}" method="POST" style="display:inline">
+                                        <button type="submit" class="btn-delete-cat" data-confirm-delete data-confirm-message="确定删除计划「{{ item.plan.name }}」及其所有记录？">删除</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
         {% else %}
