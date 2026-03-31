@@ -86,10 +86,9 @@
                         <thead>
                             <tr>
                                 <th>账户名</th>
-                                <th>币种</th>
+                                <th>类型</th>
                                 <th>所属</th>
                                 <th>余额</th>
-                                <th>≈人民币</th>
                                 <th>操作</th>
                             </tr>
                         </thead>
@@ -97,14 +96,12 @@
                             {% for a in investment_accounts %}
                             <tr>
                                 <td style="font-weight:500;">{{ a.name }}</td>
-                                <td><span class="category-badge custom">{{ a.currency or 'CNY' }}</span></td>
+                                <td><span class="category-badge default">{{ a.account_type.name }}</span></td>
                                 <td>{{ a.owner.nickname or a.owner.username if a.owner else '-' }}</td>
-                                <td class="td-amount">{{ "%.2f"|format(a.current_balance|float) }}</td>
-                                <td class="td-amount" style="color:var(--color-text-muted);">
+                                <td class="td-amount">
+                                    <div style="color:var(--color-text-primary);">{{ a.currency or 'CNY' }} {{ "%.2f"|format(a.current_balance|float) }}</div>
                                     {% if a.currency and a.currency != 'CNY' %}
-                                    ≈¥{{ "%.0f"|format(a.current_balance|float * exchange_rates.get(a.currency, 1)) }}
-                                    {% else %}
-                                    ¥{{ "%.2f"|format(a.current_balance|float) }}
+                                    <div style="font-size:12px;color:var(--color-text-muted);">≈ ¥{{ "%.0f"|format(a.current_balance|float * exchange_rates.get(a.currency, 1)) }}</div>
                                     {% endif %}
                                 </td>
                                 <td>
