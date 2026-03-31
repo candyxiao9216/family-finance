@@ -47,6 +47,7 @@ def savings_list():
             'plan': plan,
             'saved': float(saved),
             'progress': min(progress, 100),
+            'records': plan.records,
         })
         total_target += plan.target_amount
         total_saved += saved
