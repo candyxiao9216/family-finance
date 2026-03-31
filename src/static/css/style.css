@@ -2325,7 +2325,15 @@ button.loading::after {
 
 /* --- 宽抽屉（批量录入用） --- */
 .drawer-wide {
-    max-width: 520px;
+    max-width: 680px;
+    width: 90vw;
+}
+
+@media (max-width: 767px) {
+    .drawer-wide {
+        max-width: 100%;
+        width: 100%;
+    }
 }
 
 /* --- 批量录入快照面板（已废弃，保留兼容） --- */

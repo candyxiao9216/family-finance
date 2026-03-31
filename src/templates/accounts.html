@@ -313,24 +313,24 @@
                         {% endif %}
                     </div>
                     <div style="display:flex;gap:8px;align-items:center;">
-                        <select name="currency_{{ a.id }}" class="form-select" style="width:80px;padding:8px 4px;font-size:13px;"
+                        <select name="currency_{{ a.id }}" class="form-select" style="width:80px;padding:8px 4px;font-size:13px;flex-shrink:0;"
                                 data-aid="{{ a.id }}" onchange="updateCurrencyDisplay(this)">
                             <option value="HKD" {{ 'selected' if (a.currency or 'HKD') == 'HKD' }}>港币</option>
                             <option value="CNY" {{ 'selected' if a.currency == 'CNY' }}>人民币</option>
                             <option value="USD" {{ 'selected' if a.currency == 'USD' }}>美元</option>
                         </select>
                         <input type="number" name="balance_{{ a.id }}" class="form-input" placeholder="本月余额" step="0.01" min="0"
-                               style="flex:1;"
+                               style="flex:1.2;"
                                data-prev="{{ prev_snapshots[a.id].balance|float if prev_snapshots.get(a.id) else '' }}"
                                data-currency="{{ a.currency or 'HKD' }}" data-aid="{{ a.id }}"
                                oninput="calcChange(this)">
-                    </div>
-                    <div style="display:flex;gap:8px;margin-top:6px;">
                         <input type="text" name="note_{{ a.id }}" class="form-input" placeholder="备注" maxlength="200"
                                style="flex:1;font-size:13px;">
                     </div>
-                    <div id="change_{{ a.id }}" style="font-size:12px;margin-top:4px;min-height:16px;"></div>
-                    <div id="cny_{{ a.id }}" style="font-size:12px;color:var(--color-text-muted);min-height:16px;"></div>
+                    <div style="display:flex;gap:12px;margin-top:4px;">
+                        <span id="change_{{ a.id }}" style="font-size:12px;min-height:16px;"></span>
+                        <span id="cny_{{ a.id }}" style="font-size:12px;color:var(--color-text-muted);"></span>
+                    </div>
                 </div>
                 {% endfor %}
                 {% endif %}
