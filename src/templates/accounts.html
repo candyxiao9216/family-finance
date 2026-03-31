@@ -204,7 +204,7 @@
                                     {% endif %}
                                 </td>
                                 <td>{{ s.recorder.nickname or s.recorder.username if s.recorder else '-' }}</td>
-                                <td class="td-meta">{{ s.created_at.strftime('%m-%d %H:%M') if s.created_at else '-' }}</td>
+                                <td class="td-meta">{{ (s.created_at + timedelta(hours=8)).strftime('%m-%d %H:%M') if s.created_at else '-' }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>

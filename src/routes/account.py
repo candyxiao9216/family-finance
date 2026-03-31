@@ -36,12 +36,13 @@ def account_list():
     account_types = AccountType.query.all()
 
     # 按类型分组
-    savings_accounts = [a for a in accounts if a.account_type and a.account_type.category == 'savings']
-    investment_accounts = [a for a in accounts if a.account_type and a.account_type.category == 'investment']
+    savings_accounts = sorted([a for a in accounts if a.account_type and a.account_type.category == 'savings'], key=lambda a: a.name)
+    investment_accounts = sorted([a for a in accounts if a.account_type and a.account_type.category == 'investment'], key=lambda a: a.name)
 
-    # 计算各组合计
-    savings_total = sum(float(a.current_balance) for a in savings_accounts)
-    investment_total = sum(float(a.current_balance) for a in investment_accounts)
+    # 计算各组合计（外币转换为人民币）
+    rates = _get_exchange_rates()
+    savings_total = sum(float(a.current_balance) * rates.get(a.currency or 'CNY', 1.0) for a in savings_accounts)
+    investment_total = sum(float(a.current_balance) * rates.get(a.currency or 'CNY', 1.0) for a in investment_accounts)
 
     # 获取本月快照记录
     this_month = date.today().replace(day=1)
