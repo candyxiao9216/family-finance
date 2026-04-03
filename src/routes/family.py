@@ -36,7 +36,9 @@ def family_info():
 
     return render_template('family/info.html',
                          family=family,
-                         user=user)
+                         user=user,
+                         current_view=request.args.get('view', 'personal'),
+                         username=session.get('nickname', session.get('username', '用户')))
 
 
 @family_bp.route('/members')
