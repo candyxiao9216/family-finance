@@ -3,19 +3,25 @@
 实现注册、登录、登出功能，支持家庭创建和加入
 """
 
-import random
-import string
+import secrets
+import logging
+from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from models import db, User, Family
+
+logger = logging.getLogger(__name__)
 
 # 创建认证蓝图
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
+# 登录暴力破解防护配置
+MAX_LOGIN_FAILURES = 5
+LOCKOUT_DURATION_MINUTES = 5
+
 
 def generate_invite_code(length=8):
-    """生成随机邀请码"""
-    characters = string.ascii_uppercase + string.digits
-    return ''.join(random.choice(characters) for _ in range(length))
+    """生成随机邀请码（使用密码学安全的随机数生成器）"""
+    return secrets.token_urlsafe(6).upper()[:length]
 
 
 def create_family_for_first_user(user):
@@ -123,7 +129,8 @@ def register():
 
         except Exception as e:
             db.session.rollback()
-            flash(f'注册失败：{str(e)}', 'error')
+            logger.error(f'用户注册失败（用户名: {username}）：{str(e)}')
+            flash('注册失败，请重试', 'error')
             return render_template('auth/register-redesigned.html')
 
     return render_template('auth/register-redesigned.html')
@@ -144,19 +151,49 @@ def login():
             flash('用户名和密码不能为空', 'error')
             return render_template('auth/login-redesigned.html')
 
+        # 暴力破解防护：检查是否被锁定
+        fail_key = f'login_failures_{username}'
+        lockout_key = f'login_lockout_{username}'
+        lockout_until = session.get(lockout_key)
+
+        if lockout_until:
+            lockout_time = datetime.fromisoformat(lockout_until)
+            if datetime.now() < lockout_time:
+                remaining = int((lockout_time - datetime.now()).total_seconds() / 60) + 1
+                flash(f'登录失败次数过多，请 {remaining} 分钟后重试', 'error')
+                return render_template('auth/login-redesigned.html')
+            else:
+                # 锁定已过期，清除
+                session.pop(fail_key, None)
+                session.pop(lockout_key, None)
+
         # 验证用户
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
-            # 登录成功
+            # 登录成功，清除失败计数
+            session.pop(fail_key, None)
+            session.pop(lockout_key, None)
+
             session['user_id'] = user.id
             session['username'] = user.username
             session['nickname'] = user.nickname
             session['family_id'] = user.family_id
+            session.permanent = True  # 启用会话过期
 
             flash(f'欢迎回来，{user.nickname}！', 'success')
             return redirect(url_for('index'))
         else:
-            flash('用户名或密码错误', 'error')
+            # 登录失败，累加失败计数
+            failures = session.get(fail_key, 0) + 1
+            session[fail_key] = failures
+
+            if failures >= MAX_LOGIN_FAILURES:
+                lockout_time = datetime.now() + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
+                session[lockout_key] = lockout_time.isoformat()
+                flash(f'登录失败次数过多，账号已锁定 {LOCKOUT_DURATION_MINUTES} 分钟', 'error')
+            else:
+                flash('用户名或密码错误', 'error')
+
             return render_template('auth/login-redesigned.html')
 
     return render_template('auth/login-redesigned.html')

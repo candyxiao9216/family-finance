@@ -1,3 +1,5 @@
+from datetime import timedelta
+from datetime import timedelta
 from flask import Flask
 from models import db, Category, DEFAULT_CATEGORIES, AccountType, DEFAULT_ACCOUNT_TYPES
 from config import BASE_DIR, SQLALCHEMY_DATABASE_URI, SQLALCHEMY_TRACK_MODIFICATIONS, SECRET_KEY
@@ -36,6 +38,7 @@ def create_app() -> Flask:
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = SQLALCHEMY_TRACK_MODIFICATIONS
     app.config['SECRET_KEY'] = SECRET_KEY
     app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)  # 会话 24 小时过期
 
     # 初始化数据库
     db.init_app(app)

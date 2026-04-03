@@ -1,6 +1,7 @@
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 
+# TODO: [安全] 添加 CSRF 防护（flask-wtf），当前为家庭内部应用暂未实施
 from flask import Flask, redirect, render_template, request, url_for
 from sqlalchemy import func, extract, case
 
@@ -48,11 +49,7 @@ def require_login():
             return redirect(url_for('auth.login'))
 
 
-@app.route('/init-db')
-def init_db_route():
-    """初始化数据库（开发用路由）"""
-    init_database(app)
-    return "数据库初始化成功！<a href='/'>返回首页</a>"
+# 安全修复：已删除 /init-db 公开路由，生产环境通过 deploy.sh CLI 初始化数据库
 
 
 @app.route('/')
@@ -329,7 +326,10 @@ def delete_transaction(transaction_id):
 
 
 if __name__ == '__main__':
+    import os
     # 首次运行时初始化数据库
     init_database(app)
     # 使用 5001 端口避免与 macOS AirPlay Receiver 冲突
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    # 安全修复：debug 模式通过环境变量控制，生产环境禁止开启
+    app.run(host='0.0.0.0', port=5001,
+            debug=os.environ.get('FLASK_DEBUG', 'False').lower() == 'true')

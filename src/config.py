@@ -12,5 +12,6 @@ SQLALCHEMY_DATABASE_URI = f'sqlite:///{DATABASE_PATH}'
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 # 应用配置
+# 安全提醒：生产环境必须通过 .env 设置 SECRET_KEY，禁止使用默认值
 SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 DEBUG = os.environ.get('FLASK_DEBUG', 'True') == 'True'
