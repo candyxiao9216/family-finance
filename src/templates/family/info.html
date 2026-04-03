@@ -192,7 +192,7 @@
             }
 
             $.ajax({
-                url: '{{ url_for("family.regenerate_invite") }}',
+                url: '{{ url_for("family.regenerate_invite_code") }}',
                 method: 'POST',
                 success: function(response) {
                     if (response.success) {
