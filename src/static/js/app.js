@@ -131,7 +131,7 @@
 
   // ── 财务数据隐藏（小眼睛） ──────────────────────────────────
   var HIDDEN_KEY = 'ff_data_hidden';
-  var isHidden = localStorage.getItem(HIDDEN_KEY) === '1';
+  var isHidden = localStorage.getItem(HIDDEN_KEY) !== '0'; // 默认隐藏
 
   // 在每个统计栏上方插入眼睛按钮
   var statsBars = document.querySelectorAll('.stats-bar');
