@@ -318,6 +318,35 @@ python src/main.py
 
 ## 功能实现记录
 
+### 2026-04-03: 安全扫描 + 修复 ✅
+
+**扫描方式:** Bandit 自动扫描 + 手动代码审查，共发现 14 个问题（4 高/5 中/5 低）
+
+**已修复（10 项）:**
+- debug=True 硬编码 → 改为环境变量控制
+- /init-db 路由公开暴露 → 已删除
+- 登录无暴力破解防护 → session 记录失败次数，5 次锁定 5 分钟
+- SECRET_KEY 有默认值 → 添加安全提醒注释
+- 异常信息泄露给用户 → 改为通用错误提示
+- 邀请码用 random 生成 → 改用 secrets 模块
+- 会话无过期时间 → 设置 24 小时过期
+- 密码强度要求过低 → 最低 8 位 + 必须含字母和数字
+- Decimal 无范围校验 → 金额限制 0 ~ 999 万
+- 家庭页面 endpoint 错误 → 修复 regenerate_invite → regenerate_invite_code
+
+**已知问题（4 项，记录为技术债）:**
+- CSRF 防护缺失（需安装 flask-wtf，家庭内部使用风险低）
+- 文件上传缺 MIME 校验（目前靠扩展名过滤）
+- urlopen 汇率 API 无 SSRF 限制（URL 硬编码，当前安全）
+- 开发模式绑定 0.0.0.0（生产环境 Gunicorn 已安全）
+
+**安全亮点（原本就做得好的）:**
+- 密码 pbkdf2 哈希存储 ✅
+- SQLAlchemy ORM 防 SQL 注入 ✅
+- Jinja2 自动转义防 XSS ✅
+- CSV 注入防护 ✅
+- .gitignore 包含敏感文件 ✅
+
 ### 2026-03-31: Phase 5 — 体验打磨 + 多币种 + 快捷记账 ✅
 
 **实现内容:**
@@ -612,5 +641,5 @@ curl -sSL https://raw.githubusercontent.com/candyxiao9216/family-finance/main/de
 
 ---
 
-**最后更新:** 2026-03-31
-**文档版本:** 1.5.0
+**最后更新:** 2026-04-03
+**文档版本:** 1.5.1
