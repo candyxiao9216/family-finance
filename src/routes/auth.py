@@ -82,8 +82,12 @@ def register():
             flash('用户名长度必须在3-20个字符之间', 'error')
             return render_template('auth/register-redesigned.html')
 
-        if len(password) < 6:
-            flash('密码长度不能少于6个字符', 'error')
+        if len(password) < 8:
+            flash('密码长度不能少于8个字符', 'error')
+            return render_template('auth/register-redesigned.html')
+
+        if not any(c.isalpha() for c in password) or not any(c.isdigit() for c in password):
+            flash('密码必须同时包含字母和数字', 'error')
             return render_template('auth/register-redesigned.html')
 
         # 检查用户名是否已存在

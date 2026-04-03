@@ -153,6 +153,16 @@ def add_transaction():
     if not all([transaction_type, amount, category_id, transaction_date_str]):
         return "缺少必填字段", 400
 
+    # 金额范围校验
+    try:
+        amount_val = float(amount)
+        if amount_val <= 0 or amount_val > 9999999:
+            flash('金额必须在 0 ~ 9,999,999 之间', 'error')
+            return redirect(url_for('index'))
+    except (ValueError, TypeError):
+        flash('金额格式错误', 'error')
+        return redirect(url_for('index'))
+
     try:
         transaction_date = datetime.strptime(transaction_date_str, '%Y-%m-%d').date()
     except ValueError:
