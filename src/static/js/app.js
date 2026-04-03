@@ -129,4 +129,44 @@
     dateEl.textContent = now.toLocaleDateString('zh-CN', options);
   }
 
+  // ── 财务数据隐藏（小眼睛） ──────────────────────────────────
+  var HIDDEN_KEY = 'ff_data_hidden';
+  var isHidden = localStorage.getItem(HIDDEN_KEY) === '1';
+
+  // 在每个统计栏上方插入眼睛按钮
+  var statsBars = document.querySelectorAll('.stats-bar');
+  statsBars.forEach(function(bar) {
+    var wrapper = document.createElement('div');
+    wrapper.style.cssText = 'display:flex;justify-content:flex-end;margin-bottom:-8px;';
+    var eyeBtn = document.createElement('button');
+    eyeBtn.className = 'eye-toggle';
+    eyeBtn.type = 'button';
+    eyeBtn.innerHTML = isHidden ? '🙈' : '👁';
+    eyeBtn.title = isHidden ? '显示数据' : '隐藏数据';
+    eyeBtn.addEventListener('click', function() {
+      isHidden = !isHidden;
+      localStorage.setItem(HIDDEN_KEY, isHidden ? '1' : '0');
+      applyDataVisibility();
+      document.querySelectorAll('.eye-toggle').forEach(function(btn) {
+        btn.innerHTML = isHidden ? '🙈' : '👁';
+        btn.title = isHidden ? '显示数据' : '隐藏数据';
+      });
+    });
+    wrapper.appendChild(eyeBtn);
+    bar.parentNode.insertBefore(wrapper, bar);
+  });
+
+  function applyDataVisibility() {
+    document.querySelectorAll('.stat-value').forEach(function(el) {
+      if (isHidden) {
+        if (!el.dataset.original) el.dataset.original = el.textContent;
+        el.textContent = '****';
+      } else {
+        if (el.dataset.original) el.textContent = el.dataset.original;
+      }
+    });
+  }
+
+  if (isHidden) applyDataVisibility();
+
 })();

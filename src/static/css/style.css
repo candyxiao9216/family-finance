@@ -2499,3 +2499,20 @@ button.loading::after {
     .batch-prev::before { content: "上月: "; }
     .batch-change::before { content: "变化: "; }
 }
+
+/* --- 数据隐藏眼睛按钮 --- */
+.eye-toggle {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px 8px;
+    opacity: 0.5;
+    transition: opacity var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.eye-toggle:hover {
+    opacity: 1;
+}
+}
