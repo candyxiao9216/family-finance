@@ -32,13 +32,12 @@
         </div>
 
         {% if savings_accounts or investment_accounts %}
-        <!-- 储蓄 + 投资账户并排表格 -->
-        <div class="accounts-grid">
-            <div class="card">
-                <div class="card-header">
-                    <h2 class="card-title">储蓄账户</h2>
-                    <span class="account-count">{{ savings_accounts|length }} 个</span>
-                </div>
+        <!-- 储蓄账户 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">储蓄账户</h2>
+                <span class="account-count">{{ savings_accounts|length }} 个</span>
+            </div>
                 {% if savings_accounts %}
                 <div class="snapshot-table-wrap">
                     <table class="snapshot-table">
@@ -73,10 +72,11 @@
                     <p class="empty-state-text">暂无储蓄账户</p>
                 </div>
                 {% endif %}
-            </div>
+        </div>
 
-            <div class="card">
-                <div class="card-header">
+        <!-- 投资账户 -->
+        <div class="card">
+            <div class="card-header">
                     <h2 class="card-title">投资账户</h2>
                     <span class="account-count">{{ investment_accounts|length }} 个</span>
                 </div>
@@ -119,7 +119,6 @@
                     <p class="empty-state-text">暂无投资账户</p>
                 </div>
                 {% endif %}
-            </div>
         </div>
 
         {% else %}
