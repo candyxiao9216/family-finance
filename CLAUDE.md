@@ -318,6 +318,45 @@ python src/main.py
 
 ## 功能实现记录
 
+### 2026-04-04: Phase 6 — 体验细节优化 ✅
+
+**实现内容:**
+
+**千分位金额格式:**
+- 在 database.py 注册 Jinja2 `currency` 自定义过滤器（支持 0/1/2 位小数）
+- 替换所有模板中的 `"%.2f"|format` 为 `|currency`，含 accounts/savings/baby_fund/index/recurring/quick_templates 共 6 个模板
+- upload.html 的 JS `toFixed(2)` 改为 `toLocaleString`
+
+**账户列表左右两列精简排版:**
+- 用 `.acct-grid` 两列 grid 布局替代上下排列的表格
+- 每行精简为：账户名（含类型 badge + 归属人彩色圆形 icon）| 余额 | 操作
+- 归属人 icon 按用户区分颜色：小帅=莫兰迪蓝(#6B9EB5)、小美=莫兰迪紫(#9B8EC4)
+- 移动端自动降为单列
+
+**首页交易列表分页:**
+- main.py 用 SQLAlchemy `paginate(per_page=10)` 替代 `.all()`
+- index.html 底部添加分页导航（上/下页 + 页码 + 省略号）
+- 分页样式：圆角按钮，当前页高亮
+
+**储蓄计划 / 宝宝基金去除个人视图:**
+- savings.py 和 baby_fund.py 的 `current_view` 固定为 `'family'`
+- 删除两个模板中的「我的/家庭」视图切换按钮
+- 无家庭用户自动回退到个人数据
+
+**新增/修改文件:**
+- `src/database.py` — 新增 currency 过滤器
+- `src/static/css/style.css` — 新增 acct-grid/acct-compact-*/pagination 样式 + owner icon 颜色
+- `src/templates/accounts.html` — 两列精简布局 + 彩色归属 icon
+- `src/templates/index.html` — 分页导航
+- `src/templates/savings.html` — 去除视图切换 + currency 过滤器
+- `src/templates/baby_fund.html` — 去除视图切换 + currency 过滤器
+- `src/templates/quick_templates.html` — currency 过滤器
+- `src/templates/recurring.html` — currency 过滤器
+- `src/templates/upload.html` — JS toLocaleString
+- `src/main.py` — 分页查询
+- `src/routes/savings.py` — 固定 family 视图
+- `src/routes/baby_fund.py` — 固定 family 视图
+
 ### 2026-04-03: 安全扫描 + 修复 ✅
 
 **扫描方式:** Bandit 自动扫描 + 手动代码审查，共发现 14 个问题（4 高/5 中/5 低）
@@ -641,5 +680,5 @@ curl -sSL https://raw.githubusercontent.com/candyxiao9216/family-finance/main/de
 
 ---
 
-**最后更新:** 2026-04-03
-**文档版本:** 1.5.1
+**最后更新:** 2026-04-04
+**文档版本:** 1.6.0
