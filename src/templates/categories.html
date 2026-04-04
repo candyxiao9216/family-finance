@@ -43,14 +43,12 @@
                                 {{ '系统' if c.is_default else '自定义' }}
                             </span>
                         </div>
-                        {% if not c.is_default %}
                         <div style="display:flex;gap:4px;">
                             <button class="btn-delete-cat" onclick="openEditCategory({{ c.id }}, '{{ c.name }}')">修改</button>
                             <form action="{{ url_for('category.category_delete', category_id=c.id) }}" method="POST" class="delete-form">
                                 <button type="submit" class="btn-delete-cat" data-confirm-delete data-confirm-message="确定删除分类「{{ c.name }}」？关联的交易将变为未分类。">删除</button>
                             </form>
                         </div>
-                        {% endif %}
                     </div>
                     {% endfor %}
                 {% else %}
@@ -77,14 +75,12 @@
                                 {{ '系统' if c.is_default else '自定义' }}
                             </span>
                         </div>
-                        {% if not c.is_default %}
                         <div style="display:flex;gap:4px;">
                             <button class="btn-delete-cat" onclick="openEditCategory({{ c.id }}, '{{ c.name }}')">修改</button>
                             <form action="{{ url_for('category.category_delete', category_id=c.id) }}" method="POST" class="delete-form">
                                 <button type="submit" class="btn-delete-cat" data-confirm-delete data-confirm-message="确定删除分类「{{ c.name }}」？关联的交易将变为未分类。">删除</button>
                             </form>
                         </div>
-                        {% endif %}
                     </div>
                     {% endfor %}
                 {% else %}

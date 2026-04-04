@@ -76,11 +76,7 @@ def category_edit(category_id):
 
     category = Category.query.get_or_404(category_id)
 
-    if category.is_default:
-        flash('系统默认分类不可修改', 'error')
-        return redirect(url_for('category.category_list'))
-
-    if category.user_id != user_id:
+    if category.user_id is not None and category.user_id != user_id:
         flash('无权修改此分类', 'error')
         return redirect(url_for('category.category_list'))
 
@@ -116,13 +112,8 @@ def category_delete(category_id):
 
     category = Category.query.get_or_404(category_id)
 
-    # 系统默认分类不可删除
-    if category.is_default:
-        flash('系统默认分类不可删除', 'error')
-        return redirect(url_for('category.category_list'))
-
-    # 只能删除自己创建的分类
-    if category.user_id != user_id:
+    # 只能删除自己创建的分类（系统分类所有人可删）
+    if category.user_id is not None and category.user_id != user_id:
         flash('无权删除此分类', 'error')
         return redirect(url_for('category.category_list'))
 
