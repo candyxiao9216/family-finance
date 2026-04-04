@@ -133,11 +133,22 @@
   var HIDDEN_KEY = 'ff_data_hidden';
   var isHidden = localStorage.getItem(HIDDEN_KEY) !== '0'; // 默认隐藏
 
-  // 在每个统计栏上方插入眼睛按钮
+  // 需要隐藏金额的选择器（覆盖所有页面）
+  var AMOUNT_SELECTORS = '.stat-value, .dash-stat-value, .asset-row-value, .amount-hide';
+
+  // 插入眼睛按钮的锚点：.stats-bar（子页面）或 .dashboard-card:first-child .dashboard-card-header（首页仪表盘）
+  var eyeAnchors = [];
   var statsBars = document.querySelectorAll('.stats-bar');
   statsBars.forEach(function(bar) {
-    var wrapper = document.createElement('div');
-    wrapper.style.cssText = 'display:flex;justify-content:flex-end;margin-bottom:-8px;';
+    eyeAnchors.push({ target: bar, mode: 'before' });
+  });
+  // 首页仪表盘：在第一个卡片头部插入
+  var dashHeader = document.querySelector('.dashboard-card .dashboard-card-header');
+  if (dashHeader && eyeAnchors.length === 0) {
+    eyeAnchors.push({ target: dashHeader, mode: 'inside' });
+  }
+
+  eyeAnchors.forEach(function(anchor) {
     var eyeBtn = document.createElement('button');
     eyeBtn.className = 'eye-toggle';
     eyeBtn.type = 'button';
@@ -152,12 +163,22 @@
         btn.title = isHidden ? '显示数据' : '隐藏数据';
       });
     });
-    wrapper.appendChild(eyeBtn);
-    bar.parentNode.insertBefore(wrapper, bar);
+
+    if (anchor.mode === 'inside') {
+      // 插入到 header 内部右侧
+      eyeBtn.style.marginLeft = 'auto';
+      anchor.target.appendChild(eyeBtn);
+    } else {
+      // 插入到 stats-bar 上方
+      var wrapper = document.createElement('div');
+      wrapper.style.cssText = 'display:flex;justify-content:flex-end;margin-bottom:-8px;';
+      wrapper.appendChild(eyeBtn);
+      anchor.target.parentNode.insertBefore(wrapper, anchor.target);
+    }
   });
 
   function applyDataVisibility() {
-    document.querySelectorAll('.stat-value').forEach(function(el) {
+    document.querySelectorAll(AMOUNT_SELECTORS).forEach(function(el) {
       if (isHidden) {
         if (!el.dataset.original) el.dataset.original = el.textContent;
         el.textContent = '****';
@@ -166,6 +187,15 @@
       }
     });
   }
+
+  // 暴露给页面内联脚本，用于 JS 动态赋值后重新隐藏
+  window.ffReapplyHide = function() {
+    // 先清除缓存的 original，重新读取当前值
+    document.querySelectorAll(AMOUNT_SELECTORS).forEach(function(el) {
+      delete el.dataset.original;
+    });
+    if (isHidden) applyDataVisibility();
+  };
 
   if (isHidden) applyDataVisibility();
 

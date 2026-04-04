@@ -242,7 +242,7 @@
             </div>
             <div class="savings-progress-text" id="dash-progress-text">0%</div>
             <div class="savings-detail-row">
-                <span>剩余 <span id="dash-remaining">¥0</span></span>
+                <span>剩余 <span id="dash-remaining" class="amount-hide">¥0</span></span>
                 <span>完成率 <span id="dash-progress-pct">0%</span></span>
             </div>
         </div>
@@ -349,5 +349,8 @@
             console.warn('趋势图加载失败', e);
         }
     })();
+
+    // JS 动态赋值完成后，重新应用小眼睛隐藏
+    if (window.ffReapplyHide) window.ffReapplyHide();
 </script>
 {% endblock %}
