@@ -22,12 +22,13 @@
                 <span class="username">{{ username }}</span>
                 <div class="user-actions">
                     <a href="{{ url_for('index') }}" class="nav-link">首页</a>
-                    <a href="{{ url_for('account.account_list') }}" class="nav-link">账户</a>
-                    <a href="{{ url_for('savings.savings_list') }}" class="nav-link">储蓄</a>
+                    <a href="{{ url_for('account.account_list') }}" class="nav-link">资产总览</a>
+                    <a href="{{ url_for('savings.savings_list') }}" class="nav-link">储蓄计划</a>
                     <a href="{{ url_for('baby_fund.baby_fund_list') }}" class="nav-link">宝宝基金</a>
                     <div class="nav-dropdown">
                         <a href="#" class="nav-link nav-dropdown-trigger">管理 ▾</a>
                         <div class="nav-dropdown-menu">
+                            <a href="{{ url_for('transaction.transaction_list') }}" class="nav-dropdown-item">月度收支</a>
                             <a href="{{ url_for('category.category_list') }}" class="nav-dropdown-item">分类管理</a>
                             <a href="{{ url_for('template.template_list') }}" class="nav-dropdown-item">快捷模板</a>
                             <a href="{{ url_for('recurring.recurring_list') }}" class="nav-dropdown-item">定期交易</a>
@@ -66,10 +67,11 @@
             <div class="side-menu-items">
                 <a href="{{ url_for('index') }}" class="side-menu-item">🏠 首页</a>
                 <div class="side-menu-divider"></div>
-                <a href="{{ url_for('account.account_list') }}" class="side-menu-item">💳 账户管理</a>
+                <a href="{{ url_for('account.account_list') }}" class="side-menu-item">💳 资产总览</a>
                 <a href="{{ url_for('savings.savings_list') }}" class="side-menu-item">🎯 储蓄计划</a>
                 <a href="{{ url_for('baby_fund.baby_fund_list') }}" class="side-menu-item">👶 宝宝基金</a>
                 <div class="side-menu-divider"></div>
+                <a href="{{ url_for('transaction.transaction_list') }}" class="side-menu-item">💵 月度收支</a>
                 <a href="{{ url_for('category.category_list') }}" class="side-menu-item">🏷️ 分类管理</a>
                 <a href="{{ url_for('template.template_list') }}" class="side-menu-item">⚡ 快捷模板</a>
                 <a href="{{ url_for('recurring.recurring_list') }}" class="side-menu-item">🔄 定期交易</a>
@@ -122,11 +124,11 @@
             </a>
             <a href="{{ url_for('account.account_list') }}" class="bottom-tab {% if '/accounts' in request.path %}active{% endif %}">
                 <span class="bottom-tab-icon">💳</span>
-                <span class="bottom-tab-label">账户</span>
+                <span class="bottom-tab-label">资产总览</span>
             </a>
             <a href="{{ url_for('savings.savings_list') }}" class="bottom-tab {% if '/savings' in request.path %}active{% endif %}">
                 <span class="bottom-tab-icon">🎯</span>
-                <span class="bottom-tab-label">储蓄</span>
+                <span class="bottom-tab-label">储蓄计划</span>
             </a>
             <button class="bottom-tab" id="more-tab-btn" type="button">
                 <span class="bottom-tab-icon">⚙️</span>

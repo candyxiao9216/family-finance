@@ -1,0 +1,367 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+{% endblock %}
+
+{% block content %}
+        <!-- 视图切换 -->
+        {% if family %}
+        <div class="view-switcher">
+            <a href="{{ url_for('transaction.transaction_list', view='personal') }}" class="view-btn {{ 'active' if current_view == 'personal' }}">我的</a>
+            <a href="{{ url_for('transaction.transaction_list', view='family') }}" class="view-btn {{ 'active' if current_view == 'family' }}">家庭</a>
+        </div>
+        {% if current_view == 'family' %}
+        <div class="family-bar">
+            <span class="family-name">{{ family.name }}</span>
+            <span class="family-meta">{{ family.members|length }} 位成员 · 邀请码 {{ family.invite_code }}</span>
+        </div>
+        {% endif %}
+        {% endif %}
+
+        <!-- 统计栏 -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-label">{{ stat_year }}年{{ stat_month }}月收入</div>
+                <div class="stat-value income" id="stat-income">¥0.00</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">{{ stat_year }}年{{ stat_month }}月支出</div>
+                <div class="stat-value expense" id="stat-expense">¥0.00</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">{{ stat_year }}年{{ stat_month }}月结余</div>
+                <div class="stat-value balance" id="stat-balance">¥0.00</div>
+            </div>
+        </div>
+
+        <!-- 迷你图表 -->
+        <div class="card chart-section">
+            <div class="card-header">
+                <h2 class="card-title">收支趋势</h2>
+                <a href="{{ url_for('reports.reports_page', view=current_view) }}" class="chart-detail-link">查看详情</a>
+            </div>
+            <div class="chart-container chart-container-mini">
+                <canvas id="miniTrendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 快捷录入 -->
+        {% if quick_templates %}
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">快捷录入</h2>
+                <a href="{{ url_for('template.template_list') }}" class="chart-detail-link">管理模板</a>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; padding: 16px;">
+                {% for tpl in quick_templates %}
+                <button class="quick-tpl-btn" type="button"
+                        data-amount="{{ tpl.amount }}"
+                        data-type="{{ tpl.type }}"
+                        data-category="{{ tpl.category_id or '' }}"
+                        data-description="{{ tpl.description or '' }}"
+                        data-account="{{ tpl.account_id or '' }}"
+                        data-id="{{ tpl.id }}"
+                        onclick="applyTemplate(this)">
+                    {{ tpl.name }} <span style="opacity:0.6">¥{{ tpl.amount|currency(0) }}</span>
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 添加交易表单 -->
+        <div class="card form-section" id="add-form">
+            <div class="card-header">
+                <h2 class="card-title">添加交易</h2>
+            </div>
+            <form action="/add" method="POST">
+                <div class="type-selector">
+                    <label class="type-option">
+                        <input type="radio" name="type" value="income" required>
+                        <span class="type-label income">💰 收入</span>
+                    </label>
+                    <label class="type-option">
+                        <input type="radio" name="type" value="expense" checked required>
+                        <span class="type-label expense">📤 支出</span>
+                    </label>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">金额</label>
+                        <input type="number" name="amount" class="form-input" placeholder="0.00" step="0.01" min="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">分类</label>
+                        <select name="category" class="form-select" required id="category-select">
+                            <option value="">选择分类</option>
+                            <optgroup label="收入">
+                                {% for c in categories if c.type == 'income' %}
+                                <option value="{{ c.id }}">{{ c.name }}</option>
+                                {% endfor %}
+                            </optgroup>
+                            <optgroup label="支出">
+                                {% for c in categories if c.type == 'expense' %}
+                                <option value="{{ c.id }}">{{ c.name }}</option>
+                                {% endfor %}
+                            </optgroup>
+                            <option value="__add_category__">+ 添加分类...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">账户（选填）</label>
+                        <select name="account_id" class="form-select">
+                            <option value="">不关联账户</option>
+                            {% for a in accounts %}
+                            <option value="{{ a.id }}">{{ a.name }}（{{ a.account_type.name }}）</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">日期</label>
+                        <input type="date" name="date" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">备注（选填）</label>
+                        <input type="text" name="description" class="form-input" placeholder="添加备注">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit">
+                    <span id="btn-text">添加记录</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- 交易列表 -->
+        <div class="card transactions-section">
+            <div class="card-header">
+                <h2 class="card-title">近期交易</h2>
+            </div>
+
+            <div class="transactions-list" id="transactions-list">
+                {% if transactions %}
+                    {% for t in transactions %}
+                    <div class="transaction-item {{ 'income' if t.type == 'income' else 'expense' }}">
+                        <div class="t-icon">
+                            {{ '💰' if t.type == 'income' else '📤' }}
+                        </div>
+                        <div class="t-info">
+                            <span class="t-description">{{ t.description or (t.category_name if t.category_name else '未分类') }}</span>
+                            <span class="t-meta">
+                                <span class="t-creator">{{ t.user.nickname or t.user.username }}</span>
+                                <span>·</span>
+                                <span>{{ t.category_name or '-' }}</span>
+                                <span>·</span>
+                                <span>{{ t.transaction_date }}</span>
+                                {% if t.modification_count %}
+                                <span class="t-modified" title="已修改 {{ t.modification_count }} 次">已修改</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="t-amount">
+                            {{ '+' if t.type == 'income' else '-' }}¥{{ t.amount|currency }}
+                        </div>
+                        <div class="t-actions">
+                            <a href="/edit/{{ t.id }}" class="btn-edit" title="编辑">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M11.5 2.5l2 2M2 14l1-4L11.5 1.5l2 2L5 12l-4 1z"/>
+                                </svg>
+                            </a>
+                            <form action="/delete/{{ t.id }}" method="POST" class="delete-form">
+                                <button type="submit" class="btn-delete" title="删除" data-confirm-delete data-confirm-message="确定删除这条交易记录？">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M3 6h10M5 6v10a1 1 0 001 1h4a1 1 0 001-1V6M8 6V4M6 6v1M10 6v1"/>
+                                    </svg>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📝</div>
+                        <p class="empty-state-text">还没有交易记录，开始记一笔吧</p>
+                        <a href="#" class="empty-state-btn" onclick="document.getElementById('add-form').scrollIntoView()">+ 添加交易</a>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- 分页 -->
+            {% if pagination and pagination.pages > 1 %}
+            <div class="pagination">
+                {% if pagination.has_prev %}
+                <a href="{{ url_for('transaction.transaction_list', page=pagination.prev_num, view=current_view if current_view != 'personal' else None) }}" class="page-link">‹ 上一页</a>
+                {% endif %}
+                {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if p %}
+                        <a href="{{ url_for('transaction.transaction_list', page=p, view=current_view if current_view != 'personal' else None) }}" class="page-link {{ 'active' if p == pagination.page }}">{{ p }}</a>
+                    {% else %}
+                        <span class="page-ellipsis">…</span>
+                    {% endif %}
+                {% endfor %}
+                {% if pagination.has_next %}
+                <a href="{{ url_for('transaction.transaction_list', page=pagination.next_num, view=current_view if current_view != 'personal' else None) }}" class="page-link">下一页 ›</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        // 设置当前日期
+        function setCurrentDate() {
+            const now = new Date();
+            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+            document.getElementById('current-date').textContent = now.toLocaleDateString('zh-CN', options);
+        }
+
+        // 设置默认日期为今天
+        function setDefaultDate() {
+            const today = new Date().toISOString().split('T')[0];
+            document.querySelector('input[name="date"]').value = today;
+        }
+
+        // 格式化货币
+        function formatCurrency(amount) {
+            return '¥' + amount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        // 初始化统计数据
+        document.getElementById('stat-income').textContent = formatCurrency({{ monthly_income }});
+        document.getElementById('stat-expense').textContent = formatCurrency({{ monthly_expense }});
+        document.getElementById('stat-balance').textContent = formatCurrency({{ monthly_balance }});
+
+        // 分类联动
+        const typeInputs = document.querySelectorAll('input[name="type"]');
+        const categorySelect = document.querySelector('select[name="category"]');
+
+        const categories = {
+            income: [
+                {% for c in categories if c.type == 'income' %}
+                { value: '{{ c.id }}', text: '{{ c.name }}' }{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ],
+            expense: [
+                {% for c in categories if c.type == 'expense' %}
+                { value: '{{ c.id }}', text: '{{ c.name }}' }{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ]
+        };
+
+        function updateCategories(type) {
+            const currentCategory = categorySelect.value;
+            categorySelect.innerHTML = '<option value="">选择分类</option>';
+
+            categories[type].forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat.value;
+                option.textContent = cat.text;
+                categorySelect.appendChild(option);
+            });
+
+            const addOption = document.createElement('option');
+            addOption.value = '__add_category__';
+            addOption.textContent = '+ 添加分类...';
+            categorySelect.appendChild(addOption);
+
+            if (categories[type].some(c => c.value === currentCategory)) {
+                categorySelect.value = currentCategory;
+            }
+        }
+
+        categorySelect.addEventListener('change', function() {
+            if (categorySelect.value === '__add_category__') {
+                window.location.href = '{{ url_for("category.category_list") }}';
+            }
+        });
+
+        typeInputs.forEach(input => {
+            input.addEventListener('change', (e) => {
+                updateCategories(e.target.value);
+            });
+        });
+
+        // 表单提交动画
+        const form = document.querySelector('form');
+        form.addEventListener('submit', (e) => {
+            const btnText = document.getElementById('btn-text');
+            btnText.textContent = '添加中...';
+        });
+
+        // 初始化
+        setCurrentDate();
+        setDefaultDate();
+        updateCategories('expense');
+
+        // 快捷模板应用
+        function applyTemplate(btn) {
+            var form = document.querySelector('#add-form form');
+            var typeRadios = form.querySelectorAll('input[name="type"]');
+            typeRadios.forEach(function(r) { r.checked = r.value === btn.dataset.type; });
+            updateCategories(btn.dataset.type);
+            form.querySelector('input[name="amount"]').value = btn.dataset.amount;
+            var catSelect = form.querySelector('select[name="category"]');
+            if (catSelect && btn.dataset.category) catSelect.value = btn.dataset.category;
+            var descInput = form.querySelector('input[name="description"]');
+            if (descInput && btn.dataset.description) descInput.value = btn.dataset.description;
+            var acctSelect = form.querySelector('select[name="account_id"]');
+            if (acctSelect && btn.dataset.account) acctSelect.value = btn.dataset.account;
+            form.scrollIntoView({behavior: 'smooth'});
+            fetch('/templates/' + btn.dataset.id + '/use', {method: 'POST'});
+        }
+
+        // 迷你趋势图（近 6 个月）
+        (async function() {
+            const resp = await fetch('/reports/api/trend?months=6&view={{ current_view }}');
+            const data = await resp.json();
+            const ctx = document.getElementById('miniTrendChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: '收入',
+                            data: data.income,
+                            borderColor: '#D4A574',
+                            backgroundColor: 'rgba(212, 165, 116, 0.15)',
+                            fill: true, tension: 0.3, pointRadius: 3
+                        },
+                        {
+                            label: '支出',
+                            data: data.expense,
+                            borderColor: '#7C8BA1',
+                            backgroundColor: 'rgba(124, 139, 161, 0.15)',
+                            fill: true, tension: 0.3, pointRadius: 3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => ctx.dataset.label + ': ¥' + ctx.parsed.y.toLocaleString('zh-CN', {minimumFractionDigits: 2})
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { callback: v => '¥' + v.toLocaleString(), font: { size: 10 } } },
+                        x: { ticks: { font: { size: 10 } } }
+                    }
+                }
+            });
+        })();
+    </script>
+{% endblock %}

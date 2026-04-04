@@ -6,7 +6,7 @@ from flask import Flask, redirect, render_template, request, url_for
 from sqlalchemy import func, extract, case
 
 from database import create_app, init_database
-from models import db, Transaction, Category, User, Family, TransactionModification, Account, TransactionTemplate
+from models import db, Transaction, Category, User, Family, TransactionModification, Account, TransactionTemplate, SavingsPlan, SavingsRecord
 from routes.auth import auth_bp
 from routes.family import family_bp
 from routes.category import category_bp
@@ -17,6 +17,7 @@ from routes.baby_fund import baby_fund_bp
 from routes.upload import upload_bp
 from routes.template import template_bp
 from routes.recurring import recurring_bp
+from routes.transaction import transaction_bp
 from flask import session, flash
 
 app = create_app()
@@ -37,6 +38,7 @@ app.register_blueprint(baby_fund_bp)
 app.register_blueprint(upload_bp)
 app.register_blueprint(template_bp)
 app.register_blueprint(recurring_bp)
+app.register_blueprint(transaction_bp)
 
 @app.before_request
 def require_login():
@@ -54,7 +56,7 @@ def require_login():
 
 @app.route('/')
 def index():
-    """首页 - 交易列表，支持个人/家庭视图切换"""
+    """首页 — 三模块仪表盘（月度收支概览 + 资产总览 + 储蓄计划概览）"""
     user_id = session.get('user_id')
 
     # 自动执行到期的定期交易
@@ -63,33 +65,17 @@ def index():
     if recurring_count:
         flash(f'已自动创建 {recurring_count} 笔定期交易', 'success')
 
-    # 获取当前用户和家庭信息
     user = User.query.get(user_id)
     family = user.family if user else None
+    current_view = 'family' if family else 'personal'
 
-    # 读取视图参数：personal（个人）或 family（家庭）
-    current_view = request.args.get('view', 'personal')
-
-    # 确定查询范围：家庭视图且用户有家庭时，查询所有家庭成员的数据
+    # --- 模块 1：月度收支概览 ---
     if current_view == 'family' and family:
         family_member_ids = [m.id for m in family.members]
         user_filter = Transaction.user_id.in_(family_member_ids)
-        family_members = family.members
     else:
-        # 个人视图或无家庭，回退到仅查询当前用户
-        current_view = 'personal'
         user_filter = (Transaction.user_id == user_id)
-        family_members = []
 
-    # 获取交易列表，按日期降序（分页，每页 10 条）
-    page = request.args.get('page', 1, type=int)
-    per_page = 10
-    pagination = Transaction.query.filter(user_filter)\
-        .order_by(Transaction.transaction_date.desc())\
-        .paginate(page=page, per_page=per_page, error_out=False)
-    transactions = pagination.items
-
-    # 计算本月统计
     current_month = date.today().month
     current_year = date.today().year
 
@@ -108,36 +94,55 @@ def index():
         ).label('expense')
     ).first()
 
-    monthly_income = month_stats.income or Decimal('0')
-    monthly_expense = month_stats.expense or Decimal('0')
+    monthly_income = float(month_stats.income or 0)
+    monthly_expense = float(month_stats.expense or 0)
     monthly_balance = monthly_income - monthly_expense
 
-    # 获取当前用户可用的分类（系统预设 + 用户自定义）
-    categories = Category.query.filter(
-        (Category.user_id == None) | (Category.user_id == user_id)
+    # --- 模块 2：资产总览 ---
+    from routes.account import _get_family_accounts, _get_exchange_rates
+    accounts = _get_family_accounts(user_id, current_view)
+    rates = _get_exchange_rates()
+
+    savings_accounts = [a for a in accounts if a.account_type and a.account_type.category == 'savings']
+    investment_accounts = [a for a in accounts if a.account_type and a.account_type.category == 'investment']
+
+    savings_total = sum(float(a.current_balance) * rates.get(a.currency or 'CNY', 1.0) for a in savings_accounts)
+    investment_total = sum(float(a.current_balance) * rates.get(a.currency or 'CNY', 1.0) for a in investment_accounts)
+    total_assets = savings_total + investment_total
+
+    # --- 模块 3：储蓄计划概览 ---
+    from routes.savings import _get_family_member_ids
+    member_ids = _get_family_member_ids(user_id, current_view)
+
+    plans = SavingsPlan.query.filter(
+        SavingsPlan.created_by.in_(member_ids)
     ).all()
 
-    # 获取当前用户的账户列表（用于交易表单）
-    accounts = Account.query.filter_by(user_id=user_id).all()
+    total_target = Decimal('0')
+    total_saved = Decimal('0')
+    for plan in plans:
+        saved = db.session.query(func.sum(SavingsRecord.amount)).filter(
+            SavingsRecord.plan_id == plan.id
+        ).scalar() or Decimal('0')
+        total_target += plan.target_amount
+        total_saved += saved
 
-    # 获取快捷模板（按使用次数排序，最多 6 个）
-    quick_templates = TransactionTemplate.query.filter_by(user_id=user_id)\
-        .order_by(TransactionTemplate.use_count.desc()).limit(6).all()
+    overall_progress = float(total_saved / total_target * 100) if total_target else 0
 
     return render_template('index.html',
-                          transactions=transactions,
-                          pagination=pagination,
-                          monthly_income=float(monthly_income),
-                          monthly_expense=float(monthly_expense),
-                          monthly_balance=float(monthly_balance),
+                          monthly_income=monthly_income,
+                          monthly_expense=monthly_expense,
+                          monthly_balance=monthly_balance,
                           stat_year=current_year,
                           stat_month=current_month,
-                          categories=categories,
-                          accounts=accounts,
-                          quick_templates=quick_templates,
+                          savings_total=savings_total,
+                          investment_total=investment_total,
+                          total_assets=total_assets,
+                          total_target=float(total_target),
+                          total_saved=float(total_saved),
+                          overall_progress=min(overall_progress, 100),
                           current_view=current_view,
                           family=family,
-                          family_members=family_members,
                           username=session.get('nickname', session.get('username', '用户')))
 
 
@@ -164,10 +169,10 @@ def add_transaction():
         amount_val = float(amount)
         if amount_val <= 0 or amount_val > 9999999:
             flash('金额必须在 0 ~ 9,999,999 之间', 'error')
-            return redirect(url_for('index'))
+            return redirect(url_for('transaction.transaction_list'))
     except (ValueError, TypeError):
         flash('金额格式错误', 'error')
-        return redirect(url_for('index'))
+        return redirect(url_for('transaction.transaction_list'))
 
     try:
         transaction_date = datetime.strptime(transaction_date_str, '%Y-%m-%d').date()
@@ -198,7 +203,7 @@ def add_transaction():
 
     db.session.commit()
 
-    return redirect(url_for('index'))
+    return redirect(url_for('transaction.transaction_list'))
 
 
 @app.route('/edit/<int:transaction_id>', methods=['GET', 'POST'])
@@ -308,7 +313,7 @@ def edit_transaction(transaction_id):
 
         db.session.commit()
 
-    return redirect(url_for('index'))
+    return redirect(url_for('transaction.transaction_list'))
 
 
 @app.route('/delete/<int:transaction_id>', methods=['POST'])
@@ -338,7 +343,7 @@ def delete_transaction(transaction_id):
     db.session.delete(transaction)
     db.session.commit()
 
-    return redirect(url_for('index'))
+    return redirect(url_for('transaction.transaction_list'))
 
 
 if __name__ == '__main__':
