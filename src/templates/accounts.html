@@ -48,7 +48,7 @@
                             <span class="acct-name-text">{{ a.name }}</span>
                             <span class="category-badge default" style="font-size:10px;padding:1px 6px;">{{ a.account_type.name }}</span>
                             {% if a.owner %}
-                            <span class="acct-owner-icon" title="{{ a.owner.nickname or a.owner.username }}">{{ (a.owner.nickname or a.owner.username)[-1:] }}</span>
+                            <span class="acct-owner-icon {% if a.owner.username == 'charlley88' %}icon-blue{% else %}icon-purple{% endif %}" title="{{ a.owner.nickname or a.owner.username }}">{{ (a.owner.nickname or a.owner.username)[-1:] }}</span>
                             {% endif %}
                         </div>
                         <div class="acct-compact-bal" style="color:var(--color-income);">¥{{ a.current_balance|float|currency }}</div>
@@ -81,7 +81,7 @@
                             <span class="acct-name-text">{{ a.name }}</span>
                             <span class="category-badge custom" style="font-size:10px;padding:1px 6px;">{{ a.account_type.name }}</span>
                             {% if a.owner %}
-                            <span class="acct-owner-icon" title="{{ a.owner.nickname or a.owner.username }}">{{ (a.owner.nickname or a.owner.username)[-1:] }}</span>
+                            <span class="acct-owner-icon {% if a.owner.username == 'charlley88' %}icon-blue{% else %}icon-purple{% endif %}" title="{{ a.owner.nickname or a.owner.username }}">{{ (a.owner.nickname or a.owner.username)[-1:] }}</span>
                             {% endif %}
                         </div>
                         <div class="acct-compact-bal">
