@@ -22,27 +22,22 @@
                 <span class="username">{{ username }}</span>
                 <div class="user-actions">
                     <a href="{{ url_for('index') }}" class="nav-link">首页</a>
+                    <a href="{{ url_for('account.account_list') }}" class="nav-link">账户</a>
+                    <a href="{{ url_for('savings.savings_list') }}" class="nav-link">储蓄</a>
+                    <a href="{{ url_for('baby_fund.baby_fund_list') }}" class="nav-link">宝宝基金</a>
                     <div class="nav-dropdown">
-                        <a href="#" class="nav-link nav-dropdown-trigger">账户 ▾</a>
-                        <div class="nav-dropdown-menu">
-                            <a href="{{ url_for('account.account_list') }}" class="nav-dropdown-item">账户管理</a>
-                            <a href="{{ url_for('savings.savings_list') }}" class="nav-dropdown-item">储蓄计划</a>
-                            <a href="{{ url_for('baby_fund.baby_fund_list') }}" class="nav-dropdown-item">宝宝基金</a>
-                        </div>
-                    </div>
-                    <a href="{{ url_for('reports.reports_page', view=current_view) }}" class="nav-link">报表</a>
-                    <div class="nav-dropdown">
-                        <a href="#" class="nav-link nav-dropdown-trigger">设置 ▾</a>
+                        <a href="#" class="nav-link nav-dropdown-trigger">管理 ▾</a>
                         <div class="nav-dropdown-menu">
                             <a href="{{ url_for('category.category_list') }}" class="nav-dropdown-item">分类管理</a>
-                            <a href="{{ url_for('upload.upload_page') }}" class="nav-dropdown-item">批量导入</a>
                             <a href="{{ url_for('template.template_list') }}" class="nav-dropdown-item">快捷模板</a>
                             <a href="{{ url_for('recurring.recurring_list') }}" class="nav-dropdown-item">定期交易</a>
+                            <a href="{{ url_for('upload.upload_page') }}" class="nav-dropdown-item">批量导入</a>
+                            <a href="{{ url_for('reports.reports_page', view=current_view) }}" class="nav-dropdown-item">报表</a>
+                            {% if family %}
+                            <a href="{{ url_for('family.family_info') }}" class="nav-dropdown-item">家庭</a>
+                            {% endif %}
                         </div>
                     </div>
-                    {% if family %}
-                    <a href="{{ url_for('family.family_info') }}" class="nav-link">家庭</a>
-                    {% endif %}
                     <a href="{{ url_for('auth.logout') }}" class="logout-btn">退出</a>
                 </div>
             </div>
@@ -75,12 +70,11 @@
                 <a href="{{ url_for('savings.savings_list') }}" class="side-menu-item">🎯 储蓄计划</a>
                 <a href="{{ url_for('baby_fund.baby_fund_list') }}" class="side-menu-item">👶 宝宝基金</a>
                 <div class="side-menu-divider"></div>
-                <a href="{{ url_for('reports.reports_page', view=current_view) }}" class="side-menu-item">📊 报表</a>
-                <div class="side-menu-divider"></div>
                 <a href="{{ url_for('category.category_list') }}" class="side-menu-item">🏷️ 分类管理</a>
-                <a href="{{ url_for('upload.upload_page') }}" class="side-menu-item">📥 批量导入</a>
                 <a href="{{ url_for('template.template_list') }}" class="side-menu-item">⚡ 快捷模板</a>
                 <a href="{{ url_for('recurring.recurring_list') }}" class="side-menu-item">🔄 定期交易</a>
+                <a href="{{ url_for('upload.upload_page') }}" class="side-menu-item">📥 批量导入</a>
+                <a href="{{ url_for('reports.reports_page', view=current_view) }}" class="side-menu-item">📊 报表</a>
                 {% if family %}
                 <div class="side-menu-divider"></div>
                 <a href="{{ url_for('family.family_info') }}" class="side-menu-item">👨‍👩‍👧 家庭</a>
@@ -130,9 +124,9 @@
                 <span class="bottom-tab-icon">💳</span>
                 <span class="bottom-tab-label">账户</span>
             </a>
-            <a href="{{ url_for('reports.reports_page', view=current_view) }}" class="bottom-tab {% if '/reports' in request.path %}active{% endif %}">
-                <span class="bottom-tab-icon">📊</span>
-                <span class="bottom-tab-label">报表</span>
+            <a href="{{ url_for('savings.savings_list') }}" class="bottom-tab {% if '/savings' in request.path %}active{% endif %}">
+                <span class="bottom-tab-icon">🎯</span>
+                <span class="bottom-tab-label">储蓄</span>
             </a>
             <button class="bottom-tab" id="more-tab-btn" type="button">
                 <span class="bottom-tab-icon">⚙️</span>
