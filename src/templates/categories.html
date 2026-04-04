@@ -44,9 +44,12 @@
                             </span>
                         </div>
                         {% if not c.is_default %}
-                        <form action="{{ url_for('category.category_delete', category_id=c.id) }}" method="POST" class="delete-form">
-                            <button type="submit" class="btn-delete-cat" data-confirm-delete data-confirm-message="确定删除分类「{{ c.name }}」？关联的交易将变为未分类。">删除</button>
-                        </form>
+                        <div style="display:flex;gap:4px;">
+                            <button class="btn-delete-cat" onclick="openEditCategory({{ c.id }}, '{{ c.name }}')">修改</button>
+                            <form action="{{ url_for('category.category_delete', category_id=c.id) }}" method="POST" class="delete-form">
+                                <button type="submit" class="btn-delete-cat" data-confirm-delete data-confirm-message="确定删除分类「{{ c.name }}」？关联的交易将变为未分类。">删除</button>
+                            </form>
+                        </div>
                         {% endif %}
                     </div>
                     {% endfor %}
@@ -75,9 +78,12 @@
                             </span>
                         </div>
                         {% if not c.is_default %}
-                        <form action="{{ url_for('category.category_delete', category_id=c.id) }}" method="POST" class="delete-form">
-                            <button type="submit" class="btn-delete-cat" data-confirm-delete data-confirm-message="确定删除分类「{{ c.name }}」？关联的交易将变为未分类。">删除</button>
-                        </form>
+                        <div style="display:flex;gap:4px;">
+                            <button class="btn-delete-cat" onclick="openEditCategory({{ c.id }}, '{{ c.name }}')">修改</button>
+                            <form action="{{ url_for('category.category_delete', category_id=c.id) }}" method="POST" class="delete-form">
+                                <button type="submit" class="btn-delete-cat" data-confirm-delete data-confirm-message="确定删除分类「{{ c.name }}」？关联的交易将变为未分类。">删除</button>
+                            </form>
+                        </div>
                         {% endif %}
                     </div>
                     {% endfor %}
@@ -88,4 +94,47 @@
                 {% endif %}
             </div>
         </div>
+
+    <!-- ===== 浮层：修改分类 ===== -->
+    <div class="drawer-overlay" id="overlay-edit-cat"></div>
+    <div class="drawer" id="drawer-edit-cat">
+        <div class="drawer-header">
+            <h2 class="drawer-title">修改分类</h2>
+            <button class="drawer-close" id="close-edit-cat">&times;</button>
+        </div>
+        <form id="edit-cat-form" action="#" method="POST" class="drawer-body">
+            <div class="form-group">
+                <label class="form-label">分类名称</label>
+                <input type="text" name="name" id="edit-cat-name" class="form-input" required maxlength="50">
+            </div>
+            <button type="submit" class="btn-submit">保存修改</button>
+        </form>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function openDrawer(drawerId, overlayId) {
+        document.getElementById(overlayId).classList.add('open');
+        document.getElementById(drawerId).classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+    function closeDrawer(drawerId, overlayId) {
+        document.getElementById(overlayId).classList.remove('open');
+        document.getElementById(drawerId).classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    function openEditCategory(catId, name) {
+        document.getElementById('edit-cat-form').action = '/categories/edit/' + catId;
+        document.getElementById('edit-cat-name').value = name;
+        openDrawer('drawer-edit-cat', 'overlay-edit-cat');
+    }
+
+    document.getElementById('close-edit-cat').addEventListener('click', function() { closeDrawer('drawer-edit-cat', 'overlay-edit-cat'); });
+    document.getElementById('overlay-edit-cat').addEventListener('click', function() { closeDrawer('drawer-edit-cat', 'overlay-edit-cat'); });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeDrawer('drawer-edit-cat', 'overlay-edit-cat');
+    });
+</script>
 {% endblock %}

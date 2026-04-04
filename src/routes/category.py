@@ -67,6 +67,46 @@ def category_add():
     return redirect(url_for('category.category_list'))
 
 
+@category_bp.route('/edit/<int:category_id>', methods=['POST'])
+def category_edit(category_id):
+    """修改分类名称"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('auth.login'))
+
+    category = Category.query.get_or_404(category_id)
+
+    if category.is_default:
+        flash('系统默认分类不可修改', 'error')
+        return redirect(url_for('category.category_list'))
+
+    if category.user_id != user_id:
+        flash('无权修改此分类', 'error')
+        return redirect(url_for('category.category_list'))
+
+    new_name = request.form.get('name', '').strip()
+    if not new_name:
+        flash('分类名称不能为空', 'error')
+        return redirect(url_for('category.category_list'))
+
+    # 检查同名分类
+    existing = Category.query.filter(
+        Category.name == new_name,
+        Category.type == category.type,
+        Category.id != category_id,
+        (Category.user_id == None) | (Category.user_id == user_id)
+    ).first()
+    if existing:
+        flash('该分类名称已存在', 'error')
+        return redirect(url_for('category.category_list'))
+
+    old_name = category.name
+    category.name = new_name
+    db.session.commit()
+    flash(f'分类「{old_name}」已改名为「{new_name}」', 'success')
+    return redirect(url_for('category.category_list'))
+
+
 @category_bp.route('/delete/<int:category_id>', methods=['POST'])
 def category_delete(category_id):
     """删除自定义分类"""
