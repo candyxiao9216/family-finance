@@ -189,10 +189,42 @@ def add_record():
     return redirect(url_for('savings.savings_list'))
 
 
+@savings_bp.route('/record/<int:record_id>/edit', methods=['POST'])
+def edit_record(record_id):
+    """编辑储蓄记录"""
+    record = SavingsRecord.query.get_or_404(record_id)
+
+    plan_id = request.form.get('plan_id', type=int)
+    amount = request.form.get('amount')
+    record_date_str = request.form.get('record_date')
+    description = request.form.get('description')
+    account_id = request.form.get('account_id', type=int)
+
+    if not all([plan_id, amount, record_date_str]):
+        flash('请填写所有必填字段', 'error')
+        return redirect(url_for('savings.savings_list'))
+
+    try:
+        record_date = datetime.strptime(record_date_str, '%Y-%m-%d').date()
+    except ValueError:
+        flash('日期格式错误', 'error')
+        return redirect(url_for('savings.savings_list'))
+
+    record.plan_id = plan_id
+    record.amount = Decimal(amount)
+    record.record_date = record_date
+    record.description = description or None
+    record.account_id = account_id or None
+    db.session.commit()
+    flash('储蓄记录已更新', 'success')
+    return redirect(url_for('savings.savings_list'))
+
+
 @savings_bp.route('/record/<int:record_id>/delete', methods=['POST'])
 def delete_record(record_id):
     """删除储蓄记录"""
     record = SavingsRecord.query.get_or_404(record_id)
     db.session.delete(record)
     db.session.commit()
+    flash('储蓄记录已删除', 'success')
     return redirect(url_for('savings.savings_list'))

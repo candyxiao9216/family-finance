@@ -140,6 +140,7 @@
                             <th>备注</th>
                             <th>操作人</th>
                             <th>录入时间</th>
+                            <th>操作</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -151,6 +152,14 @@
                             <td>{{ r.description or '-' }}</td>
                             <td>{{ r.recorder.nickname or r.recorder.username if r.recorder else '-' }}</td>
                             <td class="td-meta">{{ (r.created_at + timedelta(hours=8)).strftime('%m-%d %H:%M') if r.created_at else '-' }}</td>
+                            <td>
+                                <div style="display:flex;gap:4px;">
+                                    <button class="btn-delete-cat" onclick="openEditRecord({{ r.id }}, {{ r.plan_id }}, '{{ r.amount|float }}', '{{ r.record_date.strftime('%Y-%m-%d') }}', '{{ r.description or '' }}', '{{ r.account_id or '' }}')">编辑</button>
+                                    <form action="{{ url_for('savings.delete_record', record_id=r.id) }}" method="POST" style="display:inline">
+                                        <button type="submit" class="btn-delete-cat" data-confirm-delete data-confirm-message="确定删除这条储蓄记录？">删除</button>
+                                    </form>
+                                </div>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -260,6 +269,48 @@
             <div class="form-group">
                 <label class="form-label">目标金额</label>
                 <input type="number" name="target_amount" id="edit-plan-target" class="form-input" step="0.01" min="0.01" required>
+            </div>
+            <button type="submit" class="btn-submit">保存修改</button>
+        </form>
+    </div>
+
+    <!-- ===== 浮层：编辑储蓄记录 ===== -->
+    <div class="drawer-overlay" id="overlay-edit-record"></div>
+    <div class="drawer" id="drawer-edit-record">
+        <div class="drawer-header">
+            <h2 class="drawer-title">编辑储蓄记录</h2>
+            <button class="drawer-close" id="close-edit-record">&times;</button>
+        </div>
+        <form id="edit-record-form" action="#" method="POST" class="drawer-body">
+            <div class="form-group">
+                <label class="form-label">选择计划</label>
+                <select name="plan_id" id="edit-record-plan" class="form-select" required>
+                    <option value="">选择计划</option>
+                    {% for item in plan_data %}
+                    <option value="{{ item.plan.id }}">{{ item.plan.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">储蓄金额</label>
+                <input type="number" name="amount" id="edit-record-amount" class="form-input" placeholder="0.00" step="0.01" min="0.01" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">储蓄日期</label>
+                <input type="date" name="record_date" id="edit-record-date" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">关联账户（可选）</label>
+                <select name="account_id" id="edit-record-account" class="form-select">
+                    <option value="">不关联</option>
+                    {% for a in accounts %}
+                    <option value="{{ a.id }}">{{ a.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">备注（可选）</label>
+                <input type="text" name="description" id="edit-record-desc" class="form-input" placeholder="备注说明" maxlength="200">
             </div>
             <button type="submit" class="btn-submit">保存修改</button>
         </form>
@@ -386,12 +437,27 @@
             openDrawer('drawer-edit-plan', 'overlay-edit-plan');
         }
 
+        function openEditRecord(recordId, planId, amount, date, description, accountId) {
+            document.getElementById('edit-record-form').action = '/savings/record/' + recordId + '/edit';
+            document.getElementById('edit-record-plan').value = planId;
+            document.getElementById('edit-record-amount').value = amount;
+            document.getElementById('edit-record-date').value = date;
+            document.getElementById('edit-record-desc').value = description;
+            document.getElementById('edit-record-account').value = accountId || '';
+            openDrawer('drawer-edit-record', 'overlay-edit-record');
+        }
+
+        // 编辑记录抽屉
+        document.getElementById('close-edit-record').addEventListener('click', function() { closeDrawer('drawer-edit-record', 'overlay-edit-record'); });
+        document.getElementById('overlay-edit-record').addEventListener('click', function() { closeDrawer('drawer-edit-record', 'overlay-edit-record'); });
+
         // ESC 关闭
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeDrawer('drawer-plan', 'overlay-plan');
                 closeDrawer('drawer-record', 'overlay-record');
                 closeDrawer('drawer-edit-plan', 'overlay-edit-plan');
+                closeDrawer('drawer-edit-record', 'overlay-edit-record');
             }
         });
 
