@@ -26,27 +26,20 @@
 {% endblock %}
 
 {% block content %}
-        <!-- 视图切换 -->
-        {% if family %}
-        <div class="view-switcher">
-            <a href="/savings?view=personal" class="view-btn {{ 'active' if current_view == 'personal' }}">我的</a>
-            <a href="/savings?view=family" class="view-btn {{ 'active' if current_view == 'family' }}">家庭</a>
-        </div>
-        {% endif %}
 
         <!-- 统计栏 -->
         <div class="stats-bar stats-bar--compact">
             <div class="stat-item">
                 <div class="stat-label">年度目标</div>
-                <div class="stat-value expense">¥{{ "%.2f"|format(total_target) }}</div>
+                <div class="stat-value expense">¥{{ total_target|currency }}</div>
             </div>
             <div class="stat-item">
                 <div class="stat-label">已储蓄</div>
-                <div class="stat-value income">¥{{ "%.2f"|format(total_saved) }}</div>
+                <div class="stat-value income">¥{{ total_saved|currency }}</div>
             </div>
             <div class="stat-item">
                 <div class="stat-label">完成率</div>
-                <div class="stat-value balance">{{ "%.1f"|format(overall_progress) }}%</div>
+                <div class="stat-value balance">{{ overall_progress|currency(1) }}%</div>
             </div>
         </div>
 
@@ -94,15 +87,15 @@
                             <td><span class="category-badge {{ 'default' if item.plan.type == 'monthly' else 'custom' }}">{{ '月度' if item.plan.type == 'monthly' else '年度' }}</span></td>
                             <td>{{ item.plan.year }}{% if item.plan.month %}年{{ item.plan.month }}月{% endif %}</td>
                             <td class="td-amount">
-                                <div style="color:var(--color-income);">¥{{ "%.0f"|format(item.saved) }}</div>
-                                <div style="font-size:12px;color:var(--color-text-muted);">/ ¥{{ "%.0f"|format(item.plan.target_amount|float) }}</div>
+                                <div style="color:var(--color-income);">¥{{ item.saved|currency(0) }}</div>
+                                <div style="font-size:12px;color:var(--color-text-muted);">/ ¥{{ item.plan.target_amount|float|currency(0) }}</div>
                             </td>
                             <td style="min-width:120px;">
                                 <div style="display:flex;align-items:center;gap:8px;">
                                     <div class="progress-bar" style="flex:1;margin:0;">
                                         <div class="progress-fill" style="width:{{ item.progress }}%"></div>
                                     </div>
-                                    <span style="font-size:12px;color:var(--color-text-secondary);white-space:nowrap;">{{ "%.1f"|format(item.progress) }}%</span>
+                                    <span style="font-size:12px;color:var(--color-text-secondary);white-space:nowrap;">{{ item.progress|currency(1) }}%</span>
                                 </div>
                             </td>
                             <td>
@@ -154,7 +147,7 @@
                         <tr>
                             <td>{{ r.record_date.strftime('%Y-%m-%d') }}</td>
                             <td>{{ r.plan.name if r.plan else '-' }}</td>
-                            <td class="td-amount" style="color:var(--color-income);">¥{{ "%.2f"|format(r.amount|float) }}</td>
+                            <td class="td-amount" style="color:var(--color-income);">¥{{ r.amount|float|currency }}</td>
                             <td>{{ r.description or '-' }}</td>
                             <td>{{ r.recorder.nickname or r.recorder.username if r.recorder else '-' }}</td>
                             <td class="td-meta">{{ (r.created_at + timedelta(hours=8)).strftime('%m-%d %H:%M') if r.created_at else '-' }}</td>

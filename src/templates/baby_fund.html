@@ -1,19 +1,12 @@
 {% extends "base.html" %}
 
 {% block content %}
-        <!-- 视图切换 -->
-        {% if family %}
-        <div class="view-switcher">
-            <a href="/baby-fund?view=personal" class="view-btn {{ 'active' if current_view == 'personal' }}">我的</a>
-            <a href="/baby-fund?view=family" class="view-btn {{ 'active' if current_view == 'family' }}">家庭</a>
-        </div>
-        {% endif %}
 
         <!-- 统计栏 -->
         <div class="stats-bar stats-bar--compact">
             <div class="stat-item">
                 <div class="stat-label">基金总额</div>
-                <div class="stat-value income">¥{{ "%.2f"|format(total_amount) }}</div>
+                <div class="stat-value income">¥{{ total_amount|currency }}</div>
             </div>
             <div class="stat-item">
                 <div class="stat-label">记录数</div>
@@ -53,7 +46,7 @@
                         {% endif %}
                     </div>
                     <div class="account-balance">
-                        <span class="account-balance-value">¥{{ "%.2f"|format(f.amount|float) }}</span>
+                        <span class="account-balance-value">¥{{ f.amount|float|currency }}</span>
                         <span class="account-owner">{{ f.event_date.strftime('%Y-%m-%d') }}</span>
                     </div>
                     <div class="fund-actions" style="display:flex;gap:4px;align-items:center;">

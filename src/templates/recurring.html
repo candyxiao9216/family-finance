@@ -40,7 +40,7 @@
                         {% endif %}
                     </div>
                     <div class="account-balance">
-                        <span class="account-balance-value">¥{{ "%.2f"|format(item.amount) }}</span>
+                        <span class="account-balance-value">¥{{ item.amount|currency }}</span>
                         <span class="account-owner">
                             {% if item.frequency == 'monthly' %}
                                 每月{{ item.day_of_month or 1 }}号

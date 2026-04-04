@@ -63,7 +63,7 @@
                         data-account="{{ tpl.account_id or '' }}"
                         data-id="{{ tpl.id }}"
                         onclick="applyTemplate(this)">
-                    {{ tpl.name }} <span style="opacity:0.6">¥{{ "%.0f"|format(tpl.amount) }}</span>
+                    {{ tpl.name }} <span style="opacity:0.6">¥{{ tpl.amount|currency(0) }}</span>
                 </button>
                 {% endfor %}
             </div>
@@ -167,7 +167,7 @@
                             </span>
                         </div>
                         <div class="t-amount">
-                            {{ '+' if t.type == 'income' else '-' }}¥{{ "%.2f"|format(t.amount) }}
+                            {{ '+' if t.type == 'income' else '-' }}¥{{ t.amount|currency }}
                         </div>
                         <div class="t-actions">
                             <a href="/edit/{{ t.id }}" class="btn-edit" title="编辑">
@@ -193,6 +193,25 @@
                     </div>
                 {% endif %}
             </div>
+
+            <!-- 分页 -->
+            {% if pagination and pagination.pages > 1 %}
+            <div class="pagination">
+                {% if pagination.has_prev %}
+                <a href="?page={{ pagination.prev_num }}{% if current_view != 'personal' %}&view={{ current_view }}{% endif %}" class="page-link">‹ 上一页</a>
+                {% endif %}
+                {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if p %}
+                        <a href="?page={{ p }}{% if current_view != 'personal' %}&view={{ current_view }}{% endif %}" class="page-link {{ 'active' if p == pagination.page }}">{{ p }}</a>
+                    {% else %}
+                        <span class="page-ellipsis">…</span>
+                    {% endif %}
+                {% endfor %}
+                {% if pagination.has_next %}
+                <a href="?page={{ pagination.next_num }}{% if current_view != 'personal' %}&view={{ current_view }}{% endif %}" class="page-link">下一页 ›</a>
+                {% endif %}
+            </div>
+            {% endif %}
         </div>
 {% endblock %}
 

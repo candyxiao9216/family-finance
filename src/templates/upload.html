@@ -287,7 +287,7 @@
                 html += '<td>' + (isDup ? '⚠️ 重复' : '✓ 新') + '</td>';
                 html += '<td>' + (r.date || '-') + '</td>';
                 html += '<td>' + typeLabel + '</td>';
-                html += '<td>¥' + (r.amount || 0).toFixed(2) + '</td>';
+                html += '<td>¥' + (r.amount || 0).toLocaleString('zh-CN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</td>';
                 html += '<td>' + catName + '</td>';
                 html += '<td>' + (r.description || '-') + '</td>';
                 html += '<td><button class="btn-delete-cat toggle-skip" data-idx="' + i + '">' + (isSkipped ? '恢复' : '跳过') + '</button></td>';

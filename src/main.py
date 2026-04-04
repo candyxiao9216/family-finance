@@ -81,8 +81,13 @@ def index():
         user_filter = (Transaction.user_id == user_id)
         family_members = []
 
-    # 获取交易列表，按日期降序
-    transactions = Transaction.query.filter(user_filter).order_by(Transaction.transaction_date.desc()).all()
+    # 获取交易列表，按日期降序（分页，每页 10 条）
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+    pagination = Transaction.query.filter(user_filter)\
+        .order_by(Transaction.transaction_date.desc())\
+        .paginate(page=page, per_page=per_page, error_out=False)
+    transactions = pagination.items
 
     # 计算本月统计
     current_month = date.today().month
@@ -121,6 +126,7 @@ def index():
 
     return render_template('index.html',
                           transactions=transactions,
+                          pagination=pagination,
                           monthly_income=float(monthly_income),
                           monthly_expense=float(monthly_expense),
                           monthly_balance=float(monthly_balance),

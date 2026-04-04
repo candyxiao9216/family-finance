@@ -13,15 +13,15 @@
         <div class="stats-bar stats-bar--compact">
             <div class="stat-item">
                 <div class="stat-label">储蓄资产</div>
-                <div class="stat-value income">¥{{ "%.2f"|format(savings_total) }}</div>
+                <div class="stat-value income">¥{{ savings_total|currency }}</div>
             </div>
             <div class="stat-item">
                 <div class="stat-label">投资资产</div>
-                <div class="stat-value expense">¥{{ "%.2f"|format(investment_total) }}</div>
+                <div class="stat-value expense">¥{{ investment_total|currency }}</div>
             </div>
             <div class="stat-item">
                 <div class="stat-label">总资产</div>
-                <div class="stat-value balance">¥{{ "%.2f"|format(savings_total + investment_total) }}</div>
+                <div class="stat-value balance">¥{{ (savings_total + investment_total)|currency }}</div>
             </div>
         </div>
 
@@ -32,6 +32,8 @@
         </div>
 
         {% if savings_accounts or investment_accounts %}
+        <!-- 左右两列布局 -->
+        <div class="acct-grid">
         <!-- 储蓄账户 -->
         <div class="card">
             <div class="card-header">
@@ -39,33 +41,24 @@
                 <span class="account-count">{{ savings_accounts|length }} 个</span>
             </div>
                 {% if savings_accounts %}
-                <div class="snapshot-table-wrap">
-                    <table class="snapshot-table">
-                        <thead>
-                            <tr>
-                                <th>账户名</th>
-                                <th>类型</th>
-                                <th>所属</th>
-                                <th>余额</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for a in savings_accounts %}
-                            <tr>
-                                <td style="font-weight:500;">{{ a.name }}</td>
-                                <td><span class="category-badge default">{{ a.account_type.name }}</span></td>
-                                <td>{{ a.owner.nickname or a.owner.username if a.owner else '-' }}</td>
-                                <td class="td-amount" style="color:var(--color-income);">¥{{ "%.2f"|format(a.current_balance|float) }}</td>
-                                <td>
-                                    <form action="{{ url_for('account.delete_account', account_id=a.id) }}" method="POST" style="display:inline;">
-                                        <button type="submit" class="btn-delete-cat" data-confirm-delete data-confirm-message="确定删除账户「{{ a.name }}」？">删除</button>
-                                    </form>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <div class="acct-compact-list">
+                    {% for a in savings_accounts %}
+                    <div class="acct-compact-row">
+                        <div class="acct-compact-name">
+                            <span class="acct-name-text">{{ a.name }}</span>
+                            <span class="category-badge default" style="font-size:10px;padding:1px 6px;">{{ a.account_type.name }}</span>
+                            {% if a.owner %}
+                            <span class="acct-owner-icon" title="{{ a.owner.nickname or a.owner.username }}">{{ (a.owner.nickname or a.owner.username)[:1] }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="acct-compact-bal" style="color:var(--color-income);">¥{{ a.current_balance|float|currency }}</div>
+                        <div class="acct-compact-act">
+                            <form action="{{ url_for('account.delete_account', account_id=a.id) }}" method="POST" style="display:inline;">
+                                <button type="submit" class="btn-delete-cat" data-confirm-delete data-confirm-message="确定删除账户「{{ a.name }}」？">删除</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
                 {% else %}
                 <div class="empty-state empty-state--inline">
@@ -81,44 +74,36 @@
                     <span class="account-count">{{ investment_accounts|length }} 个</span>
                 </div>
                 {% if investment_accounts %}
-                <div class="snapshot-table-wrap">
-                    <table class="snapshot-table">
-                        <thead>
-                            <tr>
-                                <th>账户名</th>
-                                <th>类型</th>
-                                <th>所属</th>
-                                <th>余额</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for a in investment_accounts %}
-                            <tr>
-                                <td style="font-weight:500;">{{ a.name }}</td>
-                                <td><span class="category-badge default">{{ a.account_type.name }}</span></td>
-                                <td>{{ a.owner.nickname or a.owner.username if a.owner else '-' }}</td>
-                                <td class="td-amount">
-                                    <div style="color:var(--color-text-primary);">{{ a.currency or 'CNY' }} {{ "%.2f"|format(a.current_balance|float) }}</div>
-                                    {% if a.currency and a.currency != 'CNY' %}
-                                    <div style="font-size:12px;color:var(--color-text-muted);">≈ ¥{{ "%.0f"|format(a.current_balance|float * exchange_rates.get(a.currency, 1)) }}</div>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <form action="{{ url_for('account.delete_account', account_id=a.id) }}" method="POST" style="display:inline;">
-                                        <button type="submit" class="btn-delete-cat" data-confirm-delete data-confirm-message="确定删除账户「{{ a.name }}」？">删除</button>
-                                    </form>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <div class="acct-compact-list">
+                    {% for a in investment_accounts %}
+                    <div class="acct-compact-row">
+                        <div class="acct-compact-name">
+                            <span class="acct-name-text">{{ a.name }}</span>
+                            <span class="category-badge custom" style="font-size:10px;padding:1px 6px;">{{ a.account_type.name }}</span>
+                            {% if a.owner %}
+                            <span class="acct-owner-icon" title="{{ a.owner.nickname or a.owner.username }}">{{ (a.owner.nickname or a.owner.username)[:1] }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="acct-compact-bal">
+                            <div style="color:var(--color-text-primary);">{{ a.currency or 'CNY' }} {{ a.current_balance|float|currency }}</div>
+                            {% if a.currency and a.currency != 'CNY' %}
+                            <div style="font-size:11px;color:var(--color-text-muted);">≈ ¥{{ (a.current_balance|float * exchange_rates.get(a.currency, 1))|currency(0) }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="acct-compact-act">
+                            <form action="{{ url_for('account.delete_account', account_id=a.id) }}" method="POST" style="display:inline;">
+                                <button type="submit" class="btn-delete-cat" data-confirm-delete data-confirm-message="确定删除账户「{{ a.name }}」？">删除</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
                 {% else %}
                 <div class="empty-state empty-state--inline">
                     <p class="empty-state-text">暂无投资账户</p>
                 </div>
                 {% endif %}
+        </div>
         </div>
 
         {% else %}
@@ -192,11 +177,11 @@
                                 <td>{{ s.record_month.strftime('%Y年%m月') }}</td>
                                 <td>{{ s.account.name if s.account else '-' }}</td>
                                 <td><span class="category-badge {{ 'default' if s.account and s.account.account_type and s.account.account_type.category == 'savings' else 'custom' }}">{{ s.account.account_type.name if s.account and s.account.account_type else '-' }}</span></td>
-                                <td class="td-amount">¥{{ "%.2f"|format(s.balance|float) }}</td>
+                                <td class="td-amount">¥{{ s.balance|float|currency }}</td>
                                 <td class="td-amount">
                                     {% if s.change_amount is not none %}
                                     <span class="account-change {{ 'positive' if s.change_amount >= 0 else 'negative' }}">
-                                        {{ '+' if s.change_amount >= 0 }}¥{{ "%.2f"|format(s.change_amount|float|abs) }}
+                                        {{ '+' if s.change_amount >= 0 }}¥{{ s.change_amount|float|abs|currency }}
                                     </span>
                                     {% else %}
                                     <span class="account-owner">-</span>
@@ -293,7 +278,7 @@
                 {% for a in savings_accounts %}
                 <div style="display:grid;grid-template-columns:120px 100px 130px 80px 1fr;gap:8px;padding:8px 12px;align-items:center;border-bottom:1px solid #f0ece7;">
                     <div style="font-size:13px;font-weight:500;">{{ a.name }}</div>
-                    <div style="font-size:12px;color:#999;">{% if prev_snapshots.get(a.id) %}¥{{ "%.0f"|format(prev_snapshots[a.id].balance|float) }}{% else %}—{% endif %}</div>
+                    <div style="font-size:12px;color:#999;">{% if prev_snapshots.get(a.id) %}¥{{ prev_snapshots[a.id].balance|float|currency(0) }}{% else %}—{% endif %}</div>
                     <div><input type="number" name="balance_{{ a.id }}" style="width:100%;padding:6px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:13px;background:#fff;" placeholder="输入余额" step="0.01" min="0" data-prev="{{ prev_snapshots[a.id].balance|float if prev_snapshots.get(a.id) else '' }}" data-currency="CNY" data-aid="{{ a.id }}" oninput="calcChange(this)"></div>
                     <div id="change_{{ a.id }}" style="font-size:12px;">—</div>
                     <div><input type="text" name="note_{{ a.id }}" style="width:100%;padding:6px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:12px;color:#666;" placeholder="本月大事..." maxlength="200"></div>
@@ -307,7 +292,7 @@
                 {% for a in investment_accounts %}
                 <div style="display:grid;grid-template-columns:120px 100px 130px 80px 1fr;gap:8px;padding:8px 12px;align-items:center;border-bottom:1px solid #f0ece7;">
                     <div style="font-size:13px;font-weight:500;">{{ a.name }}</div>
-                    <div style="font-size:12px;color:#999;">{% if prev_snapshots.get(a.id) %}{{ "%.0f"|format(prev_snapshots[a.id].balance|float) }}{% else %}—{% endif %}</div>
+                    <div style="font-size:12px;color:#999;">{% if prev_snapshots.get(a.id) %}{{ prev_snapshots[a.id].balance|float|currency(0) }}{% else %}—{% endif %}</div>
                     <div style="display:flex;gap:4px;">
                         <select name="currency_{{ a.id }}" style="width:55px;padding:4px;border:1px solid #e0dcd7;border-radius:6px;font-size:10px;" data-aid="{{ a.id }}" onchange="updateCurrencyDisplay(this)">
                             <option value="HKD" {{ 'selected' if (a.currency or 'HKD') == 'HKD' }}>港币</option>

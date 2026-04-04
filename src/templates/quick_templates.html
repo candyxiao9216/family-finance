@@ -36,7 +36,7 @@
                         {% endif %}
                     </div>
                     <div class="account-balance">
-                        <span class="account-balance-value">¥{{ "%.2f"|format(tpl.amount) }}</span>
+                        <span class="account-balance-value">¥{{ tpl.amount|currency }}</span>
                         <span class="account-owner">已使用 {{ tpl.use_count or 0 }} 次</span>
                     </div>
                     <div class="plan-actions" style="display:flex;gap:8px;margin-top:4px;">

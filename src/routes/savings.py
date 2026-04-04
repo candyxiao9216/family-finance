@@ -25,7 +25,7 @@ def savings_list():
     user_id = session.get('user_id')
     user = User.query.get(user_id)
     family = user.family if user else None
-    current_view = request.args.get('view', 'personal')
+    current_view = 'family'  # 储蓄计划始终使用家庭视图
 
     member_ids = _get_family_member_ids(user_id, current_view)
 

@@ -295,6 +295,43 @@ body::before {
     gap: var(--space-sm);
 }
 
+/* 分页 */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    padding: var(--space-md);
+}
+.page-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 8px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    transition: background 0.2s;
+}
+.page-link:hover { background: var(--color-bg-secondary); }
+.page-link.active {
+    background: var(--color-accent);
+    color: #fff;
+    font-weight: 600;
+}
+.page-ellipsis {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    font-size: 13px;
+    color: var(--color-text-muted);
+}
+
 .transaction-item {
     display: grid;
     grid-template-columns: auto 1fr auto auto;
@@ -1055,6 +1092,61 @@ body::before {
     gap: var(--space-sm);
     justify-content: flex-end;
     margin-bottom: var(--space-lg);
+}
+
+/* 账户左右两列 grid */
+.acct-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+}
+@media (max-width: 767px) {
+    .acct-grid { grid-template-columns: 1fr; }
+}
+
+/* 账户精简列表 */
+.acct-compact-list {
+    padding: 0 var(--space-md) var(--space-sm);
+}
+.acct-compact-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--color-border);
+}
+.acct-compact-row:last-child { border-bottom: none; }
+.acct-compact-name {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+.acct-name-text { font-weight: 500; font-size: 14px; }
+.acct-owner-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: #f44336;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+.acct-compact-bal {
+    text-align: right;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.acct-compact-act {
+    flex-shrink: 0;
 }
 
 .btn-action {

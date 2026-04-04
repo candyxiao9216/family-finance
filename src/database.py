@@ -43,6 +43,16 @@ def create_app() -> Flask:
     # 初始化数据库
     db.init_app(app)
 
+    # 注册 Jinja2 自定义过滤器
+    @app.template_filter('currency')
+    def currency_filter(value, decimals=2):
+        """千分位逗号格式化金额，如 1020000 → 1,020,000.00"""
+        try:
+            value = float(value)
+        except (ValueError, TypeError):
+            return '0.00'
+        return f'{value:,.{decimals}f}'
+
     # 静态文件和模板目录
     app.static_folder = str(BASE_DIR / 'src' / 'static')
     app.template_folder = str(BASE_DIR / 'src' / 'templates')
