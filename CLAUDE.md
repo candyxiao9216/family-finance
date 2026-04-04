@@ -4,7 +4,7 @@
 
 **项目名称:** 0225-FamilyFinance
 **项目类型:** 个人财务管理 Web 应用
-**状态:** Phase 5 已完成 (v1.5.0)
+**状态:** Phase 7 已完成 (v1.7.0)
 **创建日期:** 2026-02-25
 
 ## 项目目标
@@ -205,7 +205,7 @@ CREATE TABLE import_records (
 ### 目录结构
 ```
 src/
-├── main.py                # Flask 应用入口
+├── main.py                # Flask 应用入口（仪表盘首页 + 交易增删改）
 ├── models.py              # 所有数据模型（12 个）
 ├── database.py            # 数据库连接和初始化
 ├── routes/                # 路由层（Flask 蓝图）
@@ -215,23 +215,29 @@ src/
 │   ├── savings.py         # 储蓄路由
 │   ├── baby_fund.py       # 宝宝基金路由
 │   ├── upload.py          # 文件上传路由
-│   └── family.py          # 家庭路由
+│   ├── family.py          # 家庭路由
+│   ├── transaction.py     # 月度收支路由（记账表单+交易列表）
+│   ├── template.py        # 快捷模板路由
+│   └── recurring.py       # 定期交易路由
 ├── utils/                 # 工具函数
 │   └── importers.py       # CSV/Excel 解析
 ├── static/
 │   ├── css/style.css      # 全局样式（含移动端响应式）
-│   └── js/app.js          # 公共交互 JS
+│   └── js/app.js          # 公共交互 JS（菜单、Toast、小眼睛隐藏）
 └── templates/             # HTML 模板（Jinja2 继承）
     ├── base.html          # 公共模板（导航、Tab、Toast、确认弹窗）
     ├── auth_base.html     # 认证页公共模板
-    ├── index.html         # 首页
-    ├── accounts.html      # 账户管理
+    ├── index.html         # 首页（三模块仪表盘）
+    ├── transactions.html  # 月度收支（记账表单+交易列表+分页）
+    ├── accounts.html      # 资产总览
     ├── reports.html       # 数据报表
     ├── categories.html    # 分类管理
     ├── savings.html       # 储蓄计划
     ├── baby_fund.html     # 宝宝基金
     ├── upload.html        # 批量导入
     ├── edit_transaction.html
+    ├── quick_templates.html # 快捷模板管理
+    ├── recurring.html     # 定期交易管理
     ├── auth/              # 登录/注册
     └── family/            # 家庭信息/成员
 ```
@@ -240,17 +246,21 @@ src/
 
 | 路由 | 方法 | 功能 |
 |------|------|------|
+| `/` | GET | 首页仪表盘（三模块概览） |
+| `/transactions` | GET | 月度收支页（记账表单+交易列表+分页） |
+| `/add` | POST | 添加交易 |
+| `/edit/<id>` | GET/POST | 编辑交易 |
+| `/delete/<id>` | POST | 删除交易 |
 | `/api/auth/login` | POST | 用户登录 |
 | `/api/auth/register` | POST | 用户注册 |
-| `/api/transactions` | GET/POST | 获取/创建交易 |
-| `/api/transactions/<id>` | PUT/DELETE | 更新/删除交易 |
-| `/api/accounts` | GET/POST | 获取/创建账户 |
-| `/api/accounts/<id>/balance` | POST | 记录账户余额 |
-| `/api/savings/plans` | GET/POST | 获取/创建储蓄计划 |
-| `/api/savings/records` | GET/POST | 获取/创建储蓄记录 |
-| `/api/baby-funds` | GET/POST | 获取/创建宝宝基金记录 |
-| `/api/upload` | POST | CSV/Excel 导入 |
-| `/api/dashboard/stats` | GET | 获取仪表盘统计数据 |
+| `/accounts` | GET | 资产总览 |
+| `/accounts/<id>/balance` | POST | 记录账户余额 |
+| `/savings` | GET | 储蓄计划 |
+| `/savings/records` | GET/POST | 储蓄记录 |
+| `/baby-funds` | GET/POST | 宝宝基金 |
+| `/upload` | GET/POST | CSV/Excel 导入 |
+| `/reports` | GET | 数据报表 |
+| `/reports/api/trend` | GET | 趋势图数据 API |
 
 ## 数据可视化需求
 
@@ -317,6 +327,42 @@ python src/main.py
 - 端口：5001（Gunicorn）→ 80（Nginx）
 
 ## 功能实现记录
+
+### 2026-04-05: Phase 7 — 首页重做为仪表盘 + 小眼睛统一 ✅
+
+**实现内容:**
+
+**首页重做为三模块仪表盘:**
+- 首页（`/`）从记账页改为概览仪表盘，包含三个卡片模块：
+  - 模块 1：月度收支概览（收入/支出/结余 + 近 6 月趋势折线图）
+  - 模块 2：资产总览（储蓄总额/投资总额/总资产，含多币种汇率换算）
+  - 模块 3：储蓄计划概览（年度目标/已储蓄/进度条/完成率）
+- 每个模块底部「查看详情 →」链接跳转到对应子页面
+
+**月度收支独立页面:**
+- 新建 `transaction_bp` 蓝图（`/transactions`），完整迁移原首页的记账功能
+- 包含：记账表单 + 交易列表 + 分页 + 快捷模板 + 视图切换 + 迷你趋势图
+- 交易增删改路由（`/add`、`/edit/<id>`、`/delete/<id>`）重定向目标从 `/` 改为 `/transactions`
+
+**导航文案更新:**
+- 桌面端：首页 | 资产总览 | 储蓄计划 | 宝宝基金 | 管理▾（含月度收支）| 退出
+- 移动端底栏：🏠首页 | 💳资产总览 | 🎯储蓄计划 | ⚙️更多
+- 汉堡菜单：新增「💵 月度收支」入口
+
+**小眼睛金额隐藏统一:**
+- 扩展 app.js 选择器，覆盖所有页面金额元素：`.stat-value`、`.dash-stat-value`、`.asset-row-value`、`.amount-hide`
+- 首页仪表盘在第一个卡片头部自动插入小眼睛按钮
+- 新增 `window.ffReapplyHide()` 全局函数，解决 JS 动态赋值后覆盖隐藏状态的问题
+- 所有页面默认隐藏金额（🙈），状态通过 localStorage 全局同步
+- 储蓄进度条和百分比不受小眼睛影响
+
+**新增/修改文件:**
+- `src/routes/transaction.py` — **新建**，月度收支蓝图
+- `src/templates/transactions.html` — **新建**，月度收支页面模板
+- `src/main.py` — 重写 index 路由为仪表盘；注册 transaction_bp；交易重定向改为 `/transactions`
+- `src/templates/index.html` — **重写**为三模块仪表盘
+- `src/templates/base.html` — 导航文案更新（资产总览/储蓄计划/月度收支）
+- `src/static/js/app.js` — 小眼睛选择器扩展 + ffReapplyHide 全局函数
 
 ### 2026-04-04: Phase 6 — 体验细节优化 ✅
 
@@ -680,5 +726,5 @@ curl -sSL https://raw.githubusercontent.com/candyxiao9216/family-finance/main/de
 
 ---
 
-**最后更新:** 2026-04-04
-**文档版本:** 1.6.0
+**最后更新:** 2026-04-05
+**文档版本:** 1.7.0

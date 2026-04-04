@@ -192,6 +192,32 @@
 
 ---
 
+## Phase 7 - 首页仪表盘重做（2026-04-05）
+
+### TASK-010：首页重做为三模块仪表盘 ✅
+- 状态：DONE
+- 优先级：P0
+- 规模：M
+- 目标：首页从记账页改为概览仪表盘（月度收支+资产总览+储蓄计划）
+- 涉及文件：
+  - `/src/main.py`（重写 index 路由为仪表盘数据查询）
+  - `/src/templates/index.html`（重写为三模块卡片布局）
+  - `/src/routes/transaction.py`（**新建**，月度收支蓝图）
+  - `/src/templates/transactions.html`（**新建**，迁移原首页记账功能）
+  - `/src/templates/base.html`（导航文案更新：资产总览/储蓄计划/管理▾含月度收支）
+
+### TASK-011：小眼睛金额隐藏统一 ✅
+- 状态：DONE
+- 优先级：P1
+- 规模：S
+- 目标：首页仪表盘添加小眼睛，所有页面默认隐藏金额，进度条和百分比不隐藏
+- 涉及文件：
+  - `/src/static/js/app.js`（选择器扩展 + ffReapplyHide 全局函数）
+  - `/src/templates/index.html`（amount-hide class + ffReapplyHide 调用）
+  - `/src/templates/transactions.html`（ffReapplyHide 调用）
+
+---
+
 ## 已完成任务
 
 ### TASK-P0-001：交易记录基本功能

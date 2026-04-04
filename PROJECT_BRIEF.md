@@ -32,12 +32,12 @@
 
 ## 4. 架构快照（保持简短）
 - 入口形态：Web 应用（Flask）
-- 核心模块：用户认证 → 交易记录 → 分类管理 → 数据统计
-- 数据流：用户登录 → 录入交易 → 关联分类 → 统计展示
-- 数据库：SQLite 3，包含 users、categories、transactions 三张表
+- 核心模块：用户认证 → 仪表盘首页 → 月度收支 → 分类管理 → 资产总览 → 储蓄计划 → 数据统计
+- 数据流：用户登录 → 首页概览（三模块仪表盘）→ 各子页面详情操作
+- 数据库：SQLite 3，包含 users、categories、transactions 等 10 张表
 
 ## 5. 当前状态（必须随时更新）
-- 当前里程碑：Phase 5 体验打磨已完成
+- 当前里程碑：Phase 7 首页仪表盘重做已完成
 - 已可用能力：
   - [x] 用户注册/登录（密码哈希加密）
   - [x] 交易记录（添加、编辑、删除、列表展示）
@@ -72,7 +72,10 @@
   - [x] 账户列表左右两列精简排版（类型badge + 归属人彩色icon）
   - [x] 首页交易列表分页（每页 10 条）
   - [x] 储蓄计划 / 宝宝基金默认家庭视图（去除个人视图切换）
-  - [x] 财务数据隐藏（小眼睛，默认隐藏）
+  - [x] 财务数据隐藏（小眼睛，默认隐藏，所有页面统一）
+  - [x] 首页重做为三模块仪表盘（月度收支概览 + 资产总览 + 储蓄计划概览）
+  - [x] 月度收支独立页面（/transactions，迁移原首页记账功能）
+  - [x] 导航文案更新（资产总览/储蓄计划/管理▾含月度收支）
 - 已知问题 / 技术债：
   - CSRF 防护缺失（需安装 flask-wtf 改动所有表单，家庭内部使用风险低，后续版本处理）
   - 文件上传缺 MIME 校验（目前仅靠扩展名过滤，后续加 magic bytes 校验）
@@ -99,13 +102,17 @@
   - `cd /opt/family-finance && git pull origin main && systemctl restart family-finance`
 
 ## 8. 关键路径（只列重要的）
-- `/src/main.py` - 应用入口，主路由
+- `/src/main.py` - 应用入口，仪表盘首页路由 + 交易增删改路由
+- `/src/routes/transaction.py` - 月度收支页路由（记账表单+交易列表+分页）
 - `/src/models.py` - 数据模型（User, Category, Transaction, SavingsPlan, BabyFund 等 12 个模型）
 - `/src/database.py` - 数据库配置和初始化
 - `/src/routes/auth.py` - 认证路由（登录/注册）
+- `/src/routes/account.py` - 资产总览路由
+- `/src/routes/savings.py` - 储蓄计划路由
 - `/src/templates/base.html` - 公共模板（导航、Tab栏、Toast、确认弹窗）
-- `/src/templates/auth_base.html` - 认证页公共模板
-- `/src/static/js/app.js` - 公共交互 JS（菜单、Toast、loading、确认弹窗）
+- `/src/templates/index.html` - 首页三模块仪表盘
+- `/src/templates/transactions.html` - 月度收支页面
+- `/src/static/js/app.js` - 公共交互 JS（菜单、Toast、loading、确认弹窗、小眼睛隐藏）
 - `/src/static/css/style.css` - 全局样式（含移动端响应式）
 - `/data/family_finance.db` - SQLite 数据库文件
 
