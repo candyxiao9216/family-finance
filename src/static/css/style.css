@@ -1129,16 +1129,15 @@ body::before {
 }
 .acct-compact-row:last-child { border-bottom: none; }
 .acct-compact-name {
-    flex: 1;
-    min-width: 0;
     display: flex;
     align-items: center;
     gap: 4px;
+    flex-shrink: 0;
 }
 .acct-name-text {
     font-weight: 500;
     font-size: 13px;
-    width: 3em;
+    width: 4em;
     word-break: break-all;
     line-height: 1.3;
     flex-shrink: 0;
@@ -1158,11 +1157,11 @@ body::before {
 .acct-owner-icon.icon-blue { background: #6B9EB5; }
 .acct-owner-icon.icon-purple { background: #9B8EC4; }
 .acct-compact-bal {
+    flex: 1;
     text-align: right;
     font-size: 13px;
     font-weight: 500;
     white-space: nowrap;
-    flex-shrink: 0;
 }
 .acct-compact-act {
     flex-shrink: 0;
