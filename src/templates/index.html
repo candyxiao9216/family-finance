@@ -250,6 +250,86 @@
             <a href="{{ url_for('savings.savings_list') }}">查看详情 →</a>
         </div>
     </div>
+
+    <!-- 模块 4：月度待办 Checklist -->
+    <div class="dashboard-card">
+        <div class="dashboard-card-header">
+            <h2>本月待办 <span class="subtitle">{{ stat_year }}年{{ stat_month }}月</span></h2>
+            <span class="subtitle">{{ required_completed }}/{{ total_required }} 必选项</span>
+        </div>
+        <div class="dashboard-card-body">
+            <!-- 进度条 -->
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+                <div style="flex:1;height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden;">
+                    <div style="height:100%;background:{% if checklist_rate == 100 %}#27AE60{% else %}linear-gradient(90deg,#D4A574,#c08f5a){% endif %};border-radius:4px;width:{{ checklist_rate|int }}%;transition:width .5s;"></div>
+                </div>
+                <span style="font-size:13px;font-weight:600;color:{% if checklist_rate == 100 %}#27AE60{% else %}#D4A574{% endif %};">{{ checklist_rate|int }}%</span>
+            </div>
+
+            <!-- Checklist 列表 -->
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                {% for todo in checklist %}
+                <div id="checklist-item-{{ loop.index0 }}" data-guide-step="{{ loop.index0 }}" data-status="{{ todo.status }}" data-detect-key="{{ todo.detect_key }}" style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:{% if todo.status == 'completed' %}#f9faf9{% else %}#fff{% endif %};border-radius:8px;border:1px solid {% if todo.status == 'completed' %}#e0e8e0{% else %}#eee{% endif %};position:relative;">
+                    <!-- 打钩按钮 -->
+                    <form method="POST" action="{{ url_for('monthly_todo.toggle_todo', todo_id=todo.id) }}" style="margin:0;">
+                        <button type="submit" style="background:none;border:none;cursor:pointer;font-size:20px;padding:0;line-height:1;">
+                            {% if todo.status == 'completed' %}☑{% else %}☐{% endif %}
+                        </button>
+                    </form>
+
+                    <!-- 标题 + 标签 -->
+                    <div style="flex:1;min-width:0;">
+                        <span style="font-size:14px;{% if todo.status == 'completed' %}text-decoration:line-through;color:#aaa;{% else %}color:#2c3e50;font-weight:500;{% endif %}">{{ todo.title }}</span>
+                        {% if not todo.is_required %}
+                        <span style="font-size:11px;background:#f0f0f0;color:#999;padding:1px 6px;border-radius:3px;margin-left:6px;">可选</span>
+                        {% endif %}
+                        {% if todo.auto_detected and todo.status == 'completed' %}
+                        <span style="font-size:11px;background:#e8f8f0;color:#27AE60;padding:1px 6px;border-radius:3px;margin-left:4px;">自动检测</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- 跳转链接 -->
+                    {% if todo.status != 'completed' %}
+                    {% set item_def = checklist_items | selectattr('detect_key', 'equalto', todo.detect_key) | first %}
+                    {% if item_def %}
+                    <a href="{{ url_for(item_def.action_url_endpoint) }}" style="font-size:12px;color:#D4A574;white-space:nowrap;text-decoration:none;">{{ item_def.action_label }} →</a>
+                    {% endif %}
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="dashboard-card-footer">
+            <a href="{{ url_for('monthly_todo.monthly_todo_list', year=stat_year, month=stat_month) }}">查看详情 →</a>
+        </div>
+    </div>
+
+    <!-- 聚焦遮罩 + 气泡引导 -->
+    {% if show_todo_popup %}
+    <div id="guide-overlay" style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:9990;pointer-events:none;display:none;">
+        <!-- 四块遮罩拼出聚焦窗口 -->
+        <div id="guide-mask-top" style="position:absolute;background:rgba(0,0,0,.55);"></div>
+        <div id="guide-mask-bottom" style="position:absolute;background:rgba(0,0,0,.55);"></div>
+        <div id="guide-mask-left" style="position:absolute;background:rgba(0,0,0,.55);"></div>
+        <div id="guide-mask-right" style="position:absolute;background:rgba(0,0,0,.55);"></div>
+    </div>
+    <!-- 气泡 -->
+    <div id="guide-bubble" style="display:none;position:fixed;z-index:9991;background:#fff;border-radius:10px;padding:16px;box-shadow:0 6px 24px rgba(0,0,0,.2);max-width:280px;width:280px;">
+        <!-- 小三角 -->
+        <div id="guide-arrow" style="position:absolute;top:-8px;left:24px;width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:8px solid #fff;"></div>
+        <div id="guide-step-label" style="font-size:11px;color:#D4A574;font-weight:600;margin-bottom:4px;"></div>
+        <div id="guide-title" style="font-size:15px;font-weight:600;color:#2c3e50;margin-bottom:6px;"></div>
+        <div id="guide-desc" style="font-size:13px;color:#666;margin-bottom:12px;"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+            <!-- 步骤指示器 -->
+            <div id="guide-dots" style="display:flex;gap:5px;"></div>
+            <div style="display:flex;gap:6px;">
+                <button id="guide-skip" onclick="closeGuide()" style="padding:6px 12px;border:1px solid #ddd;border-radius:5px;background:#fff;color:#999;cursor:pointer;font-size:12px;">跳过</button>
+                <button id="guide-action" style="padding:6px 12px;border:none;border-radius:5px;background:#D4A574;color:#fff;cursor:pointer;font-size:12px;font-weight:600;"></button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 {% endblock %}
 
 {% block scripts %}
@@ -352,5 +432,149 @@
 
     // JS 动态赋值完成后，重新应用小眼睛隐藏
     if (window.ffReapplyHide) window.ffReapplyHide();
+
+    // ── 聚焦遮罩 + 气泡引导 ──────────────────────────
+    {% if show_todo_popup %}
+    (function() {
+        // 引导步骤数据（从 Jinja 渲染）
+        var guideSteps = [
+            {% for todo in checklist %}
+            {
+                index: {{ loop.index0 }},
+                title: '{{ todo.title }}',
+                desc: '{{ todo.description or todo.tips or "" }}',
+                status: '{{ todo.status }}',
+                detectKey: '{{ todo.detect_key }}',
+                {% set item_def = checklist_items | selectattr('detect_key', 'equalto', todo.detect_key) | first %}
+                actionLabel: '{{ item_def.action_label if item_def else "查看" }}',
+                actionUrl: '{{ url_for(item_def.action_url_endpoint) if item_def else "#" }}'
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+
+        // 只保留未完成的步骤
+        var pendingSteps = guideSteps.filter(function(s) { return s.status !== 'completed'; });
+        if (pendingSteps.length === 0) return;
+
+        var currentGuideIdx = 0;
+        var overlay = document.getElementById('guide-overlay');
+        var bubble = document.getElementById('guide-bubble');
+        var maskTop = document.getElementById('guide-mask-top');
+        var maskBottom = document.getElementById('guide-mask-bottom');
+        var maskLeft = document.getElementById('guide-mask-left');
+        var maskRight = document.getElementById('guide-mask-right');
+
+        function positionMask(rect) {
+            var pad = 6; // 高亮区域 padding
+            var vw = window.innerWidth, vh = window.innerHeight;
+            var t = rect.top - pad, l = rect.left - pad;
+            var w = rect.width + pad * 2, h = rect.height + pad * 2;
+
+            // 上
+            maskTop.style.cssText = 'position:absolute;background:rgba(0,0,0,.55);top:0;left:0;width:' + vw + 'px;height:' + Math.max(0, t) + 'px;';
+            // 下
+            maskBottom.style.cssText = 'position:absolute;background:rgba(0,0,0,.55);top:' + (t + h) + 'px;left:0;width:' + vw + 'px;height:' + Math.max(0, vh - t - h) + 'px;';
+            // 左
+            maskLeft.style.cssText = 'position:absolute;background:rgba(0,0,0,.55);top:' + t + 'px;left:0;width:' + Math.max(0, l) + 'px;height:' + h + 'px;';
+            // 右
+            maskRight.style.cssText = 'position:absolute;background:rgba(0,0,0,.55);top:' + t + 'px;left:' + (l + w) + 'px;width:' + Math.max(0, vw - l - w) + 'px;height:' + h + 'px;';
+        }
+
+        function positionBubble(rect) {
+            var bw = 280;
+            // 气泡放在高亮元素下方
+            var top = rect.bottom + 12;
+            var left = rect.left;
+            // 防止右侧溢出
+            if (left + bw > window.innerWidth - 16) left = window.innerWidth - bw - 16;
+            if (left < 16) left = 16;
+            // 如果下方空间不够，放上方
+            var arrow = document.getElementById('guide-arrow');
+            if (top + 180 > window.innerHeight) {
+                top = rect.top - 180;
+                arrow.style.cssText = 'position:absolute;bottom:-8px;top:auto;left:24px;width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:8px solid #fff;';
+            } else {
+                arrow.style.cssText = 'position:absolute;top:-8px;left:24px;width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:8px solid #fff;';
+            }
+            bubble.style.left = left + 'px';
+            bubble.style.top = top + 'px';
+        }
+
+        function showStep(idx) {
+            if (idx >= pendingSteps.length) { closeGuide(); return; }
+            currentGuideIdx = idx;
+            var step = pendingSteps[idx];
+            var el = document.getElementById('checklist-item-' + step.index);
+            if (!el) { closeGuide(); return; }
+
+            // 滚动到可见
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            setTimeout(function() {
+                var rect = el.getBoundingClientRect();
+
+                // 高亮元素
+                el.style.zIndex = '9992';
+                el.style.position = 'relative';
+                el.style.boxShadow = '0 0 0 3px #D4A574';
+                el.style.borderColor = '#D4A574';
+
+                // 遮罩
+                positionMask(rect);
+                overlay.style.display = 'block';
+                overlay.style.pointerEvents = 'auto';
+
+                // 气泡内容
+                var totalPending = pendingSteps.length;
+                document.getElementById('guide-step-label').textContent = '第 ' + (idx + 1) + ' 步（共 ' + totalPending + ' 步）';
+                document.getElementById('guide-title').textContent = step.title;
+                document.getElementById('guide-desc').textContent = step.desc;
+
+                // 步骤点
+                var dotsHtml = '';
+                for (var i = 0; i < totalPending; i++) {
+                    dotsHtml += '<span style="width:7px;height:7px;border-radius:50%;background:' + (i === idx ? '#D4A574' : '#ddd') + ';"></span>';
+                }
+                document.getElementById('guide-dots').innerHTML = dotsHtml;
+
+                // 按钮
+                var actionBtn = document.getElementById('guide-action');
+                if (idx < totalPending - 1) {
+                    actionBtn.textContent = '下一步 →';
+                    actionBtn.onclick = function() { clearHighlight(step.index); showStep(idx + 1); };
+                } else {
+                    actionBtn.textContent = '知道了';
+                    actionBtn.onclick = function() { closeGuide(); };
+                }
+
+                positionBubble(rect);
+                bubble.style.display = 'block';
+            }, 350);
+        }
+
+        function clearHighlight(stepIdx) {
+            var el = document.getElementById('checklist-item-' + stepIdx);
+            if (el) {
+                el.style.zIndex = '';
+                el.style.boxShadow = '';
+                el.style.borderColor = '';
+            }
+        }
+
+        window.closeGuide = function() {
+            overlay.style.display = 'none';
+            bubble.style.display = 'none';
+            pendingSteps.forEach(function(s) { clearHighlight(s.index); });
+        };
+
+        // 点击遮罩关闭
+        overlay.onclick = function(e) {
+            if (e.target === overlay || e.target.id.indexOf('guide-mask') === 0) closeGuide();
+        };
+
+        // 延迟启动引导（等页面渲染完）
+        setTimeout(function() { showStep(0); }, 600);
+    })();
+    {% endif %}
 </script>
 {% endblock %}

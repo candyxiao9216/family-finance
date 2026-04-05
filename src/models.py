@@ -459,3 +459,81 @@ class RecurringTransaction(db.Model):
     creator = db.relationship('User', foreign_keys=[user_id])
     category = db.relationship('Category', foreign_keys=[category_id])
     account = db.relationship('Account', foreign_keys=[account_id])
+
+
+class MonthlyTodo(db.Model):
+    """月度待办引导表 - 用于记录每月的财务待办事项和引导"""
+    __tablename__ = 'monthly_todos'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    year = db.Column(db.Integer, nullable=False)
+    month = db.Column(db.Integer, nullable=False)  # 1-12
+    
+    # 待办类型：'transaction'(交易录入), 'snapshot'(账户快照), 'savings'(储蓄记录), 'baby_fund'(宝宝基金)
+    category = db.Column(db.String(20), nullable=False, default='transaction')
+
+    # 检测 key：用于自动检测完成状态（对应 category）
+    detect_key = db.Column(db.String(30), nullable=True)
+
+    # 待办项内容
+    title = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+
+    # 是否必选项（必选项参与进度计算，可选项不参与）
+    is_required = db.Column(db.Boolean, default=True)
+
+    # 优先级：1-5，其中 5 最高
+    priority = db.Column(db.Integer, default=3)
+
+    # 状态：'pending'(待处理), 'completed'(已完成)
+    status = db.Column(db.String(20), default='pending')
+
+    # 是否由系统自动检测完成（True=自动检测通过, False=手动打钩）
+    auto_detected = db.Column(db.Boolean, default=False)
+
+    # 完成日期
+    completed_at = db.Column(db.DateTime, nullable=True)
+
+    # 提示信息和小贴士
+    tips = db.Column(db.Text, nullable=True)
+
+    # 跳转链接（引导用户去完成操作的页面）
+    action_url = db.Column(db.String(200), nullable=True)
+    
+    # 时间戳
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # 关系定义
+    creator = db.relationship('User', foreign_keys=[user_id], backref='monthly_todos')
+
+    # 复合唯一键：同一用户同一月份的待办项应该唯一
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'year', 'month', 'title', name='uq_user_month_todo'),
+    )
+
+    def __repr__(self):
+        return f"<MonthlyTodo {self.id}: {self.title} ({self.year}-{self.month:02d})>"
+
+    def to_dict(self):
+        """转换为字典格式"""
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'year': self.year,
+            'month': self.month,
+            'category': self.category,
+            'detect_key': self.detect_key,
+            'title': self.title,
+            'description': self.description,
+            'is_required': self.is_required,
+            'priority': self.priority,
+            'status': self.status,
+            'auto_detected': self.auto_detected,
+            'completed_at': self.completed_at.isoformat() if self.completed_at else None,
+            'tips': self.tips,
+            'action_url': self.action_url,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }

@@ -6,7 +6,7 @@ from flask import Flask, redirect, render_template, request, url_for
 from sqlalchemy import func, extract, case
 
 from database import create_app, init_database
-from models import db, Transaction, Category, User, Family, TransactionModification, Account, TransactionTemplate, SavingsPlan, SavingsRecord
+from models import db, Transaction, Category, User, Family, TransactionModification, Account, TransactionTemplate, SavingsPlan, SavingsRecord, MonthlyTodo
 from routes.auth import auth_bp
 from routes.family import family_bp
 from routes.category import category_bp
@@ -18,6 +18,7 @@ from routes.upload import upload_bp
 from routes.template import template_bp
 from routes.recurring import recurring_bp
 from routes.transaction import transaction_bp
+from routes.monthly_todo import monthly_todo_bp
 from flask import session, flash
 
 app = create_app()
@@ -38,6 +39,7 @@ app.register_blueprint(baby_fund_bp)
 app.register_blueprint(upload_bp)
 app.register_blueprint(template_bp)
 app.register_blueprint(recurring_bp)
+app.register_blueprint(monthly_todo_bp)
 app.register_blueprint(transaction_bp)
 
 @app.before_request
@@ -129,6 +131,23 @@ def index():
 
     overall_progress = float(total_saved / total_target * 100) if total_target else 0
 
+    # --- 模块 4：月度待办 Checklist ---
+    from routes.monthly_todo import ensure_monthly_checklist, CHECKLIST_ITEMS
+    checklist = ensure_monthly_checklist(user_id, current_year, current_month)
+    checklist.sort(key=lambda t: t.priority, reverse=True)
+
+    required_todos = [t for t in checklist if t.is_required]
+    required_completed = sum(1 for t in required_todos if t.status == 'completed')
+    total_required = len(required_todos)
+    checklist_rate = (required_completed / total_required * 100) if total_required > 0 else 0
+
+    # 弹窗逻辑：当月有未完成必选项 + 本次登录还没弹过
+    popup_key = f'todo_popup_{current_year}_{current_month}'
+    pending_required = [t for t in required_todos if t.status != 'completed']
+    show_todo_popup = len(pending_required) > 0 and not session.get(popup_key)
+    if show_todo_popup:
+        session[popup_key] = True
+
     return render_template('index.html',
                           monthly_income=monthly_income,
                           monthly_expense=monthly_expense,
@@ -141,6 +160,13 @@ def index():
                           total_target=float(total_target),
                           total_saved=float(total_saved),
                           overall_progress=min(overall_progress, 100),
+                          checklist=checklist,
+                          checklist_items=CHECKLIST_ITEMS,
+                          required_completed=required_completed,
+                          total_required=total_required,
+                          checklist_rate=checklist_rate,
+                          show_todo_popup=show_todo_popup,
+                          pending_required=pending_required,
                           current_view=current_view,
                           family=family,
                           username=session.get('nickname', session.get('username', '用户')))

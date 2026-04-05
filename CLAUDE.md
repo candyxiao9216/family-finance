@@ -4,7 +4,7 @@
 
 **项目名称:** 0225-FamilyFinance
 **项目类型:** 个人财务管理 Web 应用
-**状态:** Phase 7 已完成 (v1.7.0)
+**状态:** Phase 8 已完成 (v1.8.0)
 **创建日期:** 2026-02-25
 
 ## 项目目标
@@ -292,6 +292,7 @@ src/
 - ✅ CSV/Excel 批量导入
 - ✅ 移动端适配（底部 Tab + 汉堡菜单）
 - ✅ 交互优化（Toast、确认弹窗、空状态、loading）
+- ✅ 月度待办 Checklist（自动检测 + 手动打钩 + 聚焦气泡引导）
 
 **暂不包含：**
 - ❌ 银行流水自动同步
@@ -327,6 +328,61 @@ python src/main.py
 - 端口：5001（Gunicorn）→ 80（Nginx）
 
 ## 功能实现记录
+
+### 2026-04-05: Phase 8 — 月度待办 Checklist + 聚焦气泡引导 ✅
+
+**实现内容:**
+
+**月度待办 Checklist（固定 4 项）:**
+- 每月自动生成 4 项待办（用户首次访问时触发）：
+  - ✅ 录入本月交易记录（必选，手动打钩）
+  - ✅ 更新账户余额快照（必选，自动检测：所有账户都有快照→完成）
+  - ✅ 录入储蓄记录（必选，自动检测：本月有记录→完成）
+  - ☐ 录入宝宝基金（可选，手动打钩）
+- 自动检测按当前登录用户判断，小美和小帅各自独立
+- 手动打钩永远有效，可兜底自动检测未覆盖的情况
+
+**首页仪表盘模块 4 改造:**
+- 从通用任务摘要改为 checklist 卡片（☑/☐ + 跳转链接 + 进度条）
+- 进度条只统计必选项，100% 时变绿
+- 已完成项显示删除线 + 灰色，自动检测项显示「自动检测」badge
+- 未完成项右侧显示「去录入 →」跳转链接
+
+**聚焦遮罩 + 气泡引导:**
+- 有未完成必选项时，登录后自动启动引导（每次登录触发一次）
+- 页面变暗，高亮当前步骤的待办项，下方弹出气泡
+- 气泡显示：步骤标签 + 标题 + 说明 + 步骤点 + 下一步按钮
+- 最后一步按钮变为「知道了」，点遮罩可关闭
+- 已完成项自动跳过，只引导未完成项
+- 纯原生 JS 实现，四块遮罩拼接聚焦窗口
+
+**导航栏调整:**
+- 桌面端：首页 | 月度收支 | 资产总览 | 储蓄计划 | 管理 ▾（宝宝基金排第一）| 退出
+- 移动端底部 Tab：🏠首页 | 💵月度收支 | 💳资产总览 | ⚙️更多
+- 移动端侧边菜单：月度收支提升至首页后第一项，宝宝基金归入管理区
+
+**底部 Tab 栏美化:**
+- 修复 CSS 类名不匹配问题（HTML `bottom-tabs` → `bottom-tab-bar`）
+- 电脑端和移动端统一显示，居中布局
+- 白色背景 + 细阴影 + hover/active 棕金色主色
+
+**登出 session 清理:**
+- `session.clear()` 替代逐个 `session.pop`，确保 todo_popup 标记被清除
+
+**新增/修改文件:**
+- `src/models.py` — MonthlyTodo 新增 5 字段（detect_key/is_required/auto_detected/action_url），移除 related_entity_type/id
+- `src/routes/monthly_todo.py` — **完全重写**：固定 4 项 checklist + 自动检测 + toggle 路由
+- `src/main.py` — index() 增加 checklist 数据 + 弹窗逻辑 + MonthlyTodo 导入
+- `src/templates/index.html` — 模块 4 改为 checklist 卡片 + 聚焦遮罩引导
+- `src/templates/monthly_todo.html` — **完全重写**为简洁 checklist 详情页
+- `src/templates/base.html` — 导航栏调整 + 底部 Tab 类名修复
+- `src/routes/auth.py` — 登出改为 session.clear()
+- `src/static/css/style.css` — 底部 Tab 栏美化 + 全尺寸显示
+
+**数据库变更:**
+- monthly_todos 表：新增 detect_key/is_required/auto_detected/action_url 列
+- 本地开发：DROP TABLE 重建即可（无历史数据）
+- 生产部署：需执行 ALTER TABLE 或 DROP TABLE 重建
 
 ### 2026-04-05: Phase 7 — 首页重做为仪表盘 + 小眼睛统一 ✅
 
@@ -727,4 +783,4 @@ curl -sSL https://raw.githubusercontent.com/candyxiao9216/family-finance/main/de
 ---
 
 **最后更新:** 2026-04-05
-**文档版本:** 1.7.0
+**文档版本:** 1.8.0

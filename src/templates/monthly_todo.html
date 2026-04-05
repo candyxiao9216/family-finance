@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}月度待办 - 家庭财务管理{% endblock %}
+{% block mobile_title %}月度待办{% endblock %}
+
+{% block extra_head %}
+<style>
+    .checklist-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+    .month-nav {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .month-nav-btn {
+        background: #f0f0f0;
+        border: none;
+        border-radius: 6px;
+        padding: 6px 12px;
+        cursor: pointer;
+        font-size: 13px;
+        color: #555;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    .month-nav-btn:hover {
+        background: #D4A574;
+        color: white;
+    }
+    .month-display {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2c3e50;
+        min-width: 120px;
+        text-align: center;
+    }
+
+    /* 进度区 */
+    .progress-section {
+        margin-bottom: 20px;
+    }
+    .progress-bar-wrap {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 6px;
+    }
+    .progress-bar {
+        flex: 1;
+        height: 10px;
+        background: #f0f0f0;
+        border-radius: 5px;
+        overflow: hidden;
+    }
+    .progress-bar-fill {
+        height: 100%;
+        border-radius: 5px;
+        transition: width 0.5s ease;
+    }
+    .progress-bar-fill.complete { background: #27AE60; }
+    .progress-bar-fill.incomplete { background: linear-gradient(90deg, #D4A574, #c08f5a); }
+    .progress-text {
+        font-size: 14px;
+        font-weight: 600;
+    }
+    .progress-text.complete { color: #27AE60; }
+    .progress-text.incomplete { color: #D4A574; }
+    .progress-subtitle {
+        font-size: 12px;
+        color: #8e99a4;
+    }
+
+    /* Checklist 列表 */
+    .checklist-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .checklist-item {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 14px 16px;
+        background: #fff;
+        border-radius: 10px;
+        border: 1px solid #eee;
+        transition: all 0.2s;
+    }
+    .checklist-item:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .checklist-item.completed {
+        background: #f9faf9;
+        border-color: #e0e8e0;
+    }
+
+    /* 打钩按钮 */
+    .check-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 24px;
+        padding: 0;
+        line-height: 1;
+        transition: transform 0.15s;
+    }
+    .check-btn:hover {
+        transform: scale(1.15);
+    }
+
+    /* 内容区 */
+    .checklist-content {
+        flex: 1;
+        min-width: 0;
+    }
+    .checklist-title {
+        font-size: 15px;
+        font-weight: 500;
+        color: #2c3e50;
+        margin-bottom: 2px;
+    }
+    .checklist-item.completed .checklist-title {
+        text-decoration: line-through;
+        color: #aaa;
+    }
+    .checklist-desc {
+        font-size: 12px;
+        color: #8e99a4;
+    }
+    .checklist-item.completed .checklist-desc {
+        color: #bbb;
+    }
+
+    /* 标签 */
+    .badge {
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 4px;
+        white-space: nowrap;
+    }
+    .badge-optional {
+        background: #f0f0f0;
+        color: #999;
+    }
+    .badge-auto {
+        background: #e8f8f0;
+        color: #27AE60;
+    }
+
+    /* 跳转按钮 */
+    .action-link {
+        font-size: 13px;
+        color: #D4A574;
+        text-decoration: none;
+        white-space: nowrap;
+        font-weight: 500;
+    }
+    .action-link:hover {
+        color: #c08f5a;
+    }
+
+    @media (max-width: 768px) {
+        .checklist-item {
+            gap: 10px;
+            padding: 12px;
+        }
+        .checklist-title {
+            font-size: 14px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-card">
+    <div class="dashboard-card-header">
+        <h2>月度待办</h2>
+    </div>
+    <div class="dashboard-card-body">
+        <!-- 月份导航 -->
+        <div class="month-nav" style="margin-bottom: 16px;">
+            <a href="{{ url_for('monthly_todo.monthly_todo_list', year=prev_year, month=prev_month) }}" class="month-nav-btn">← 上月</a>
+            <div class="month-display">{{ year }}年{{ month }}月</div>
+            <a href="{{ url_for('monthly_todo.monthly_todo_list', year=next_year, month=next_month) }}" class="month-nav-btn">下月 →</a>
+        </div>
+
+        <!-- 进度 -->
+        <div class="progress-section">
+            <div class="progress-bar-wrap">
+                <div class="progress-bar">
+                    <div class="progress-bar-fill {% if completion_rate == 100 %}complete{% else %}incomplete{% endif %}" style="width: {{ completion_rate|int }}%"></div>
+                </div>
+                <span class="progress-text {% if completion_rate == 100 %}complete{% else %}incomplete{% endif %}">{{ completion_rate|int }}%</span>
+            </div>
+            <div class="progress-subtitle">
+                必选项完成 {{ required_completed }}/{{ total_required }}
+                {% if completion_rate == 100 %}
+                <span style="color: #27AE60;">✓ 全部完成！</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Checklist -->
+        <div class="checklist-list">
+            {% for todo in todos %}
+            <div class="checklist-item {% if todo.status == 'completed' %}completed{% endif %}">
+                <!-- 打钩 -->
+                <form method="POST" action="{{ url_for('monthly_todo.toggle_todo', todo_id=todo.id) }}" style="margin:0;">
+                    <button type="submit" class="check-btn" title="{% if todo.status == 'completed' %}取消完成{% else %}标记完成{% endif %}">
+                        {% if todo.status == 'completed' %}☑{% else %}☐{% endif %}
+                    </button>
+                </form>
+
+                <!-- 内容 -->
+                <div class="checklist-content">
+                    <div class="checklist-title">
+                        {{ todo.title }}
+                        {% if not todo.is_required %}
+                        <span class="badge badge-optional">可选</span>
+                        {% endif %}
+                        {% if todo.auto_detected and todo.status == 'completed' %}
+                        <span class="badge badge-auto">自动检测</span>
+                        {% endif %}
+                    </div>
+                    <div class="checklist-desc">{{ todo.description or '' }}</div>
+                    {% if todo.tips and todo.status != 'completed' %}
+                    <div class="checklist-desc" style="font-style: italic; margin-top: 2px;">💡 {{ todo.tips }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- 跳转 -->
+                {% if todo.status != 'completed' %}
+                {% set item_def = checklist_items | selectattr('detect_key', 'equalto', todo.detect_key) | first %}
+                {% if item_def %}
+                <a href="{{ url_for(item_def.action_url_endpoint) }}" class="action-link">{{ item_def.action_label }} →</a>
+                {% endif %}
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -206,11 +206,8 @@ def login():
 @auth_bp.route('/logout')
 def logout():
     """用户登出"""
-    # 清除会话数据
-    session.pop('user_id', None)
-    session.pop('username', None)
-    session.pop('nickname', None)
-    session.pop('family_id', None)
+    # 清除所有会话数据（包括 todo_popup 标记等）
+    session.clear()
 
     flash('您已成功登出', 'success')
     return redirect(url_for('auth.login'))

@@ -22,13 +22,13 @@
                 <span class="username">{{ username }}</span>
                 <div class="user-actions">
                     <a href="{{ url_for('index') }}" class="nav-link">首页</a>
+                    <a href="{{ url_for('transaction.transaction_list') }}" class="nav-link">月度收支</a>
                     <a href="{{ url_for('account.account_list') }}" class="nav-link">资产总览</a>
                     <a href="{{ url_for('savings.savings_list') }}" class="nav-link">储蓄计划</a>
-                    <a href="{{ url_for('baby_fund.baby_fund_list') }}" class="nav-link">宝宝基金</a>
                     <div class="nav-dropdown">
                         <a href="#" class="nav-link nav-dropdown-trigger">管理 ▾</a>
                         <div class="nav-dropdown-menu">
-                            <a href="{{ url_for('transaction.transaction_list') }}" class="nav-dropdown-item">月度收支</a>
+                            <a href="{{ url_for('baby_fund.baby_fund_list') }}" class="nav-dropdown-item">宝宝基金</a>
                             <a href="{{ url_for('category.category_list') }}" class="nav-dropdown-item">分类管理</a>
                             <a href="{{ url_for('template.template_list') }}" class="nav-dropdown-item">快捷模板</a>
                             <a href="{{ url_for('recurring.recurring_list') }}" class="nav-dropdown-item">定期交易</a>
@@ -66,12 +66,12 @@
             </div>
             <div class="side-menu-items">
                 <a href="{{ url_for('index') }}" class="side-menu-item">🏠 首页</a>
+                <a href="{{ url_for('transaction.transaction_list') }}" class="side-menu-item">💵 月度收支</a>
                 <div class="side-menu-divider"></div>
                 <a href="{{ url_for('account.account_list') }}" class="side-menu-item">💳 资产总览</a>
                 <a href="{{ url_for('savings.savings_list') }}" class="side-menu-item">🎯 储蓄计划</a>
-                <a href="{{ url_for('baby_fund.baby_fund_list') }}" class="side-menu-item">👶 宝宝基金</a>
                 <div class="side-menu-divider"></div>
-                <a href="{{ url_for('transaction.transaction_list') }}" class="side-menu-item">💵 月度收支</a>
+                <a href="{{ url_for('baby_fund.baby_fund_list') }}" class="side-menu-item">👶 宝宝基金</a>
                 <a href="{{ url_for('category.category_list') }}" class="side-menu-item">🏷️ 分类管理</a>
                 <a href="{{ url_for('template.template_list') }}" class="side-menu-item">⚡ 快捷模板</a>
                 <a href="{{ url_for('recurring.recurring_list') }}" class="side-menu-item">🔄 定期交易</a>
@@ -117,22 +117,22 @@
         <main class="main-content">{% block content %}{% endblock %}</main>
 
         <!-- 移动端底部标签栏 -->
-        <nav class="bottom-tabs">
-            <a href="{{ url_for('index') }}" class="bottom-tab {% if request.path == '/' %}active{% endif %}">
-                <span class="bottom-tab-icon">🏠</span>
-                <span class="bottom-tab-label">首页</span>
+        <nav class="bottom-tab-bar">
+            <a href="{{ url_for('index') }}" class="tab-item {% if request.path == '/' %}active{% endif %}">
+                <span class="tab-icon">🏠</span>
+                <span class="tab-label">首页</span>
             </a>
-            <a href="{{ url_for('account.account_list') }}" class="bottom-tab {% if '/accounts' in request.path %}active{% endif %}">
-                <span class="bottom-tab-icon">💳</span>
-                <span class="bottom-tab-label">资产总览</span>
+            <a href="{{ url_for('transaction.transaction_list') }}" class="tab-item {% if '/transactions' in request.path %}active{% endif %}">
+                <span class="tab-icon">💵</span>
+                <span class="tab-label">月度收支</span>
             </a>
-            <a href="{{ url_for('savings.savings_list') }}" class="bottom-tab {% if '/savings' in request.path %}active{% endif %}">
-                <span class="bottom-tab-icon">🎯</span>
-                <span class="bottom-tab-label">储蓄计划</span>
+            <a href="{{ url_for('account.account_list') }}" class="tab-item {% if '/accounts' in request.path %}active{% endif %}">
+                <span class="tab-icon">💳</span>
+                <span class="tab-label">资产总览</span>
             </a>
-            <button class="bottom-tab" id="more-tab-btn" type="button">
-                <span class="bottom-tab-icon">⚙️</span>
-                <span class="bottom-tab-label">更多</span>
+            <button class="tab-item" id="more-tab-btn" type="button">
+                <span class="tab-icon">⚙️</span>
+                <span class="tab-label">更多</span>
             </button>
         </nav>
     </div>
