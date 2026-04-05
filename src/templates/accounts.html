@@ -1,5 +1,12 @@
 {% extends "base.html" %}
 
+{% block extra_head %}
+<style>
+    /* 资产页加宽容器 */
+    .container { max-width: 1100px; }
+</style>
+{% endblock %}
+
 {% block content %}
         <!-- 视图切换 -->
         {% if family %}
