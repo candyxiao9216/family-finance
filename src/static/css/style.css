@@ -474,7 +474,7 @@ body::before {
 /* 统计栏 */
 .stats-bar {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: var(--space-md);
     margin-bottom: var(--space-lg);
     animation: fadeInUp 0.6s ease-out 0.05s both;
@@ -530,7 +530,7 @@ body::before {
     }
 
     .stats-bar {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
     }
 
     .transaction-item {
@@ -1098,9 +1098,12 @@ body::before {
 /* 账户左右两列 grid */
 .acct-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: var(--space-md);
     margin-bottom: var(--space-lg);
+}
+@media (max-width: 1023px) {
+    .acct-grid { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 767px) {
     .acct-grid { grid-template-columns: 1fr; }

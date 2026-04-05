@@ -69,7 +69,9 @@ def index():
 
     user = User.query.get(user_id)
     family = user.family if user else None
-    current_view = 'family' if family else 'personal'
+    current_view = request.args.get('view', 'family' if family else 'personal')
+    if current_view == 'family' and not family:
+        current_view = 'personal'
 
     # --- 模块 1：月度收支概览 ---
     if current_view == 'family' and family:
