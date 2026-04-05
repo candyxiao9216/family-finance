@@ -16,12 +16,16 @@
                 <div class="stat-value income">¥{{ savings_total|currency }}</div>
             </div>
             <div class="stat-item">
-                <div class="stat-label">投资资产</div>
-                <div class="stat-value expense">¥{{ investment_total|currency }}</div>
+                <div class="stat-label">基金理财</div>
+                <div class="stat-value" style="color:#3498DB;">¥{{ fund_total|currency }}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">股票资产</div>
+                <div class="stat-value expense">¥{{ stock_total|currency }}</div>
             </div>
             <div class="stat-item">
                 <div class="stat-label">总资产</div>
-                <div class="stat-value balance">¥{{ (savings_total + investment_total)|currency }}</div>
+                <div class="stat-value balance">¥{{ (savings_total + fund_total + stock_total)|currency }}</div>
             </div>
         </div>
 
@@ -31,8 +35,8 @@
             <button class="btn-action btn-action--secondary" id="btn-batch-snapshot">📊 批量录入快照</button>
         </div>
 
-        {% if savings_accounts or investment_accounts %}
-        <!-- 左右两列布局 -->
+        {% if savings_accounts or fund_accounts or stock_accounts %}
+        <!-- 三列布局 -->
         <div class="acct-grid">
         <!-- 储蓄账户 -->
         <div class="card">
@@ -67,15 +71,55 @@
                 {% endif %}
         </div>
 
-        <!-- 投资账户 -->
+        <!-- 基金理财 -->
         <div class="card">
             <div class="card-header">
-                    <h2 class="card-title">投资账户</h2>
-                    <span class="account-count">{{ investment_accounts|length }} 个</span>
-                </div>
-                {% if investment_accounts %}
+                <h2 class="card-title">基金理财</h2>
+                <span class="account-count">{{ fund_accounts|length }} 个</span>
+            </div>
+                {% if fund_accounts %}
                 <div class="acct-compact-list">
-                    {% for a in investment_accounts %}
+                    {% for a in fund_accounts %}
+                    <div class="acct-compact-row">
+                        <div class="acct-compact-name">
+                            <span class="acct-name-text">{{ a.name }}</span>
+                            <span class="category-badge" style="font-size:10px;padding:1px 6px;background:#E8F4F8;color:#3498DB;">{{ a.account_type.name }}</span>
+                            {% if a.owner %}
+                            <span class="acct-owner-icon {% if a.owner.username == 'charlley88' %}icon-blue{% else %}icon-purple{% endif %}" title="{{ a.owner.nickname or a.owner.username }}">{{ (a.owner.nickname or a.owner.username)[-1:] }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="acct-compact-bal">
+                            {% if a.currency and a.currency != 'CNY' %}
+                            <div style="color:var(--color-text-primary);">{{ a.currency }} {{ a.current_balance|float|currency }}</div>
+                            <div style="font-size:11px;color:var(--color-text-muted);">≈ ¥{{ (a.current_balance|float * exchange_rates.get(a.currency, 1))|currency(0) }}</div>
+                            {% else %}
+                            <div style="color:var(--color-text-primary);">¥{{ a.current_balance|float|currency }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="acct-compact-act">
+                            <form action="{{ url_for('account.delete_account', account_id=a.id) }}" method="POST" style="display:inline;">
+                                <button type="submit" class="btn-delete-cat" data-confirm-delete data-confirm-message="确定删除账户「{{ a.name }}」？">删除</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state empty-state--inline">
+                    <p class="empty-state-text">暂无基金理财账户</p>
+                </div>
+                {% endif %}
+        </div>
+
+        <!-- 股票账户 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">股票账户</h2>
+                <span class="account-count">{{ stock_accounts|length }} 个</span>
+            </div>
+                {% if stock_accounts %}
+                <div class="acct-compact-list">
+                    {% for a in stock_accounts %}
                     <div class="acct-compact-row">
                         <div class="acct-compact-name">
                             <span class="acct-name-text">{{ a.name }}</span>
@@ -100,7 +144,7 @@
                 </div>
                 {% else %}
                 <div class="empty-state empty-state--inline">
-                    <p class="empty-state-text">暂无投资账户</p>
+                    <p class="empty-state-text">暂无股票账户</p>
                 </div>
                 {% endif %}
         </div>
@@ -135,7 +179,10 @@
                             {% for a in savings_accounts %}
                             <option value="{{ a.name }}">{{ a.name }}</option>
                             {% endfor %}
-                            {% for a in investment_accounts %}
+                            {% for a in fund_accounts %}
+                            <option value="{{ a.name }}">{{ a.name }}</option>
+                            {% endfor %}
+                            {% for a in stock_accounts %}
                             <option value="{{ a.name }}">{{ a.name }}</option>
                             {% endfor %}
                         </select>
@@ -219,8 +266,13 @@
                         <option value="{{ t.id }}">{{ t.name }}</option>
                         {% endfor %}
                     </optgroup>
-                    <optgroup label="投资">
-                        {% for t in account_types if t.category == 'investment' %}
+                    <optgroup label="基金理财">
+                        {% for t in account_types if t.category == 'fund' %}
+                        <option value="{{ t.id }}">{{ t.name }}</option>
+                        {% endfor %}
+                    </optgroup>
+                    <optgroup label="股票">
+                        {% for t in account_types if t.category == 'stock' %}
                         <option value="{{ t.id }}">{{ t.name }}</option>
                         {% endfor %}
                     </optgroup>
@@ -286,13 +338,36 @@
                 {% endfor %}
                 {% endif %}
 
-                <!-- 投资账户 -->
-                {% if investment_accounts %}
-                <div style="font-size:11px;color:#7C8BA1;padding:8px 12px 4px;font-weight:600;">投资账户</div>
-                {% for a in investment_accounts %}
+                <!-- 基金理财 -->
+                {% if fund_accounts %}
+                <div style="font-size:11px;color:#3498DB;padding:8px 12px 4px;font-weight:600;">基金理财</div>
+                {% for a in fund_accounts %}
                 <div style="display:grid;grid-template-columns:120px 100px 130px 80px 1fr;gap:8px;padding:8px 12px;align-items:center;border-bottom:1px solid #f0ece7;">
                     <div style="font-size:13px;font-weight:500;">{{ a.name }}</div>
-                    <div style="font-size:12px;color:#999;">{% if prev_snapshots.get(a.id) %}{{ prev_snapshots[a.id].balance|float|currency(0) }}{% else %}—{% endif %}</div>
+                    <div style="font-size:12px;color:#999;">{% if prev_snapshots.get(a.id) %}{% if a.currency and a.currency != 'CNY' %}{{ a.currency }}{% else %}¥{% endif %}{{ prev_snapshots[a.id].balance|float|currency(0) }}{% else %}—{% endif %}</div>
+                    <div style="display:flex;gap:4px;">
+                        {% if a.currency and a.currency != 'CNY' %}
+                        <select name="currency_{{ a.id }}" style="width:55px;padding:4px;border:1px solid #e0dcd7;border-radius:6px;font-size:10px;" data-aid="{{ a.id }}" onchange="updateCurrencyDisplay(this)">
+                            <option value="HKD" {{ 'selected' if (a.currency or 'HKD') == 'HKD' }}>港币</option>
+                            <option value="CNY" {{ 'selected' if a.currency == 'CNY' }}>人民币</option>
+                            <option value="USD" {{ 'selected' if a.currency == 'USD' }}>美元</option>
+                        </select>
+                        {% endif %}
+                        <input type="number" name="balance_{{ a.id }}" style="flex:1;width:100%;padding:6px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:13px;background:#fff;" placeholder="输入余额" step="0.01" min="0" data-prev="{{ prev_snapshots[a.id].balance|float if prev_snapshots.get(a.id) else '' }}" data-currency="{{ a.currency or 'CNY' }}" data-aid="{{ a.id }}" oninput="calcChange(this)">
+                    </div>
+                    <div id="change_{{ a.id }}" style="font-size:12px;">—</div>
+                    <div><input type="text" name="note_{{ a.id }}" style="width:100%;padding:6px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:12px;color:#666;" placeholder="本月大事..." maxlength="200"></div>
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                <!-- 股票账户 -->
+                {% if stock_accounts %}
+                <div style="font-size:11px;color:#7C8BA1;padding:8px 12px 4px;font-weight:600;">股票账户</div>
+                {% for a in stock_accounts %}
+                <div style="display:grid;grid-template-columns:120px 100px 130px 80px 1fr;gap:8px;padding:8px 12px;align-items:center;border-bottom:1px solid #f0ece7;">
+                    <div style="font-size:13px;font-weight:500;">{{ a.name }}</div>
+                    <div style="font-size:12px;color:#999;">{% if prev_snapshots.get(a.id) %}{{ a.currency or 'CNY' }} {{ prev_snapshots[a.id].balance|float|currency(0) }}{% else %}—{% endif %}</div>
                     <div style="display:flex;gap:4px;">
                         <select name="currency_{{ a.id }}" style="width:55px;padding:4px;border:1px solid #e0dcd7;border-radius:6px;font-size:10px;" data-aid="{{ a.id }}" onchange="updateCurrencyDisplay(this)">
                             <option value="HKD" {{ 'selected' if (a.currency or 'HKD') == 'HKD' }}>港币</option>
@@ -405,14 +480,14 @@
             }
         }
 
-        // 创建账户：投资类型时显示币种选择
+        // 创建账户：基金理财/股票类型时显示币种选择
         var typeSelect = document.querySelector('select[name="type_id"]');
         var currencyGroup = document.getElementById('currency-group');
         if (typeSelect && currencyGroup) {
             typeSelect.addEventListener('change', function() {
                 var opt = this.options[this.selectedIndex];
                 var group = opt.parentElement;
-                currencyGroup.style.display = (group && group.label === '投资') ? '' : 'none';
+                currencyGroup.style.display = (group && (group.label === '基金理财' || group.label === '股票')) ? '' : 'none';
             });
         }
 

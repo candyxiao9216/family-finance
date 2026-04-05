@@ -106,11 +106,13 @@ def index():
     rates = _get_exchange_rates()
 
     savings_accounts = [a for a in accounts if a.account_type and a.account_type.category == 'savings']
-    investment_accounts = [a for a in accounts if a.account_type and a.account_type.category == 'investment']
+    fund_accounts = [a for a in accounts if a.account_type and a.account_type.category == 'fund']
+    stock_accounts = [a for a in accounts if a.account_type and a.account_type.category == 'stock']
 
     savings_total = sum(float(a.current_balance) * rates.get(a.currency or 'CNY', 1.0) for a in savings_accounts)
-    investment_total = sum(float(a.current_balance) * rates.get(a.currency or 'CNY', 1.0) for a in investment_accounts)
-    total_assets = savings_total + investment_total
+    fund_total = sum(float(a.current_balance) * rates.get(a.currency or 'CNY', 1.0) for a in fund_accounts)
+    stock_total = sum(float(a.current_balance) * rates.get(a.currency or 'CNY', 1.0) for a in stock_accounts)
+    total_assets = savings_total + fund_total + stock_total
 
     # --- 模块 3：储蓄计划概览 ---
     from routes.savings import _get_family_member_ids
@@ -155,7 +157,8 @@ def index():
                           stat_year=current_year,
                           stat_month=current_month,
                           savings_total=savings_total,
-                          investment_total=investment_total,
+                          fund_total=fund_total,
+                          stock_total=stock_total,
                           total_assets=total_assets,
                           total_target=float(total_target),
                           total_saved=float(total_saved),

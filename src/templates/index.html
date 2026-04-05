@@ -197,8 +197,12 @@
                     <div class="dash-stat-value savings" id="dash-savings">¥0</div>
                 </div>
                 <div class="dash-stat">
-                    <div class="dash-stat-label">投资账户</div>
-                    <div class="dash-stat-value investment" id="dash-investment">¥0</div>
+                    <div class="dash-stat-label">基金理财</div>
+                    <div class="dash-stat-value" style="color:#3498DB;" id="dash-fund">¥0</div>
+                </div>
+                <div class="dash-stat">
+                    <div class="dash-stat-label">股票账户</div>
+                    <div class="dash-stat-value investment" id="dash-stock">¥0</div>
                 </div>
             </div>
             <div class="asset-summary">
@@ -207,8 +211,12 @@
                     <span class="asset-row-value" id="asset-savings">¥0</span>
                 </div>
                 <div class="asset-row">
-                    <span class="asset-row-label">投资账户</span>
-                    <span class="asset-row-value" id="asset-investment">¥0</span>
+                    <span class="asset-row-label">基金理财</span>
+                    <span class="asset-row-value" id="asset-fund">¥0</span>
+                </div>
+                <div class="asset-row">
+                    <span class="asset-row-label">股票账户</span>
+                    <span class="asset-row-value" id="asset-stock">¥0</span>
                 </div>
                 <div class="asset-row">
                     <span class="asset-row-label">总资产</span>
@@ -352,12 +360,15 @@
 
     // 模块 2：资产总览
     var savingsTotal = {{ savings_total }};
-    var investmentTotal = {{ investment_total }};
+    var fundTotal = {{ fund_total }};
+    var stockTotal = {{ stock_total }};
     var totalAssets = {{ total_assets }};
     document.getElementById('dash-savings').textContent = fmt(savingsTotal);
-    document.getElementById('dash-investment').textContent = fmt(investmentTotal);
+    document.getElementById('dash-fund').textContent = fmt(fundTotal);
+    document.getElementById('dash-stock').textContent = fmt(stockTotal);
     document.getElementById('asset-savings').textContent = fmt2(savingsTotal);
-    document.getElementById('asset-investment').textContent = fmt2(investmentTotal);
+    document.getElementById('asset-fund').textContent = fmt2(fundTotal);
+    document.getElementById('asset-stock').textContent = fmt2(stockTotal);
     document.getElementById('asset-total').textContent = fmt2(totalAssets);
 
     // 模块 3：储蓄计划

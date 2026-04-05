@@ -35,14 +35,16 @@ def account_list():
     accounts = _get_family_accounts(user_id, current_view)
     account_types = AccountType.query.all()
 
-    # 按类型分组
+    # 按类型分组（三分类）
     savings_accounts = sorted([a for a in accounts if a.account_type and a.account_type.category == 'savings'], key=lambda a: a.name)
-    investment_accounts = sorted([a for a in accounts if a.account_type and a.account_type.category == 'investment'], key=lambda a: a.name)
+    fund_accounts = sorted([a for a in accounts if a.account_type and a.account_type.category == 'fund'], key=lambda a: a.name)
+    stock_accounts = sorted([a for a in accounts if a.account_type and a.account_type.category == 'stock'], key=lambda a: a.name)
 
     # 计算各组合计（外币转换为人民币）
     rates = _get_exchange_rates()
     savings_total = sum(float(a.current_balance) * rates.get(a.currency or 'CNY', 1.0) for a in savings_accounts)
-    investment_total = sum(float(a.current_balance) * rates.get(a.currency or 'CNY', 1.0) for a in investment_accounts)
+    fund_total = sum(float(a.current_balance) * rates.get(a.currency or 'CNY', 1.0) for a in fund_accounts)
+    stock_total = sum(float(a.current_balance) * rates.get(a.currency or 'CNY', 1.0) for a in stock_accounts)
 
     # 获取本月快照记录
     this_month = date.today().replace(day=1)
@@ -85,9 +87,11 @@ def account_list():
 
     return render_template('accounts.html',
                            savings_accounts=savings_accounts,
-                           investment_accounts=investment_accounts,
+                           fund_accounts=fund_accounts,
+                           stock_accounts=stock_accounts,
                            savings_total=savings_total,
-                           investment_total=investment_total,
+                           fund_total=fund_total,
+                           stock_total=stock_total,
                            account_types=account_types,
                            snapshots=snapshots,
                            prev_snapshots=prev_snapshots,
