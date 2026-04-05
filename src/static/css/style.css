@@ -1127,9 +1127,15 @@ body::before {
     display: flex;
     align-items: center;
     gap: 4px;
-    flex-wrap: wrap;
+    overflow: hidden;
 }
-.acct-name-text { font-weight: 500; font-size: 14px; }
+.acct-name-text {
+    font-weight: 500;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 .acct-owner-icon {
     display: inline-flex;
     align-items: center;
@@ -1146,7 +1152,7 @@ body::before {
 .acct-owner-icon.icon-purple { background: #9B8EC4; }
 .acct-compact-bal {
     text-align: right;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     white-space: nowrap;
     flex-shrink: 0;
