@@ -4,14 +4,14 @@
 
 **项目名称:** 0225-FamilyFinance
 **项目类型:** 个人财务管理 Web 应用
-**状态:** Phase 8 已完成 (v1.8.0)
+**状态:** Phase 9 已完成 (v1.9.0)
 **创建日期:** 2026-02-25
 
 ## 项目目标
 
 构建一个智能家庭财务管理工具，帮助用户：
 - 自动追踪收入和支出，支持多银行账户同步
-- 追踪账户余额变化（储蓄账户：银行、微众、中金；投资账户：富途、中银国际）
+- 追踪账户余额变化（储蓄账户：银行；基金理财：微众、中金、招行理财、招行基金、微众基金、富途基金；股票账户：富途、中银国际）
 - 创建和跟踪储蓄计划（月度/年度目标）
 - 记录宝宝基金（谁给的、金额、哪个账户）
 - 记录贷款记录（房贷）
@@ -106,12 +106,13 @@ CREATE TABLE transactions (
 CREATE TABLE account_types (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT UNIQUE NOT NULL,            -- 账户类型名称
-    category TEXT                         -- 'savings' (储蓄) 或 'investment' (投资)
+    category TEXT                         -- 'savings' (储蓄), 'fund' (基金理财) 或 'stock' (股票)
 );
 ```
 **预设类型：**
-- 储蓄类：银行、微众、中金
-- 投资类：富途、中银国际
+- 储蓄类(savings)：银行
+- 基金理财类(fund)：微众、中金、招行基金、微众基金、富途基金、招行理财
+- 股票类(stock)：富途、中银国际
 
 #### 5. accounts - 账户表
 ```sql
@@ -285,7 +286,7 @@ src/
 
 第一阶段（MVP）包含以下功能：
 - ✅ 收入/支出记录录入
-- ✅ 账户资产管理
+- ✅ 账户资产管理（三分类：储蓄/基金理财/股票）
 - ✅ 储蓄计划追踪
 - ✅ 宝宝基金记录
 - ✅ 基础数据可视化
@@ -328,6 +329,57 @@ python src/main.py
 - 端口：5001（Gunicorn）→ 80（Nginx）
 
 ## 功能实现记录
+
+### 2026-04-06: Phase 9 — 资产总览三分类重构 + 首页视图切换 + 布局优化 ✅
+
+**实现内容:**
+
+**资产账户三分类重构:**
+- account_types 从二分类(savings/investment)改为三分类(savings/fund/stock)
+- 新增 4 个 account_type：招行基金、微众基金、富途基金、招行理财
+- 线上 12 个账户安全迁移，余额数据零损失
+- 储蓄账户(3个)：招行储蓄(小美)、中国银行(小帅)、招行(小帅)
+- 基金理财(7个)：微众理财×2、中金理财、微众基金、招行基金、招行理财、富途基金
+- 股票账户(2个)：富途股票、中银股票
+
+**首页我的/家庭视图切换:**
+- 首页增加「我的 | 家庭」切换按钮（与月度收支逻辑一致）
+- current_view 从 URL 参数读取，默认家庭视图
+- 收支、资产、储蓄三个模块都随视图切换
+
+**资产总览页布局优化:**
+- 顶部概览改为一行四列（储蓄/基金理财/股票/总资产）
+- 三个账户卡片一行三列展示（平板两列，手机单列）
+- 资产页容器加宽至 1100px
+- 去掉每行冗余的 category badge
+- 账户名 4em 宽 + word-break 两字换行
+- name 区域 flex-shrink:0，金额区域 flex:1 右对齐
+- 卡片内 padding 和 gap 缩小，整体紧凑
+
+**底部 Tab 栏美化（续）:**
+- 修复 CSS 类名不匹配（bottom-tabs → bottom-tab-bar / tab-item）
+- 电脑端和移动端统一显示
+- 移动端 stats-bar 改为两列
+
+**导航栏调整:**
+- 桌面端：月度收支提升为一级导航（首页和资产总览之间）
+- 宝宝基金收入管理菜单（排第一）
+- 底部 Tab：首页 | 月度收支 | 资产总览 | 更多
+
+**新增/修改文件:**
+- `src/models.py` — DEFAULT_ACCOUNT_TYPES 更新为 9 个类型（含 fund/stock）
+- `src/routes/account.py` — 三分类逻辑（savings/fund/stock）
+- `src/templates/accounts.html` — 三栏展示 + 批量快照三分组 + 容器加宽
+- `src/main.py` — 首页三分类资产总览 + 视图切换支持
+- `src/templates/index.html` — 仪表盘模块 2 改三行 + 视图切换按钮
+- `src/templates/base.html` — 导航调整 + 底部 Tab 类名修复
+- `src/static/css/style.css` — acct-grid 三列 + 紧凑排版 + Tab 栏美化
+- `src/routes/auth.py` — 登出改为 session.clear()
+
+**数据库变更:**
+- account_types 表：id=2(微众) → fund, id=3(中金) → fund, id=4(富途) → stock, id=5(中银国际) → stock
+- 新增 account_types：id=6(招行基金/fund), id=7(微众基金/fund), id=8(富途基金/fund), id=9(招行理财/fund)
+- accounts 表：4 个账户 type_id 更新（id=5→8, id=7→9, id=8→7, id=9→6）
 
 ### 2026-04-05: Phase 8 — 月度待办 Checklist + 聚焦气泡引导 ✅
 
@@ -782,5 +834,5 @@ curl -sSL https://raw.githubusercontent.com/candyxiao9216/family-finance/main/de
 
 ---
 
-**最后更新:** 2026-04-05
-**文档版本:** 1.8.0
+**最后更新:** 2026-04-06
+**文档版本:** 1.9.0
