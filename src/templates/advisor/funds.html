@@ -51,7 +51,7 @@
                 <tbody>
                     {% for h in holdings %}
                     <tr data-id="{{ h.id }}" data-code="{{ h.fund_code }}" data-account="{{ h.account.name }}" data-type="{{ h.fund_type or '' }}" data-profit-dir="{{ 'profit' if h.profit and h.profit >= 0 else 'loss' }}" data-amount="{{ h.amount or 0 }}" data-profit="{{ h.profit or 0 }}" data-profit-rate="{{ h.profit_rate|replace('%','')|replace('+','') if h.profit_rate else 0 }}" {% if h.status == 'redeemed' %}class="row-redeemed"{% endif %}>
-                        <td><div class="fund-name">{{ h.fund_name }}{% if h.status == 'redeemed' %} <span class="badge-redeemed">已赎回</span>{% endif %}</div><div class="fund-meta">{{ h.fund_code }} · <span class="account-badge">{{ h.account.name }}</span></div></td>
+                        <td><div class="fund-name">{{ h.fund_name }}{% if current_view == 'family' and h.owner %} <span class="acct-owner-icon {% if h.owner.nickname == '小帅' %}icon-blue{% else %}icon-purple{% endif %}" title="{{ h.owner.nickname or h.owner.username }}">{{ (h.owner.nickname or h.owner.username)[-1:] }}</span>{% endif %}{% if h.status == 'redeemed' %} <span class="badge-redeemed">已赎回</span>{% endif %}</div><div class="fund-meta">{{ h.fund_code }} · <span class="account-badge">{{ h.account.name }}</span></div></td>
                         <td><span class="type-badge">{{ h.fund_type or '未知' }}</span></td>
                         <td>{{ h.shares|currency(2) if h.shares else '-' }}</td>
                         <td class="amount-hide">{{ h.amount|currency(2) if h.amount else '-' }} {{ h.currency }}</td>

@@ -68,6 +68,7 @@
                     <tr data-id="{{ h.id }}" data-code="{{ h.stock_code }}" data-market="{{ h.market }}" data-cost="{{ h.avg_cost }}">
                         <td class="code-cell">{{ h.stock_code }}</td>
                         <td>{{ h.stock_name }}
+                            {% if current_view == 'family' and h.owner %}<span class="acct-owner-icon {% if h.owner.nickname == '小帅' %}icon-blue{% else %}icon-purple{% endif %}" title="{{ h.owner.nickname or h.owner.username }}">{{ (h.owner.nickname or h.owner.username)[-1:] }}</span>{% endif %}
                             <span class="account-badge">{{ h.account.name }}</span>
                             {% if h.notes %}<span class="note-badge">{{ h.notes }}</span>{% endif %}
                         </td>

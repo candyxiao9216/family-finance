@@ -48,7 +48,7 @@
                 <tbody>
                     {% for h in holdings %}
                     <tr data-account="{{ h.account.name }}" data-type="{{ h.product_type }}" data-profit-dir="{{ 'profit' if h.total_profit and h.total_profit >= 0 else 'loss' }}">
-                        <td><div class="fund-name">{{ h.product_name }}</div><div class="fund-meta">{{ h.manager or '' }} · <span class="account-badge">{{ h.account.name }}</span></div></td>
+                        <td><div class="fund-name">{{ h.product_name }}{% if current_view == 'family' and h.owner %} <span class="acct-owner-icon {% if h.owner.nickname == '小帅' %}icon-blue{% else %}icon-purple{% endif %}" title="{{ h.owner.nickname or h.owner.username }}">{{ (h.owner.nickname or h.owner.username)[-1:] }}</span>{% endif %}</div><div class="fund-meta">{{ h.manager or '' }} · <span class="account-badge">{{ h.account.name }}</span></div></td>
                         <td class="amount-hide">¥{{ h.buy_amount|currency(2) }}</td>
                         <td class="amount-hide">¥{{ h.current_amount|currency(2) if h.current_amount else '-' }}</td>
                         <td class="{% if h.total_profit and h.total_profit >= 0 %}profit{% elif h.total_profit and h.total_profit < 0 %}loss{% endif %} amount-hide">{{ h.total_profit|signed_currency(2) if h.total_profit else '-' }}</td>
