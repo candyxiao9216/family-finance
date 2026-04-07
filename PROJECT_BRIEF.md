@@ -77,7 +77,7 @@
   - [x] 导航文案更新（资产总览/储蓄计划/管理▾含月度收支）
   - [x] 智能财务顾问模块（5页Tab：总览/股票/基金/理财/储蓄）
   - [x] 股票/基金/理财持仓CRUD管理
-  - [x] AI分析引擎（智谱GLM-5/GLM-5V-Turbo/GLM-Image全系列）
+  - [x] AI分析引擎（智谱GLM-5-Turbo/GLM-5V-Turbo/GLM-Image全系列）
   - [x] 7个AI分析端点（综合/股票整体+个股/基金整体+个基/理财/储蓄）
   - [x] AI分析右侧抽屉交互 + Markdown渲染 + 缓存+刷新+历史
   - [x] Sina Finance API 实时行情（港股/A股/美股）

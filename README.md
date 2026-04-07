@@ -18,7 +18,7 @@
 
 ### 智能财务顾问 🤖
 - **持仓管理**: 股票/基金/理财产品 CRUD
-- **AI 分析**: 智谱GLM全系列（GLM-5文本 + GLM-5V-Turbo多模态 + GLM-Image图像）
+- **AI 分析**: 智谱GLM全系列（GLM-5-Turbo文本 + GLM-5V-Turbo多模态 + GLM-Image图像）
 - **7个分析端点**: 综合分析/股票整体+个股/基金整体+个基/理财/储蓄
 - **实时行情**: Sina Finance API（港股/A股/美股）
 - **资产配置**: 实时聚合分析 + 饼图展示
@@ -45,7 +45,7 @@
 | 数据库 | SQLite |
 | 前端样式 | 原生 CSS（变量 + 媒体查询） |
 | 数据可视化 | Chart.js |
-| AI 模型 | 智谱GLM（GLM-5 / GLM-5V-Turbo / GLM-Image） |
+| AI 模型 | 智谱GLM（GLM-5-Turbo / GLM-5V-Turbo / GLM-Image） |
 | 行情数据 | Sina Finance API |
 | 部署 | Gunicorn + Nginx |
 

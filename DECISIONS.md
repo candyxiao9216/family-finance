@@ -270,13 +270,14 @@
 - 状态：Accepted（已采纳）
 - 背景：财务顾问模块需要 AI 分析能力，同时为后续图片OCR导入做准备
 - 决策：
-  - 文本分析：GLM-5（旗舰模型，财务建议质量优先）
+  - 文本分析：GLM-5-Turbo（快速版，避免 GLM-5 推理模型超时；GLM-5 content 为空时 fallback 到 reasoning_content）
   - 多模态理解：GLM-5V-Turbo（截图OCR，持仓数据提取）
   - 图像生成：GLM-Image（预留能力）
   - 统一使用智谱开放平台，一个 API Key 三种模型
+  - max_tokens 16384（防止长分析输出截断），timeout 180s
 - 原因：
   - 智谱 API 兼容 OpenAI 格式，集成成本低
-  - GLM-5 中文理解能力强，适合财务场景
+  - GLM-5 推理模型响应慢（>30s 超时），GLM-5-Turbo 速度更快且质量足够
   - 一个平台覆盖文本+视觉+图像，减少多供应商管理
 - 备选方案：MiniMax（原方案）、OpenRouter（多模型路由）
 

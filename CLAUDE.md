@@ -26,7 +26,7 @@
 | 前端样式 | 原生 CSS（CSS 变量 + 媒体查询） |
 | 数据可视化 | Chart.js |
 | 文件处理 | CSV/Excel 导入导出 |
-| AI 模型 | 智谱GLM（GLM-5 / GLM-5V-Turbo / GLM-Image） |
+| AI 模型 | 智谱GLM（GLM-5-Turbo / GLM-5V-Turbo / GLM-Image） |
 | 行情数据 | Sina Finance API（港股/A股/美股） |
 
 ## 核心业务逻辑
@@ -357,11 +357,17 @@ python src/main.py
 - 所有持仓支持添加/编辑/删除
 
 **AI 分析引擎（智谱GLM全系列模型）:**
-- 文本分析: GLM-5（旗舰，用于财务建议）
+- 文本分析: GLM-5-Turbo（默认模型，快速响应，避免 GLM-5 推理超时）
 - 多模态理解: GLM-5V-Turbo（图片OCR，为截图导入准备）
 - 图像生成: GLM-Image
 - 7个AI分析端点：综合分析/股票整体/个股/基金整体/个基/理财/储蓄
 - OpenAI兼容格式调用（智谱/MiniMax等均可适配）
+
+**AI 模型兼容与调优:**
+- GLM-5 推理模型兼容（content 为空时 fallback 到 reasoning_content）
+- 默认模型从 GLM-5 改为 GLM-5-Turbo（推理快速版，避免超时）
+- max_tokens 调大到 16384（防止长分析输出截断）
+- timeout 增到 180s
 
 **AI 分析交互（右侧抽屉）:**
 - 全局 AI 抽屉组件（`window.aiDrawer`），替代底部面板
@@ -420,6 +426,8 @@ python src/main.py
 - AI 分析 API 也随视图切换，分析对应视图的数据
 - 有家庭用户显示切换按钮，无家庭用户只看自己数据
 - 新增 `_get_user_ids_by_view()` 替代硬编码的 `_get_family_user_ids()`
+- 家庭视图下股票/基金/理财列表名字旁显示归属人圆形 icon（蓝=小帅 紫=小美），复用 acct-owner-icon 样式；个人视图不显示
+- 家庭视图下股票/基金/理财列表名字旁显示归属人圆形 icon（蓝=小帅 紫=小美），复用 acct-owner-icon 样式；个人视图不显示
 
 **数据库变更:**
 - 新增 6 张表：stock_holdings, fund_holdings, wealth_holdings, market_data_cache, ai_advice_cache, ai_advice_history
@@ -929,5 +937,5 @@ curl -sSL https://raw.githubusercontent.com/candyxiao9216/family-finance/main/de
 
 ---
 
-**最后更新:** 2026-04-07
+**最后更新:** 2026-04-08
 **文档版本:** 2.0.0
