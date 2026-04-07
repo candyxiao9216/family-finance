@@ -425,7 +425,7 @@ class AiAdvisor:
                         {'role': 'system', 'content': '你是专业的家庭财务顾问，给出务实、具体、可操作的建议。不要加免责声明。'},
                         {'role': 'user', 'content': prompt},
                     ],
-                    'max_tokens': 4096,
+                    'max_tokens': 16384,
                 },
                 timeout=180
             )
