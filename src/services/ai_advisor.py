@@ -15,12 +15,21 @@ AI_CACHE_TTL_HOURS = 1
 
 
 class AiAdvisor:
-    """AI 财务顾问"""
+    """AI 财务顾问 — 支持智谱GLM多模型（文本/多模态/图像生成）"""
+
+    # 智谱 API 基础 URL
+    BASE_URL = 'https://open.bigmodel.cn/api/paas/v4'
 
     def __init__(self):
         self.api_key = os.environ.get('AI_API_KEY', '') or os.environ.get('MINIMAX_API_KEY', '')
-        self.base_url = os.environ.get('AI_API_URL', 'https://open.bigmodel.cn/api/paas/v4/chat/completions')
+        # 文本模型（财务分析用）
         self.model = os.environ.get('AI_MODEL', 'glm-4.7-flash')
+        # 多模态模型（图片理解/OCR用）
+        self.vision_model = os.environ.get('AI_VISION_MODEL', 'glm-4.7v')
+        # 图像生成模型
+        self.image_model = os.environ.get('AI_IMAGE_MODEL', 'cogview-4')
+        # 兼容自定义 URL
+        self._custom_url = os.environ.get('AI_API_URL', '')
 
     @property
     def available(self):
@@ -369,18 +378,42 @@ class AiAdvisor:
 
     # ========== API 调用 ==========
 
+    def _get_chat_url(self):
+        """获取对话补全 API URL"""
+        return self._custom_url or f'{self.BASE_URL}/chat/completions'
+
+    def _get_images_url(self):
+        """获取图像生成 API URL"""
+        return f'{self.BASE_URL}/images/generations'
+
+    def _headers(self):
+        return {
+            'Authorization': f'Bearer {self.api_key}',
+            'Content-Type': 'application/json',
+        }
+
+    def _extract_text(self, data):
+        """从 API 响应中提取文本内容"""
+        # OpenAI 兼容格式：choices[0].message.content
+        choices = data.get('choices', [])
+        if choices:
+            return choices[0].get('message', {}).get('content', '')
+        # Anthropic 兼容格式：content[0].text
+        content = data.get('content', [])
+        for item in content:
+            if isinstance(item, dict) and item.get('type') == 'text':
+                return item.get('text', '')
+        return None
+
     def _call_api(self, prompt):
-        """调用 AI API（OpenAI 兼容格式，支持智谱GLM/MiniMax等）"""
+        """调用文本模型（财务分析）"""
         if not self.available:
             return None
 
         try:
             resp = requests.post(
-                self.base_url,
-                headers={
-                    'Authorization': f'Bearer {self.api_key}',
-                    'Content-Type': 'application/json',
-                },
+                self._get_chat_url(),
+                headers=self._headers(),
                 json={
                     'model': self.model,
                     'messages': [
@@ -392,20 +425,10 @@ class AiAdvisor:
                 timeout=120
             )
             resp.raise_for_status()
-            data = resp.json()
-
-            # OpenAI 兼容格式：choices[0].message.content
-            choices = data.get('choices', [])
-            if choices:
-                return choices[0].get('message', {}).get('content', '')
-
-            # Anthropic 兼容格式：content[0].text
-            content = data.get('content', [])
-            for item in content:
-                if isinstance(item, dict) and item.get('type') == 'text':
-                    return item.get('text', '')
-
-            print(f"AI 未知响应格式: {json.dumps(data, ensure_ascii=False)[:500]}")
+            text = self._extract_text(resp.json())
+            if text:
+                return text
+            print(f"AI 未知响应格式: {json.dumps(resp.json(), ensure_ascii=False)[:500]}")
             return '❌ AI 返回格式异常，请重试'
         except requests.exceptions.Timeout:
             return '⏳ AI 分析超时，请稍后重试'
@@ -413,6 +436,77 @@ class AiAdvisor:
             return f'❌ AI 服务错误: {e.response.status_code}'
         except Exception as e:
             return f'❌ AI 服务异常: {str(e)}'
+
+    def call_vision(self, prompt, image_url=None, image_base64=None):
+        """
+        调用多模态模型（图片理解/OCR）
+        支持传入 image_url 或 image_base64（二选一）
+        返回: 文本字符串 或 None
+        """
+        if not self.available:
+            return None
+
+        # 构建多模态消息
+        content_parts = [{'type': 'text', 'text': prompt}]
+        if image_base64:
+            content_parts.append({
+                'type': 'image_url',
+                'image_url': {'url': f'data:image/png;base64,{image_base64}'}
+            })
+        elif image_url:
+            content_parts.append({
+                'type': 'image_url',
+                'image_url': {'url': image_url}
+            })
+
+        try:
+            resp = requests.post(
+                self._get_chat_url(),
+                headers=self._headers(),
+                json={
+                    'model': self.vision_model,
+                    'messages': [
+                        {'role': 'user', 'content': content_parts}
+                    ],
+                    'max_tokens': 4000,
+                },
+                timeout=120
+            )
+            resp.raise_for_status()
+            return self._extract_text(resp.json())
+        except requests.exceptions.Timeout:
+            return '⏳ 图片识别超时，请稍后重试'
+        except requests.exceptions.HTTPError as e:
+            return f'❌ 图片识别服务错误: {e.response.status_code}'
+        except Exception as e:
+            return f'❌ 图片识别异常: {str(e)}'
+
+    def call_image_gen(self, prompt, size='1024x1024'):
+        """
+        调用图像生成模型（CogView-4）
+        返回: 图片 URL 列表 或 None
+        """
+        if not self.available:
+            return None
+
+        try:
+            resp = requests.post(
+                self._get_images_url(),
+                headers=self._headers(),
+                json={
+                    'model': self.image_model,
+                    'prompt': prompt,
+                    'size': size,
+                },
+                timeout=120
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            images = data.get('data', [])
+            return [img.get('url') for img in images if img.get('url')]
+        except Exception as e:
+            print(f"图像生成失败: {e}")
+            return None
 
     # ========== 缓存（返回三元组） ==========
 
