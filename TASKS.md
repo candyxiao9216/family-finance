@@ -218,6 +218,50 @@
 
 ---
 
+## Phase 10 - 智能财务顾问（2026-04-07）
+
+### TASK-012：AI 分析引擎 + 智谱GLM集成 ✅
+- 状态：DONE
+- 优先级：P0
+- 规模：L
+- 目标：接入智谱GLM全系列模型（文本GLM-5/多模态GLM-5V-Turbo/图像GLM-Image）
+- 涉及文件：
+  - `/src/services/ai_advisor.py`（AI引擎，支持文本/视觉/图像三类API）
+  - `/src/services/market_data.py`（Sina行情API + 数据库缓存）
+  - `.env.example`（API配置模板）
+
+### TASK-013：持仓管理CRUD ✅
+- 状态：DONE
+- 优先级：P0
+- 规模：M
+- 目标：股票/基金/理财三类持仓的增删改查
+- 涉及文件：
+  - `/src/models.py`（StockHolding/FundHolding/WealthHolding + 3个缓存表）
+  - `/src/routes/advisor.py`（CRUD路由 + 页面路由）
+  - `/src/templates/advisor/`（6个页面模板）
+
+### TASK-014：AI 分析交互 + 历史记录 ✅
+- 状态：DONE
+- 优先级：P0
+- 规模：M
+- 目标：右侧抽屉展示AI分析 + 时间戳 + 缓存标记 + 强制刷新 + 永久历史
+- 涉及文件：
+  - `/src/static/js/app.js`（window.aiDrawer 全局组件）
+  - `/src/templates/base.html`（抽屉HTML）
+  - `/src/templates/advisor/history.html`（独立历史页）
+  - `/src/static/css/style.css`（抽屉+历史样式）
+
+### TASK-015：基金增强（排序+赎回转投） ✅
+- 状态：DONE
+- 优先级：P1
+- 规模：S
+- 目标：基金表头排序（金额/收益/收益率）+ 赎回转投操作流程
+- 涉及文件：
+  - `/src/templates/advisor/funds.html`（排序JS + 转投模态框）
+  - `/src/routes/advisor.py`（转投API）
+
+---
+
 ## 已完成任务
 
 ### TASK-P0-001：交易记录基本功能

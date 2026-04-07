@@ -76,12 +76,17 @@ sudo tail -f /opt/family-finance/data/error.log  # 应用错误日志
 | 文件 | 说明 |
 |------|------|
 | `src/main.py` | 应用入口 + 主路由 |
-| `src/models.py` | 所有数据模型（12 个） |
+| `src/models.py` | 所有数据模型（16 个） |
 | `src/database.py` | 数据库配置和初始化 |
 | `src/routes/` | 路由蓝图（auth、savings、baby_fund、upload 等） |
 | `src/templates/` | HTML 模板 |
 | `src/static/css/style.css` | 全局样式 |
 | `src/utils/importers.py` | CSV/Excel 解析工具 |
+| `src/routes/advisor.py` | 财务顾问蓝图（持仓CRUD + AI分析） |
+| `src/services/ai_advisor.py` | AI分析引擎（智谱GLM全系列） |
+| `src/services/market_data.py` | 行情数据服务（Sina API） |
+| `src/templates/advisor/` | 财务顾问页面模板（6个） |
+| `.env` / `.env.example` | AI API密钥配置 |
 | `PROJECT_BRIEF.md` | 项目状态总览（每次完成任务后更新） |
 
 ---

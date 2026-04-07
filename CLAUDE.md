@@ -26,6 +26,8 @@
 | 前端样式 | 原生 CSS（CSS 变量 + 媒体查询） |
 | 数据可视化 | Chart.js |
 | 文件处理 | CSV/Excel 导入导出 |
+| AI 模型 | 智谱GLM（GLM-5 / GLM-5V-Turbo / GLM-Image） |
+| 行情数据 | Sina Finance API（港股/A股/美股） |
 
 ## 核心业务逻辑
 
@@ -58,7 +60,9 @@
 
 ## 数据库设计
 
-### 表结构 (10 张表)
+### 表结构 (16 张表)
+
+> Phase 10 新增 6 张表：stock_holdings（股票持仓）、fund_holdings（基金持仓）、wealth_holdings（理财产品）、market_data_cache（行情缓存）、ai_advice_cache（AI建议缓存）、ai_advice_history（AI建议历史）
 
 #### 1. users - 用户表
 ```sql
@@ -207,8 +211,9 @@ CREATE TABLE import_records (
 ```
 src/
 ├── main.py                # Flask 应用入口（仪表盘首页 + 交易增删改）
-├── models.py              # 所有数据模型（12 个）
+├── models.py              # 所有数据模型（18 个）
 ├── database.py            # 数据库连接和初始化
+├── config.py              # 配置管理（dotenv 加载）
 ├── routes/                # 路由层（Flask 蓝图）
 │   ├── auth.py            # 认证路由
 │   ├── account.py         # 账户路由
@@ -219,7 +224,12 @@ src/
 │   ├── family.py          # 家庭路由
 │   ├── transaction.py     # 月度收支路由（记账表单+交易列表）
 │   ├── template.py        # 快捷模板路由
-│   └── recurring.py       # 定期交易路由
+│   ├── recurring.py       # 定期交易路由
+│   └── advisor.py         # 财务顾问路由（持仓管理+AI分析）
+├── services/              # 服务层
+│   ├── __init__.py        # 服务层初始化
+│   ├── ai_advisor.py      # AI 分析引擎（智谱GLM全系列）
+│   └── market_data.py     # 行情数据服务（Sina API）
 ├── utils/                 # 工具函数
 │   └── importers.py       # CSV/Excel 解析
 ├── static/
@@ -240,7 +250,8 @@ src/
     ├── quick_templates.html # 快捷模板管理
     ├── recurring.html     # 定期交易管理
     ├── auth/              # 登录/注册
-    └── family/            # 家庭信息/成员
+    ├── family/            # 家庭信息/成员
+    └── advisor/           # 财务顾问（总览/股票/基金/理财/储蓄/历史）
 ```
 
 ### API 路由设计
@@ -300,6 +311,7 @@ src/
 - ❌ 贷款管理模块
 - ❌ 用户权限隔离
 - ❌ 暗色模式
+- ✅ 已实现：智能财务顾问（AI分析+持仓管理+行情数据）
 
 ## 开发环境
 
@@ -329,6 +341,81 @@ python src/main.py
 - 端口：5001（Gunicorn）→ 80（Nginx）
 
 ## 功能实现记录
+
+### 2026-04-07: Phase 10 — 智能财务顾问模块 ✅
+
+**实现内容:**
+
+**财务顾问5页Tab导航:**
+- 新增 advisor 蓝图（`/advisor/`），包含总览/股票/基金/理财/储蓄 5 个Tab页
+- 每个页面独立管理对应持仓和 AI 分析
+
+**持仓管理（3种资产类型CRUD）:**
+- StockHolding: 股票持仓（代码/名称/市场/股数/成本/币种）
+- FundHolding: 基金持仓（代码/名称/类型/份额/金额/净值/收益/收益率/状态）
+- WealthHolding: 理财产品（产品名/管理机构/买入金额/当前金额/收益/年化/日期/类型）
+- 所有持仓支持添加/编辑/删除
+
+**AI 分析引擎（智谱GLM全系列模型）:**
+- 文本分析: GLM-5（旗舰，用于财务建议）
+- 多模态理解: GLM-5V-Turbo（图片OCR，为截图导入准备）
+- 图像生成: GLM-Image
+- 7个AI分析端点：综合分析/股票整体/个股/基金整体/个基/理财/储蓄
+- OpenAI兼容格式调用（智谱/MiniMax等均可适配）
+
+**AI 分析交互（右侧抽屉）:**
+- 全局 AI 抽屉组件（`window.aiDrawer`），替代底部面板
+- 抽屉内容：标题+正文+时间戳+缓存标记+刷新按钮+历史入口
+- marked.js Markdown 渲染
+- 支持强制刷新（`?refresh=1` 跳过缓存）
+
+**AI 建议持久化:**
+- AiAdviceCache: 短期缓存（1小时TTL，key覆盖）
+- AiAdviceHistory: 永久历史记录（类型/文本/模型/时间）
+- 独立历史页面（`/advisor/history`）：类型筛选+展开全文+Markdown渲染
+
+**实时行情:**
+- Sina Finance API（hq.sinajs.cn）获取港股/A股/美股实时报价
+- MarketDataCache 数据库缓存（5分钟TTL）
+- 批量获取 + 重复股票代码去重处理
+
+**资产配置分析:**
+- 从 Account（储蓄）+ FundHolding（基金）+ StockHolding×实时价（股票）+ WealthHolding（理财）实时聚合
+- 仪表盘饼图展示配置比例
+
+**基金增强功能:**
+- 可排序表头（金额/收益/收益率，默认金额降序）
+- 赎回转投操作（状态标记 holding→redeemed + 转投记录）
+- 已赎回基金灰色显示
+
+**页面标题 + 千分位格式:**
+- 所有页面 render_template 添加 `page_title=` 参数
+- 所有金额使用 `|currency` 过滤器千分位格式化
+
+**新增/修改文件:**
+- `src/services/__init__.py` — 服务层初始化
+- `src/services/ai_advisor.py` — **新建**，AI 分析引擎（智谱GLM全系列）
+- `src/services/market_data.py` — **新建**，行情数据服务（Sina API）
+- `src/routes/advisor.py` — **新建**，财务顾问蓝图（758行）
+- `src/templates/advisor/dashboard.html` — **新建**，顾问总览
+- `src/templates/advisor/stocks.html` — **新建**，股票分析
+- `src/templates/advisor/funds.html` — **新建**，基金分析
+- `src/templates/advisor/wealth.html` — **新建**，理财分析
+- `src/templates/advisor/savings.html` — **新建**，储蓄建议
+- `src/templates/advisor/history.html` — **新建**，AI分析历史
+- `src/models.py` — +StockHolding/FundHolding/WealthHolding/AiAdviceCache/AiAdviceHistory/MarketDataCache（6个新模型）
+- `src/database.py` — +signed_currency 过滤器 + _safe_add_column
+- `src/static/js/app.js` — +window.aiDrawer 全局AI抽屉
+- `src/static/css/style.css` — +advisor/drawer/history 样式（约900行）
+- `src/templates/base.html` — +AI抽屉HTML + 页面标题栏
+- `src/config.py` — +dotenv 加载
+- `requirements.txt` — +requests
+- `.env.example` — **新建**，AI API配置模板
+- 所有路由文件 — +page_title 参数
+
+**数据库变更:**
+- 新增 6 张表：stock_holdings, fund_holdings, wealth_holdings, market_data_cache, ai_advice_cache, ai_advice_history
+- fund_holdings 新增 status 列（holding/redeemed）
 
 ### 2026-04-06: Phase 9 — 资产总览三分类重构 + 首页视图切换 + 布局优化 ✅
 
@@ -834,5 +921,5 @@ curl -sSL https://raw.githubusercontent.com/candyxiao9216/family-finance/main/de
 
 ---
 
-**最后更新:** 2026-04-06
+**最后更新:** 2026-04-07
 **文档版本:** 2.0.0
