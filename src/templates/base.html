@@ -25,6 +25,7 @@
                     <a href="{{ url_for('transaction.transaction_list') }}" class="nav-link">月度收支</a>
                     <a href="{{ url_for('account.account_list') }}" class="nav-link">资产总览</a>
                     <a href="{{ url_for('savings.savings_list') }}" class="nav-link">储蓄计划</a>
+                    <a href="{{ url_for('advisor.dashboard') }}" class="nav-link">💡 财务顾问</a>
                     <div class="nav-dropdown">
                         <a href="#" class="nav-link nav-dropdown-trigger">管理 ▾</a>
                         <div class="nav-dropdown-menu">
@@ -70,6 +71,7 @@
                 <div class="side-menu-divider"></div>
                 <a href="{{ url_for('account.account_list') }}" class="side-menu-item">💳 资产总览</a>
                 <a href="{{ url_for('savings.savings_list') }}" class="side-menu-item">🎯 储蓄计划</a>
+                <a href="{{ url_for('advisor.dashboard') }}" class="side-menu-item">💡 财务顾问</a>
                 <div class="side-menu-divider"></div>
                 <a href="{{ url_for('baby_fund.baby_fund_list') }}" class="side-menu-item">👶 宝宝基金</a>
                 <a href="{{ url_for('category.category_list') }}" class="side-menu-item">🏷️ 分类管理</a>
@@ -114,6 +116,11 @@
         </div>
 
         <!-- 主内容 -->
+        {% if page_title is defined and page_title %}
+        <div class="page-title-bar">
+            <h2 class="page-title">{% block page_title %}{{ page_title }}{% endblock %}</h2>
+        </div>
+        {% endif %}
         <main class="main-content">{% block content %}{% endblock %}</main>
 
         <!-- 移动端底部标签栏 -->
@@ -135,6 +142,27 @@
                 <span class="tab-label">更多</span>
             </button>
         </nav>
+    </div>
+
+    <!-- AI 分析抽屉 -->
+    <div class="ai-drawer-overlay" id="ai-drawer-overlay"></div>
+    <div class="ai-drawer" id="ai-drawer">
+        <div class="ai-drawer-header">
+            <h3 class="ai-drawer-title" id="ai-drawer-title">AI 分析</h3>
+            <button class="ai-drawer-close" id="ai-drawer-close">&times;</button>
+        </div>
+        <div class="ai-drawer-body" id="ai-drawer-body">
+            <div class="ai-drawer-placeholder">
+                <p>点击分析按钮获取 AI 建议</p>
+            </div>
+        </div>
+        <div class="ai-drawer-footer" id="ai-drawer-footer">
+            <span class="ai-drawer-time" id="ai-drawer-time"></span>
+            <div class="ai-drawer-actions">
+                <button class="ai-drawer-btn" id="ai-drawer-refresh" style="display:none;">🔄 重新分析</button>
+                <a class="ai-drawer-link" id="ai-drawer-history" href="/advisor/history" style="display:none;">📋 查看历史 →</a>
+            </div>
+        </div>
     </div>
 
     <script src="/static/js/app.js"></script>

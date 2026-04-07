@@ -199,4 +199,132 @@
 
   if (isHidden) applyDataVisibility();
 
+  // ── AI 抽屉全局函数 ──────────────────────────────────────────
+  window.aiDrawer = {
+    _currentRefreshFn: null,
+    _currentType: null,
+    _lastUrl: null,
+
+    open: function(title, adviceType) {
+      var drawer = document.getElementById('ai-drawer');
+      var overlay = document.getElementById('ai-drawer-overlay');
+      if (!drawer || !overlay) return;
+      document.getElementById('ai-drawer-title').textContent = title || 'AI 分析';
+      this._currentType = adviceType || null;
+      drawer.classList.add('open');
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+
+      var historyLink = document.getElementById('ai-drawer-history');
+      if (adviceType) {
+        historyLink.href = '/advisor/history?type=' + adviceType;
+        historyLink.style.display = '';
+      } else {
+        historyLink.style.display = 'none';
+      }
+    },
+
+    close: function() {
+      var drawer = document.getElementById('ai-drawer');
+      var overlay = document.getElementById('ai-drawer-overlay');
+      if (drawer) drawer.classList.remove('open');
+      if (overlay) overlay.classList.remove('open');
+      document.body.style.overflow = '';
+      this._currentRefreshFn = null;
+      // 清除转投按钮（如果有）
+      var transferBtn = document.getElementById('btn-transfer-from-drawer');
+      if (transferBtn) transferBtn.remove();
+    },
+
+    setLoading: function() {
+      document.getElementById('ai-drawer-body').innerHTML = '<div class="ai-drawer-loading"><span class="loading-text">🤖 AI 分析中，请稍候...</span></div>';
+      document.getElementById('ai-drawer-time').textContent = '';
+      document.getElementById('ai-drawer-refresh').style.display = 'none';
+    },
+
+    setContent: function(html, generatedAt, fromCache, refreshFn) {
+      document.getElementById('ai-drawer-body').innerHTML = '<div class="advice-text">' + html + '</div>';
+      var timeEl = document.getElementById('ai-drawer-time');
+      timeEl.textContent = generatedAt ? '生成于 ' + generatedAt + (fromCache ? ' (缓存)' : '') : '';
+
+      var refreshBtn = document.getElementById('ai-drawer-refresh');
+      if (refreshFn) {
+        this._currentRefreshFn = refreshFn;
+        refreshBtn.style.display = '';
+      }
+    },
+
+    setError: function(msg) {
+      document.getElementById('ai-drawer-body').innerHTML = '<div class="ai-drawer-placeholder"><p class="error-text">' + (msg || '获取分析失败') + '</p></div>';
+    },
+
+    fetchAndShow: function(title, url, adviceType, refreshFn) {
+      var self = this;
+      // 所有分析都支持刷新，没传 refreshFn 就用自身参数重调
+      var actualRefreshFn = refreshFn || function() {
+        self.fetchAndShow(title, url, adviceType);
+      };
+      self.open(title, adviceType);
+      self.setLoading();
+      self._lastUrl = url;
+      fetch(url).then(function(resp) {
+        return resp.json();
+      }).then(function(data) {
+        if (typeof marked !== 'undefined') {
+          self.setContent(marked.parse(data.advice), data.generated_at, data.from_cache, actualRefreshFn);
+        } else {
+          self.setContent('<pre style="white-space:pre-wrap;">' + data.advice + '</pre>', data.generated_at, data.from_cache, actualRefreshFn);
+        }
+      }).catch(function() {
+        self.setError();
+      });
+    },
+
+    // 强制刷新（跳过缓存）
+    refreshCurrent: function() {
+      if (!this._currentRefreshFn) return;
+      // 拿到当前 URL 并加 ?refresh=1
+      this._currentRefreshFn();
+    }
+  };
+
+  // 绑定抽屉关闭事件
+  var aiDrawerClose = document.getElementById('ai-drawer-close');
+  var aiDrawerOverlay = document.getElementById('ai-drawer-overlay');
+  var aiDrawerRefresh = document.getElementById('ai-drawer-refresh');
+
+  if (aiDrawerClose) aiDrawerClose.addEventListener('click', function() { window.aiDrawer.close(); });
+  if (aiDrawerOverlay) aiDrawerOverlay.addEventListener('click', function() { window.aiDrawer.close(); });
+  if (aiDrawerRefresh) aiDrawerRefresh.addEventListener('click', function() {
+    // 重新分析：加 ?refresh=1 跳过缓存
+    var self = window.aiDrawer;
+    if (!self._currentRefreshFn) return;
+    var origFn = self._currentRefreshFn;
+    // 包装一层：给 URL 加 refresh=1
+    self.setLoading();
+    // 从 _lastUrl 取 URL，加 refresh 参数
+    var url = self._lastUrl;
+    if (url) {
+      var sep = url.indexOf('?') >= 0 ? '&' : '?';
+      fetch(url + sep + 'refresh=1').then(function(resp) {
+        return resp.json();
+      }).then(function(data) {
+        if (typeof marked !== 'undefined') {
+          self.setContent(marked.parse(data.advice), data.generated_at, data.from_cache, origFn);
+        } else {
+          self.setContent('<pre style="white-space:pre-wrap;">' + data.advice + '</pre>', data.generated_at, data.from_cache, origFn);
+        }
+      }).catch(function() {
+        self.setError();
+      });
+    }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      var drawer = document.getElementById('ai-drawer');
+      if (drawer && drawer.classList.contains('open')) window.aiDrawer.close();
+    }
+  });
+
 })();

@@ -26,7 +26,8 @@ def category_list():
     return render_template('categories.html',
                            income_categories=income_categories,
                            expense_categories=expense_categories,
-                           username=session.get('nickname', session.get('username', '用户')))
+                           username=session.get('nickname', session.get('username', '用户')),
+                           page_title='分类管理')
 
 
 @category_bp.route('/add', methods=['POST'])

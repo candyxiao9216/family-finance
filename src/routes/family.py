@@ -38,7 +38,8 @@ def family_info():
                          family=family,
                          user=user,
                          current_view=request.args.get('view', 'personal'),
-                         username=session.get('nickname', session.get('username', '用户')))
+                         username=session.get('nickname', session.get('username', '用户')),
+                         page_title='家庭信息')
 
 
 @family_bp.route('/members')
@@ -70,7 +71,8 @@ def family_members():
     return render_template('family/members.html',
                          family=family,
                          members=members,
-                         user=user)
+                         user=user,
+                         page_title='家庭成员')
 
 
 @family_bp.route('/regenerate-invite', methods=['POST'])

@@ -90,7 +90,8 @@ def recurring_list():
                            accounts=accounts,
                            current_view=current_view,
                            family=family,
-                           username=session.get('nickname', session.get('username', '用户')))
+                           username=session.get('nickname', session.get('username', '用户')),
+                           page_title='定期交易')
 
 
 @recurring_bp.route('/add', methods=['POST'])

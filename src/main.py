@@ -19,6 +19,7 @@ from routes.template import template_bp
 from routes.recurring import recurring_bp
 from routes.transaction import transaction_bp
 from routes.monthly_todo import monthly_todo_bp
+from routes.advisor import advisor_bp
 from flask import session, flash
 
 app = create_app()
@@ -41,6 +42,7 @@ app.register_blueprint(template_bp)
 app.register_blueprint(recurring_bp)
 app.register_blueprint(monthly_todo_bp)
 app.register_blueprint(transaction_bp)
+app.register_blueprint(advisor_bp)
 
 @app.before_request
 def require_login():
@@ -263,7 +265,8 @@ def edit_transaction(transaction_id):
                               transaction=transaction,
                               categories=categories,
                               accounts=accounts,
-                              username=session.get('nickname', session.get('username', '用户')))
+                              username=session.get('nickname', session.get('username', '用户')),
+                              page_title='编辑交易')
 
     # POST：处理编辑表单提交
     new_type = request.form.get('type')

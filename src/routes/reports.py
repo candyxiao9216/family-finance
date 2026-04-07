@@ -60,7 +60,8 @@ def reports_page():
     return render_template('reports.html',
                            current_view=current_view,
                            family=family,
-                           username=session.get('nickname', session.get('username', '用户')))
+                           username=session.get('nickname', session.get('username', '用户')),
+                           page_title='数据报表')
 
 
 @reports_bp.route('/api/trend')

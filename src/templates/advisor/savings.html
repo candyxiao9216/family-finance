@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}储蓄建议 - 智能财务顾问{% endblock %}
+
+{% block content %}
+<div class="advisor-container">
+    <div class="advisor-tabs">
+        <a href="{{ url_for('advisor.dashboard') }}" class="advisor-tab">📊 总览</a>
+        <a href="{{ url_for('advisor.stock_analysis') }}" class="advisor-tab">📈 股票</a>
+        <a href="{{ url_for('advisor.fund_analysis') }}" class="advisor-tab">💎 基金</a>
+        <a href="{{ url_for('advisor.wealth_analysis') }}" class="advisor-tab">🏦 理财</a>
+        <a href="{{ url_for('advisor.savings_advice') }}" class="advisor-tab active">💰 储蓄</a>
+    </div>
+
+    <div class="card advisor-card">
+        <h3>储蓄概况</h3>
+        <div class="savings-stats-grid">
+            <div class="savings-stat">
+                <div class="savings-stat-label">银行存款</div>
+                <div class="savings-stat-value amount-hide">¥{{ savings_data.total_savings|currency(0) }}</div>
+            </div>
+            <div class="savings-stat">
+                <div class="savings-stat-label">本月收入</div>
+                <div class="savings-stat-value amount-hide">¥{{ savings_data.monthly_income|currency(0) }}</div>
+            </div>
+            <div class="savings-stat">
+                <div class="savings-stat-label">本月支出</div>
+                <div class="savings-stat-value amount-hide">¥{{ savings_data.monthly_expense|currency(0) }}</div>
+            </div>
+            <div class="savings-stat">
+                <div class="savings-stat-label">月结余</div>
+                <div class="savings-stat-value amount-hide {% if savings_data.monthly_surplus >= 0 %}profit{% else %}loss{% endif %}">
+                    ¥{{ savings_data.monthly_surplus|currency(0) }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card advisor-card">
+        <div class="card-header">
+            <h3>AI 储蓄建议</h3>
+            <button class="btn-ai" onclick="getSavingsAdvice()">🤖 获取建议</button>
+        </div>
+        <p class="hint-text" style="padding: 12px 16px; margin: 0;">点击上方按钮，AI 将在右侧抽屉中给出个性化储蓄建议</p>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+<script>
+// AI 分析（使用抽屉）
+function getSavingsAdvice() {
+    window.aiDrawer.fetchAndShow('AI 储蓄建议', '/advisor/api/ai/savings', 'savings', getSavingsAdvice);
+}
+
+if (typeof window.ffReapplyHide === 'function') window.ffReapplyHide();
+</script>
+{% endblock %}

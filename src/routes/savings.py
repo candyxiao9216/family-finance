@@ -103,7 +103,8 @@ def savings_list():
                            chart_cumulative=chart_cumulative,
                            current_view=current_view,
                            family=family,
-                           username=session.get('nickname', session.get('username', '用户')))
+                           username=session.get('nickname', session.get('username', '用户')),
+                           page_title='储蓄计划')
 
 
 @savings_bp.route('/plan/add', methods=['POST'])

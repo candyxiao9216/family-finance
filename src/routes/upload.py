@@ -77,7 +77,8 @@ def upload_page():
                            history=history,
                            current_view=current_view,
                            family=family,
-                           username=session.get('nickname', session.get('username', '用户')))
+                           username=session.get('nickname', session.get('username', '用户')),
+                           page_title='批量导入')
 
 
 @upload_bp.route('/parse', methods=['POST'])

@@ -53,7 +53,8 @@ def baby_fund_list():
                            accounts=accounts,
                            current_view=current_view,
                            family=family,
-                           username=session.get('nickname', session.get('username', '用户')))
+                           username=session.get('nickname', session.get('username', '用户')),
+                           page_title='宝宝基金')
 
 
 @baby_fund_bp.route('/add', methods=['POST'])

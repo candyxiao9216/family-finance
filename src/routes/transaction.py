@@ -95,4 +95,5 @@ def transaction_list():
                           current_view=current_view,
                           family=family,
                           family_members=family_members,
-                          username=session.get('nickname', session.get('username', '用户')))
+                          username=session.get('nickname', session.get('username', '用户')),
+                          page_title='月度收支')

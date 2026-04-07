@@ -541,3 +541,182 @@ class MonthlyTodo(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
+
+
+class StockHolding(db.Model):
+    """股票持仓表"""
+    __tablename__ = 'stock_holdings'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    account_id = db.Column(db.Integer, db.ForeignKey('accounts.id'), nullable=False)
+    stock_code = db.Column(db.String(20), nullable=False)   # 00700, 600519, AAPL
+    stock_name = db.Column(db.String(100), nullable=False)
+    market = db.Column(db.String(10), nullable=False)        # HK / A / US
+    shares = db.Column(db.Float, nullable=False)             # 持有股数
+    avg_cost = db.Column(db.Float, nullable=False)           # 买入均价（摊薄成本）
+    currency = db.Column(db.String(3), default='HKD')
+    notes = db.Column(db.Text, nullable=True)                # 备注（如：公司RSU）
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    owner = db.relationship('User', foreign_keys=[user_id], backref='stock_holdings')
+    account = db.relationship('Account', foreign_keys=[account_id], backref='stock_holdings')
+
+    def __repr__(self):
+        return f"<StockHolding {self.id}: {self.stock_name}({self.stock_code}) {self.shares}股>"
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'account_id': self.account_id,
+            'stock_code': self.stock_code,
+            'stock_name': self.stock_name,
+            'market': self.market,
+            'shares': self.shares,
+            'avg_cost': self.avg_cost,
+            'currency': self.currency,
+            'notes': self.notes,
+            'account_name': self.account.name if self.account else None,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+
+
+class FundHolding(db.Model):
+    """基金持仓表"""
+    __tablename__ = 'fund_holdings'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    account_id = db.Column(db.Integer, db.ForeignKey('accounts.id'), nullable=False)
+    fund_code = db.Column(db.String(30), nullable=False)     # 004253, HK0000369188, LU0788108826
+    fund_name = db.Column(db.String(100), nullable=False)
+    fund_type = db.Column(db.String(30), nullable=True)      # 指数型基金/混合型基金/QDII基金/债券型基金/货币型基金/FOF基金
+    shares = db.Column(db.Float, nullable=True)              # 持有份额（货币基金可能为空）
+    amount = db.Column(db.Float, nullable=True)              # 持有金额
+    avg_cost = db.Column(db.Float, nullable=True)            # 买入均价(净值)
+    latest_nav = db.Column(db.Float, nullable=True)          # 最新净值
+    profit = db.Column(db.Float, nullable=True)              # 持有收益
+    profit_rate = db.Column(db.String(20), nullable=True)    # 持有收益率
+    currency = db.Column(db.String(3), default='CNY')
+    status = db.Column(db.String(20), default='holding')  # holding(持有) / redeemed(已赎回)
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    owner = db.relationship('User', foreign_keys=[user_id], backref='fund_holdings')
+    account = db.relationship('Account', foreign_keys=[account_id], backref='fund_holdings')
+
+    def __repr__(self):
+        return f"<FundHolding {self.id}: {self.fund_name}({self.fund_code})>"
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'account_id': self.account_id,
+            'fund_code': self.fund_code,
+            'fund_name': self.fund_name,
+            'fund_type': self.fund_type,
+            'shares': self.shares,
+            'amount': self.amount,
+            'avg_cost': self.avg_cost,
+            'latest_nav': self.latest_nav,
+            'profit': self.profit,
+            'profit_rate': self.profit_rate,
+            'currency': self.currency,
+            'status': self.status or 'holding',
+            'notes': self.notes,
+            'account_name': self.account.name if self.account else None,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+
+
+class WealthHolding(db.Model):
+    """理财产品持仓表"""
+    __tablename__ = 'wealth_holdings'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    account_id = db.Column(db.Integer, db.ForeignKey('accounts.id'), nullable=False)
+    product_name = db.Column(db.String(200), nullable=False)  # 产品名称
+    manager = db.Column(db.String(100), nullable=True)        # 管理机构（浦银理财、民生理财等）
+    buy_amount = db.Column(db.Float, nullable=False)          # 买入金额
+    current_amount = db.Column(db.Float, nullable=True)       # 当前金额
+    total_profit = db.Column(db.Float, nullable=True)         # 累计收益
+    annual_rate = db.Column(db.Float, nullable=True)          # 年化收益率（小数，如 0.0295）
+    buy_date = db.Column(db.Date, nullable=True)              # 买入日期
+    expire_date = db.Column(db.Date, nullable=True)           # 到期日期（活期为空）
+    product_type = db.Column(db.String(20), default='fixed')  # fixed(定期)/flexible(活期)/closed(封闭)
+    currency = db.Column(db.String(3), default='CNY')
+    notes = db.Column(db.Text, nullable=True)                 # 备注
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    owner = db.relationship('User', foreign_keys=[user_id], backref='wealth_holdings')
+    account = db.relationship('Account', foreign_keys=[account_id], backref='wealth_holdings')
+
+    def __repr__(self):
+        return f"<WealthHolding {self.id}: {self.product_name}>"
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'account_id': self.account_id,
+            'product_name': self.product_name,
+            'manager': self.manager,
+            'buy_amount': self.buy_amount,
+            'current_amount': self.current_amount,
+            'total_profit': self.total_profit,
+            'annual_rate': self.annual_rate,
+            'buy_date': self.buy_date.isoformat() if self.buy_date else None,
+            'expire_date': self.expire_date.isoformat() if self.expire_date else None,
+            'product_type': self.product_type,
+            'currency': self.currency,
+            'notes': self.notes,
+            'account_name': self.account.name if self.account else None,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+
+
+class MarketDataCache(db.Model):
+    """行情数据缓存表"""
+    __tablename__ = 'market_data_cache'
+
+    id = db.Column(db.Integer, primary_key=True)
+    data_key = db.Column(db.String(100), unique=True, nullable=False)  # 如 stock_HK_00700 / fund_004253
+    data_json = db.Column(db.Text, nullable=False)
+    fetched_at = db.Column(db.DateTime, nullable=False)
+
+    def __repr__(self):
+        return f"<MarketDataCache {self.data_key}>"
+
+
+class AiAdviceCache(db.Model):
+    """AI 建议缓存表"""
+    __tablename__ = 'ai_advice_cache'
+
+    id = db.Column(db.Integer, primary_key=True)
+    advice_key = db.Column(db.String(100), unique=True, nullable=False)  # 如 stock_analysis_00700
+    advice_text = db.Column(db.Text, nullable=False)
+    model_used = db.Column(db.String(50), nullable=True)
+    generated_at = db.Column(db.DateTime, nullable=False)
+
+
+class AiAdviceHistory(db.Model):
+    """AI 建议历史记录（永久保存，供回看）"""
+    __tablename__ = 'ai_advice_history'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    advice_type = db.Column(db.String(30), nullable=False)  # comprehensive/stocks/funds/wealth/savings
+    advice_text = db.Column(db.Text, nullable=False)
+    model_used = db.Column(db.String(50), nullable=True)
+    generated_at = db.Column(db.DateTime, nullable=False)
+
+    owner = db.relationship('User', foreign_keys=[user_id])

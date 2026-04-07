@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}理财产品 - 智能财务顾问{% endblock %}
+
+{% block content %}
+<div class="advisor-container">
+    <div class="advisor-tabs">
+        <a href="{{ url_for('advisor.dashboard') }}" class="advisor-tab">📊 总览</a>
+        <a href="{{ url_for('advisor.stock_analysis') }}" class="advisor-tab">📈 股票</a>
+        <a href="{{ url_for('advisor.fund_analysis') }}" class="advisor-tab">💎 基金</a>
+        <a href="{{ url_for('advisor.wealth_analysis') }}" class="advisor-tab active">🏦 理财</a>
+        <a href="{{ url_for('advisor.savings_advice') }}" class="advisor-tab">💰 储蓄</a>
+    </div>
+
+    <div class="card advisor-card">
+        <div class="card-header">
+            <h3>我的理财产品（{{ holdings|length }} 个）</h3>
+            <button class="btn-ai" onclick="getWealthAdvice()">🤖 AI 整体分析</button>
+        </div>
+
+        <div class="filter-bar">
+            <select id="filter-account" class="form-select-sm" onchange="filterWealth()">
+                <option value="">全部账户</option>
+                {% set accounts_seen = [] %}
+                {% for h in holdings %}{% if h.account.name not in accounts_seen %}{% if accounts_seen.append(h.account.name) %}{% endif %}
+                <option value="{{ h.account.name }}">{{ h.account.name }}</option>{% endif %}{% endfor %}
+            </select>
+            <select id="filter-type" class="form-select-sm" onchange="filterWealth()">
+                <option value="">全部类型</option>
+                <option value="fixed">定期</option><option value="flexible">活期</option><option value="closed">封闭</option>
+            </select>
+            <select id="filter-profit" class="form-select-sm" onchange="filterWealth()">
+                <option value="">全部收益</option>
+                <option value="profit">盈利</option><option value="loss">亏损</option>
+            </select>
+        </div>
+
+        {% if holdings %}
+        <div class="holdings-table-wrap">
+            <table class="holdings-table" id="wealth-table">
+                <thead><tr><th>产品名称</th><th>买入金额</th><th>当前金额</th><th>累计收益</th><th>年化</th><th>类型</th><th>操作</th></tr></thead>
+                <tbody>
+                    {% for h in holdings %}
+                    <tr data-account="{{ h.account.name }}" data-type="{{ h.product_type }}" data-profit-dir="{{ 'profit' if h.total_profit and h.total_profit >= 0 else 'loss' }}">
+                        <td><div class="fund-name">{{ h.product_name }}</div><div class="fund-meta">{{ h.manager or '' }} · <span class="account-badge">{{ h.account.name }}</span></div></td>
+                        <td class="amount-hide">¥{{ h.buy_amount|currency(2) }}</td>
+                        <td class="amount-hide">¥{{ h.current_amount|currency(2) if h.current_amount else '-' }}</td>
+                        <td class="{% if h.total_profit and h.total_profit >= 0 %}profit{% elif h.total_profit and h.total_profit < 0 %}loss{% endif %} amount-hide">{{ h.total_profit|signed_currency(2) if h.total_profit else '-' }}</td>
+                        <td>{{ "%.2f%%"|format(h.annual_rate * 100) if h.annual_rate else '-' }}</td>
+                        <td><span class="type-badge type-{{ h.product_type }}">{% if h.product_type == 'flexible' %}活期{% elif h.product_type == 'closed' %}封闭{% else %}定期{% endif %}</span></td>
+                        <td><form method="POST" action="{{ url_for('advisor.delete_wealth', id=h.id) }}" style="display:inline;" data-confirm-delete><button type="submit" class="btn-delete-sm">🗑️</button></form></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state"><p>暂无理财产品</p></div>
+        {% endif %}
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+<script>
+function filterWealth() {
+    const account = document.getElementById('filter-account').value;
+    const type = document.getElementById('filter-type').value;
+    const profit = document.getElementById('filter-profit').value;
+    document.querySelectorAll('#wealth-table tbody tr').forEach(row => {
+        let show = true;
+        if (account && row.dataset.account !== account) show = false;
+        if (type && row.dataset.type !== type) show = false;
+        if (profit && row.dataset.profitDir !== profit) show = false;
+        row.style.display = show ? '' : 'none';
+    });
+}
+
+// AI 分析（使用抽屉）
+function getWealthAdvice() {
+    window.aiDrawer.fetchAndShow('理财产品整体分析', '/advisor/api/ai/wealth', 'wealth', getWealthAdvice);
+}
+
+if (typeof window.ffReapplyHide === 'function') window.ffReapplyHide();
+</script>
+{% endblock %}

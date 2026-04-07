@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}AI 分析历史{% endblock %}
+{% block content %}
+<div class="advisor-container">
+    <div class="advisor-tabs">
+        <a href="{{ url_for('advisor.dashboard') }}" class="advisor-tab">📊 总览</a>
+        <a href="{{ url_for('advisor.stock_analysis') }}" class="advisor-tab">📈 股票</a>
+        <a href="{{ url_for('advisor.fund_analysis') }}" class="advisor-tab">💎 基金</a>
+        <a href="{{ url_for('advisor.wealth_analysis') }}" class="advisor-tab">🏦 理财</a>
+        <a href="{{ url_for('advisor.savings_advice') }}" class="advisor-tab">💰 储蓄</a>
+    </div>
+
+    <div class="card advisor-card">
+        <h3>AI 分析历史记录</h3>
+
+        <!-- 类型过滤 -->
+        <div class="filter-bar">
+            <a href="{{ url_for('advisor.advice_history') }}" class="filter-chip {% if not current_type %}active{% endif %}">全部</a>
+            <a href="{{ url_for('advisor.advice_history', type='comprehensive') }}" class="filter-chip {% if current_type == 'comprehensive' %}active{% endif %}">综合</a>
+            <a href="{{ url_for('advisor.advice_history', type='stocks') }}" class="filter-chip {% if current_type == 'stocks' %}active{% endif %}">股票</a>
+            <a href="{{ url_for('advisor.advice_history', type='funds') }}" class="filter-chip {% if current_type == 'funds' %}active{% endif %}">基金</a>
+            <a href="{{ url_for('advisor.advice_history', type='wealth') }}" class="filter-chip {% if current_type == 'wealth' %}active{% endif %}">理财</a>
+            <a href="{{ url_for('advisor.advice_history', type='savings') }}" class="filter-chip {% if current_type == 'savings' %}active{% endif %}">储蓄</a>
+        </div>
+
+        {% if records %}
+        <div class="history-list">
+            {% for r in records %}
+            <div class="history-card" onclick="toggleHistoryCard(this)">
+                <div class="history-card-header">
+                    <span class="history-type-badge badge-{{ r.advice_type }}">
+                        {% if r.advice_type == 'comprehensive' %}综合
+                        {% elif r.advice_type == 'stocks' %}股票
+                        {% elif r.advice_type == 'funds' %}基金
+                        {% elif r.advice_type == 'wealth' %}理财
+                        {% elif r.advice_type == 'savings' %}储蓄
+                        {% endif %}
+                    </span>
+                    <span class="history-card-time">{{ r.generated_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                    <span class="history-card-model">{{ r.model_used or '' }}</span>
+                    <span class="history-card-toggle">▶</span>
+                </div>
+                <div class="history-card-preview">{{ r.advice_text[:100]|replace('\n', ' ') }}...</div>
+                <div class="history-card-detail" style="display:none;">
+                    <div class="advice-text">{{ r.advice_text }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state"><p>暂无 AI 分析历史记录</p></div>
+        {% endif %}
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+<script>
+function toggleHistoryCard(card) {
+    var detail = card.querySelector('.history-card-detail');
+    var toggle = card.querySelector('.history-card-toggle');
+    var preview = card.querySelector('.history-card-preview');
+
+    if (detail.style.display === 'none') {
+        // 首次展开时渲染 Markdown
+        if (!detail.dataset.rendered) {
+            var raw = detail.querySelector('.advice-text').textContent;
+            detail.querySelector('.advice-text').innerHTML = marked.parse(raw);
+            detail.dataset.rendered = '1';
+        }
+        detail.style.display = 'block';
+        preview.style.display = 'none';
+        toggle.textContent = '▼';
+    } else {
+        detail.style.display = 'none';
+        preview.style.display = 'block';
+        toggle.textContent = '▶';
+    }
+}
+</script>
+{% endblock %}

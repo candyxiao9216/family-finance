@@ -217,7 +217,8 @@ def monthly_todo_list():
                          next_month=next_month,
                          family=family,
                          checklist_items=CHECKLIST_ITEMS,
-                         username=session.get('nickname', session.get('username', '用户')))
+                         username=session.get('nickname', session.get('username', '用户')),
+                         page_title='月度待办')
 
 
 @monthly_todo_bp.route('/<int:todo_id>/toggle', methods=['POST'])

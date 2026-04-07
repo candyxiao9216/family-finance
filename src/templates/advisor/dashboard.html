@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}智能财务顾问{% endblock %}
+
+{% block content %}
+<div class="advisor-container">
+    <!-- Tab 导航 -->
+    <div class="advisor-tabs">
+        <a href="{{ url_for('advisor.dashboard') }}" class="advisor-tab {% if current_tab == 'dashboard' %}active{% endif %}">📊 总览</a>
+        <a href="{{ url_for('advisor.stock_analysis') }}" class="advisor-tab {% if current_tab == 'stocks' %}active{% endif %}">📈 股票</a>
+        <a href="{{ url_for('advisor.fund_analysis') }}" class="advisor-tab {% if current_tab == 'funds' %}active{% endif %}">💎 基金</a>
+        <a href="{{ url_for('advisor.wealth_analysis') }}" class="advisor-tab {% if current_tab == 'wealth' %}active{% endif %}">🏦 理财</a>
+        <a href="{{ url_for('advisor.savings_advice') }}" class="advisor-tab {% if current_tab == 'savings' %}active{% endif %}">💰 储蓄</a>
+    </div>
+
+    <!-- 资产配置饼图 -->
+    <div class="card advisor-card">
+        <div class="card-header">
+            <h3>资产配置分布</h3>
+            <button class="btn-ai" onclick="loadComprehensiveAdvice()">🤖 AI 综合分析</button>
+        </div>
+        <div class="allocation-layout">
+            <div class="chart-container">
+                <canvas id="allocationChart" width="280" height="280"></canvas>
+            </div>
+            <div class="allocation-stats">
+                <div class="stat-row">
+                    <span class="stat-dot" style="background:#4CAF50"></span>
+                    <span>储蓄</span>
+                    <span class="stat-value amount-hide">¥{{ allocation.savings.amount|currency(0) }}</span>
+                    <span class="stat-pct">{{ "%.1f"|format(allocation.savings.pct) }}%</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-dot" style="background:#2196F3"></span>
+                    <span>基金</span>
+                    <span class="stat-value amount-hide">¥{{ allocation.fund.amount|currency(0) }}</span>
+                    <span class="stat-pct">{{ "%.1f"|format(allocation.fund.pct) }}%</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-dot" style="background:#FF9800"></span>
+                    <span>股票</span>
+                    <span class="stat-value amount-hide">¥{{ allocation.stock.amount|currency(0) }}</span>
+                    <span class="stat-pct">{{ "%.1f"|format(allocation.stock.pct) }}%</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-dot" style="background:#9C27B0"></span>
+                    <span>理财</span>
+                    <span class="stat-value amount-hide">¥{{ allocation.wealth.amount|currency(0) }}</span>
+                    <span class="stat-pct">{{ "%.1f"|format(allocation.wealth.pct) }}%</span>
+                </div>
+                <div class="stat-row stat-total">
+                    <span></span>
+                    <strong>总资产</strong>
+                    <strong class="stat-value amount-hide">¥{{ allocation.total|currency(0) }}</strong>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 摘要卡片 -->
+    <div class="advisor-summary-grid">
+        <a href="{{ url_for('advisor.stock_analysis') }}" class="card advisor-summary-card">
+            <div class="summary-icon">📈</div>
+            <div class="summary-info">
+                <div class="summary-title">股票持仓</div>
+                <div class="summary-value">{{ stock_count }} 只</div>
+            </div>
+            <div class="summary-arrow">→</div>
+        </a>
+        <a href="{{ url_for('advisor.fund_analysis') }}" class="card advisor-summary-card">
+            <div class="summary-icon">💎</div>
+            <div class="summary-info">
+                <div class="summary-title">基金持仓</div>
+                <div class="summary-value">{{ fund_count }} 只</div>
+            </div>
+            <div class="summary-arrow">→</div>
+        </a>
+        <a href="{{ url_for('advisor.wealth_analysis') }}" class="card advisor-summary-card">
+            <div class="summary-icon">🏦</div>
+            <div class="summary-info">
+                <div class="summary-title">理财产品</div>
+                <div class="summary-value">{{ wealth_count }} 个</div>
+            </div>
+            <div class="summary-arrow">→</div>
+        </a>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+<script>
+// 资产配置饼图
+const ctx = document.getElementById('allocationChart').getContext('2d');
+new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+        labels: ['储蓄', '基金', '股票', '理财'],
+        datasets: [{
+            data: [{{ allocation.savings.pct }}, {{ allocation.fund.pct }}, {{ allocation.stock.pct }}, {{ allocation.wealth.pct }}],
+            backgroundColor: ['#4CAF50', '#2196F3', '#FF9800', '#9C27B0'],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.label + ': ' + ctx.parsed.toFixed(1) + '%' } } },
+        cutout: '55%'
+    }
+});
+
+// AI 综合分析
+function loadComprehensiveAdvice() {
+    window.aiDrawer.fetchAndShow('AI 综合分析', '/advisor/api/ai/comprehensive', 'comprehensive', loadComprehensiveAdvice);
+}
+
+if (typeof window.ffReapplyHide === 'function') window.ffReapplyHide();
+</script>
+{% endblock %}

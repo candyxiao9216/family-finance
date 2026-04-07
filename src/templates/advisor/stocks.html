@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}股票分析 - 智能财务顾问{% endblock %}
+
+{% block content %}
+<div class="advisor-container">
+    <div class="advisor-tabs">
+        <a href="{{ url_for('advisor.dashboard') }}" class="advisor-tab">📊 总览</a>
+        <a href="{{ url_for('advisor.stock_analysis') }}" class="advisor-tab active">📈 股票</a>
+        <a href="{{ url_for('advisor.fund_analysis') }}" class="advisor-tab">💎 基金</a>
+        <a href="{{ url_for('advisor.wealth_analysis') }}" class="advisor-tab">🏦 理财</a>
+        <a href="{{ url_for('advisor.savings_advice') }}" class="advisor-tab">💰 储蓄</a>
+    </div>
+
+    <!-- 搜索添加区域 -->
+    <div class="card advisor-card">
+        <h3>添加股票持仓</h3>
+        <div class="stock-search-row">
+            <select id="market-select" class="form-select-sm">
+                <option value="HK">港股</option>
+                <option value="A">A股</option>
+                <option value="US">美股</option>
+            </select>
+            <input type="text" id="stock-search-input" class="form-input" placeholder="输入代码或名称搜索..." autocomplete="off">
+            <div id="search-results" class="search-dropdown" style="display:none;"></div>
+        </div>
+        <form id="add-stock-form" class="add-holding-form" style="display:none;" method="POST" action="{{ url_for('advisor.add_stock') }}">
+            <input type="hidden" name="stock_code" id="add-stock-code">
+            <input type="hidden" name="stock_name" id="add-stock-name">
+            <input type="hidden" name="market" id="add-stock-market">
+            <div class="form-row">
+                <span id="add-stock-label" class="form-label-text"></span>
+                <select name="account_id" class="form-select-sm" required>
+                    {% for acct in stock_accounts %}
+                    <option value="{{ acct.id }}">{{ acct.name }}（{{ acct.owner.nickname or acct.owner.username }}）</option>
+                    {% endfor %}
+                </select>
+                <input type="number" name="shares" placeholder="股数" step="1" required class="form-input-sm">
+                <input type="number" name="avg_cost" placeholder="买入均价" step="0.001" required class="form-input-sm">
+                <button type="submit" class="btn btn-primary btn-sm">添加</button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="hideAddForm()">取消</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- 持仓列表 -->
+    <div class="card advisor-card">
+        <div class="card-header">
+            <h3>我的股票持仓</h3>
+            <button class="btn-ai" onclick="getStocksOverallAdvice()">🤖 AI 整体分析</button>
+        </div>
+        {% if holdings %}
+        <div class="holdings-table-wrap">
+            <table class="holdings-table">
+                <thead>
+                    <tr>
+                        <th>代码</th><th>名称</th><th>股数</th><th>成本</th><th>现价</th><th>盈亏</th><th>AI</th><th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for h in holdings %}
+                    <tr data-id="{{ h.id }}" data-code="{{ h.stock_code }}" data-market="{{ h.market }}" data-cost="{{ h.avg_cost }}">
+                        <td class="code-cell">{{ h.stock_code }}</td>
+                        <td>{{ h.stock_name }}
+                            <span class="account-badge">{{ h.account.name }}</span>
+                            {% if h.notes %}<span class="note-badge">{{ h.notes }}</span>{% endif %}
+                        </td>
+                        <td>{{ h.shares|int }}</td>
+                        <td class="amount-hide">{{ h.avg_cost|currency(3) }}</td>
+                        <td class="live-price">⏳</td>
+                        <td class="pnl">--</td>
+                        <td><button class="btn-ai-sm" onclick="getStockAdvice({{ h.id }}, this)">🤖</button></td>
+                        <td>
+                            <form method="POST" action="{{ url_for('advisor.delete_stock', id=h.id) }}" style="display:inline;" data-confirm-delete>
+                                <button type="submit" class="btn-delete-sm">🗑️</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state"><p>暂无股票持仓，请通过上方搜索添加</p></div>
+        {% endif %}
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+<script>
+// 搜索防抖
+let searchTimer = null;
+const searchInput = document.getElementById('stock-search-input');
+const searchResults = document.getElementById('search-results');
+
+searchInput.addEventListener('input', function() {
+    clearTimeout(searchTimer);
+    const q = this.value.trim();
+    if (q.length < 1) { searchResults.style.display = 'none'; return; }
+    searchTimer = setTimeout(async () => {
+        const market = document.getElementById('market-select').value;
+        try {
+            const resp = await fetch(`/advisor/api/stock/search?q=${encodeURIComponent(q)}&market=${market}`);
+            const data = await resp.json();
+            searchResults.innerHTML = data.length === 0
+                ? '<div class="search-item">未找到结果</div>'
+                : data.map(s => `<div class="search-item" onclick="selectStock('${s.code}','${s.name}')">${s.code} - ${s.name}</div>`).join('');
+            searchResults.style.display = 'block';
+        } catch (e) {
+            searchResults.innerHTML = '<div class="search-item">搜索失败</div>';
+            searchResults.style.display = 'block';
+        }
+    }, 500);
+});
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.stock-search-row')) searchResults.style.display = 'none';
+});
+
+function selectStock(code, name) {
+    const market = document.getElementById('market-select').value;
+    document.getElementById('add-stock-code').value = code;
+    document.getElementById('add-stock-name').value = name;
+    document.getElementById('add-stock-market').value = market;
+    document.getElementById('add-stock-label').textContent = `${code} ${name} (${market})`;
+    document.getElementById('add-stock-form').style.display = 'block';
+    searchResults.style.display = 'none';
+    searchInput.value = '';
+}
+
+function hideAddForm() { document.getElementById('add-stock-form').style.display = 'none'; }
+
+// 页面加载时批量拉取行情
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const resp = await fetch('/advisor/api/stock/batch-quotes');
+        const quotes = await resp.json();
+        document.querySelectorAll('.holdings-table tbody tr[data-id]').forEach(row => {
+            const id = row.dataset.id;
+            const cost = parseFloat(row.dataset.cost);
+            const quote = quotes[id];
+            if (quote && !quote.error) {
+                const priceEl = row.querySelector('.live-price');
+                const pnlEl = row.querySelector('.pnl');
+                const price = quote.price;
+                priceEl.textContent = price.toFixed(3);
+                if (quote.change_pct !== undefined) priceEl.className = 'live-price ' + (quote.change_pct >= 0 ? 'up' : 'down');
+                if (cost !== 0) {
+                    const pnlPct = ((price - cost) / Math.abs(cost) * 100).toFixed(1);
+                    pnlEl.textContent = (pnlPct >= 0 ? '+' : '') + pnlPct + '%';
+                    pnlEl.className = 'pnl ' + (pnlPct >= 0 ? 'profit' : 'loss');
+                } else {
+                    pnlEl.textContent = 'RSU'; pnlEl.className = 'pnl';
+                }
+                if (quote.stale) { priceEl.title = '数据可能延迟'; priceEl.textContent += ' ⚠'; }
+            } else {
+                row.querySelector('.live-price').textContent = '获取失败';
+            }
+        });
+    } catch (e) {
+        document.querySelectorAll('.live-price').forEach(el => el.textContent = '网络错误');
+    }
+    if (typeof window.ffReapplyHide === 'function') window.ffReapplyHide();
+});
+
+// AI 分析（使用抽屉）
+async function getStockAdvice(holdingId, btn) {
+    const row = btn.closest('tr');
+    const name = row.children[1].textContent.trim().split('\n')[0];
+    window.aiDrawer.fetchAndShow(name + ' · AI 分析', '/advisor/api/ai/stock/' + holdingId);
+}
+
+function getStocksOverallAdvice() {
+    window.aiDrawer.fetchAndShow('股票持仓整体分析', '/advisor/api/ai/stocks-overall', 'stocks', getStocksOverallAdvice);
+}
+</script>
+{% endblock %}

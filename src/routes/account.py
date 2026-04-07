@@ -100,7 +100,8 @@ def account_list():
                            exchange_rates=_get_exchange_rates(),
                            current_view=current_view,
                            family=family,
-                           username=session.get('nickname', session.get('username', '用户')))
+                           username=session.get('nickname', session.get('username', '用户')),
+                           page_title='资产总览')
 
 
 @account_bp.route('/create', methods=['POST'])
