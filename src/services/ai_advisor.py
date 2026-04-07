@@ -18,9 +18,9 @@ class AiAdvisor:
     """AI 财务顾问"""
 
     def __init__(self):
-        self.api_key = os.environ.get('MINIMAX_API_KEY', '')
-        self.base_url = os.environ.get('AI_API_URL', 'https://api.minimaxi.com/anthropic/v1/messages')
-        self.model = os.environ.get('AI_MODEL', 'MiniMax-M2.7')
+        self.api_key = os.environ.get('AI_API_KEY', '') or os.environ.get('MINIMAX_API_KEY', '')
+        self.base_url = os.environ.get('AI_API_URL', 'https://open.bigmodel.cn/api/paas/v4/chat/completions')
+        self.model = os.environ.get('AI_MODEL', 'glm-4.7-flash')
 
     @property
     def available(self):
@@ -370,7 +370,7 @@ class AiAdvisor:
     # ========== API 调用 ==========
 
     def _call_api(self, prompt):
-        """调用 MiniMax API（Anthropic 兼容格式）"""
+        """调用 AI API（OpenAI 兼容格式，支持智谱GLM/MiniMax等）"""
         if not self.available:
             return None
 
@@ -383,8 +383,10 @@ class AiAdvisor:
                 },
                 json={
                     'model': self.model,
-                    'system': '你是专业的家庭财务顾问，给出务实、具体、可操作的建议。不要加免责声明。',
-                    'messages': [{'role': 'user', 'content': prompt}],
+                    'messages': [
+                        {'role': 'system', 'content': '你是专业的家庭财务顾问，给出务实、具体、可操作的建议。不要加免责声明。'},
+                        {'role': 'user', 'content': prompt},
+                    ],
                     'max_tokens': 2000,
                 },
                 timeout=120
@@ -392,14 +394,16 @@ class AiAdvisor:
             resp.raise_for_status()
             data = resp.json()
 
+            # OpenAI 兼容格式：choices[0].message.content
+            choices = data.get('choices', [])
+            if choices:
+                return choices[0].get('message', {}).get('content', '')
+
+            # Anthropic 兼容格式：content[0].text
             content = data.get('content', [])
             for item in content:
                 if isinstance(item, dict) and item.get('type') == 'text':
                     return item.get('text', '')
-
-            choices = data.get('choices', [])
-            if choices:
-                return choices[0].get('message', {}).get('content', '')
 
             print(f"AI 未知响应格式: {json.dumps(data, ensure_ascii=False)[:500]}")
             return '❌ AI 返回格式异常，请重试'
