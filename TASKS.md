@@ -260,6 +260,15 @@
   - `/src/templates/advisor/funds.html`（排序JS + 转投模态框）
   - `/src/routes/advisor.py`（转投API）
 
+### TASK-016：财务顾问"我的/家庭"视图切换 ✅
+- 状态：DONE
+- 优先级：P1
+- 规模：M
+- 目标：所有顾问页面支持"我的/家庭"视图切换，与资产总览交互一致
+- 涉及文件：
+  - `/src/routes/advisor.py`（新增 _get_user_ids_by_view()，全部路由改用）
+  - `/src/templates/advisor/*.html`（6个模板加视图切换按钮+Tab带view参数+JS带view）
+
 ---
 
 ## 已完成任务

@@ -413,6 +413,14 @@ python src/main.py
 - `.env.example` — **新建**，AI API配置模板
 - 所有路由文件 — +page_title 参数
 
+**我的/家庭视图切换:**
+- 所有顾问页面支持"我的/家庭"视图切换（与资产总览一致）
+- URL 参数 `?view=personal|family` 控制数据筛选
+- Tab 导航切换时保持 view 参数不丢失
+- AI 分析 API 也随视图切换，分析对应视图的数据
+- 有家庭用户显示切换按钮，无家庭用户只看自己数据
+- 新增 `_get_user_ids_by_view()` 替代硬编码的 `_get_family_user_ids()`
+
 **数据库变更:**
 - 新增 6 张表：stock_holdings, fund_holdings, wealth_holdings, market_data_cache, ai_advice_cache, ai_advice_history
 - fund_holdings 新增 status 列（holding/redeemed）

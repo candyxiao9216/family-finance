@@ -60,3 +60,7 @@
 - 优先级：高
 - 文本: GLM-5, 多模态: GLM-5V-Turbo, 图像: GLM-Image
 - OpenAI兼容格式，一个Key三种模型
+
+### ~~12. 财务顾问"我的/家庭"视图切换~~ ✅ 2026-04-07
+- 优先级：高
+- 6个顾问页面+全部AI API支持 ?view=personal|family 切换
