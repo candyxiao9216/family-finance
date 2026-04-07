@@ -269,6 +269,30 @@
   - `/src/routes/advisor.py`（新增 _get_user_ids_by_view()，全部路由改用）
   - `/src/templates/advisor/*.html`（6个模板加视图切换按钮+Tab带view参数+JS带view）
 
+### TASK-017：持仓批量导入 ✅
+- 状态：DONE
+- 优先级：P0
+- 规模：L
+- 目标：Excel模板 + App截图AI识别批量导入股票/基金/理财/储蓄持仓
+- 涉及文件：
+  - `/src/routes/advisor.py`（+import 页面路由 + parse-excel/parse-image/confirm API）
+  - `/src/templates/advisor/import.html`（新建，三步导入页面）
+  - `/src/static/holding_*_template.csv`（4个导入模板）
+  - `/src/templates/advisor/dashboard.html`（+批量导入入口卡片）
+  - `/requirements.txt`（+pandas>=2.0.0）
+
+### TASK-017：持仓批量导入 ✅
+- 状态：DONE
+- 优先级：P0
+- 规模：L
+- 目标：Excel模板 + App截图AI识别批量导入股票/基金/理财/储蓄持仓
+- 涉及文件：
+  - `/src/routes/advisor.py`（+import 页面路由 + parse-excel/parse-image/confirm API）
+  - `/src/templates/advisor/import.html`（新建，三步导入页面）
+  - `/src/static/holding_*_template.csv`（4个导入模板）
+  - `/src/templates/advisor/dashboard.html`（+批量导入入口卡片）
+  - `/requirements.txt`（+pandas>=2.0.0）
+
 ---
 
 ## 已完成任务

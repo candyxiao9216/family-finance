@@ -85,7 +85,8 @@ sudo tail -f /opt/family-finance/data/error.log  # 应用错误日志
 | `src/routes/advisor.py` | 财务顾问蓝图（持仓CRUD + AI分析） |
 | `src/services/ai_advisor.py` | AI分析引擎（智谱GLM全系列） |
 | `src/services/market_data.py` | 行情数据服务（Sina API） |
-| `src/templates/advisor/` | 财务顾问页面模板（6个） |
+| `src/templates/advisor/` | 财务顾问页面模板（7个） |
+| `src/templates/advisor/import.html` | 持仓批量导入页面（Excel+截图） |
 | `.env` / `.env.example` | AI API密钥配置 |
 | `PROJECT_BRIEF.md` | 项目状态总览（每次完成任务后更新） |
 

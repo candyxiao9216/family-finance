@@ -427,7 +427,24 @@ python src/main.py
 - 有家庭用户显示切换按钮，无家庭用户只看自己数据
 - 新增 `_get_user_ids_by_view()` 替代硬编码的 `_get_family_user_ids()`
 - 家庭视图下股票/基金/理财列表名字旁显示归属人圆形 icon（蓝=小帅 紫=小美），复用 acct-owner-icon 样式；个人视图不显示
-- 家庭视图下股票/基金/理财列表名字旁显示归属人圆形 icon（蓝=小帅 紫=小美），复用 acct-owner-icon 样式；个人视图不显示
+
+**持仓批量导入:**
+- 独立导入页面（`/advisor/import`），三步流程：选择→预览→确认
+- Excel/CSV 模板导入（4种类型：股票/基金/理财/储蓄，含可下载模板）
+- App 截图 AI 识别（GLM-5V-Turbo 多模态模型提取持仓数据）
+- 账户名自动映射（模糊匹配+手动选择） + 重复检测（stock_code/fund_code/product_name + account_id）
+- 储蓄类型为更新余额
+- 总览页新增"批量导入"入口卡片
+
+**新增/修改文件（持仓批量导入）:**
+- `src/templates/advisor/import.html` — **新建**，三步导入页面（选择→预览→确认）
+- `src/static/holding_stock_template.csv` — **新建**，股票导入模板
+- `src/static/holding_fund_template.csv` — **新建**，基金导入模板
+- `src/static/holding_wealth_template.csv` — **新建**，理财导入模板
+- `src/static/holding_savings_template.csv` — **新建**，储蓄导入模板
+- `src/routes/advisor.py` — +import 页面路由 + parse-excel/parse-image/confirm API
+- `src/templates/advisor/dashboard.html` — +批量导入入口卡片
+- `requirements.txt` — +pandas>=2.0.0
 
 **数据库变更:**
 - 新增 6 张表：stock_holdings, fund_holdings, wealth_holdings, market_data_cache, ai_advice_cache, ai_advice_history
