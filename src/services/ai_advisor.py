@@ -22,8 +22,8 @@ class AiAdvisor:
 
     def __init__(self):
         self.api_key = os.environ.get('AI_API_KEY', '') or os.environ.get('MINIMAX_API_KEY', '')
-        # 文本模型（财务分析用）— GLM-5 旗舰 / GLM-5-Turbo 快速
-        self.model = os.environ.get('AI_MODEL', 'GLM-5')
+        # 文本模型（财务分析用）— GLM-5-Turbo（推理快速版，兼顾质量和速度）
+        self.model = os.environ.get('AI_MODEL', 'GLM-5-Turbo')
         # 多模态模型（图片理解/OCR用）
         self.vision_model = os.environ.get('AI_VISION_MODEL', 'GLM-5V-Turbo')
         # 图像生成模型
@@ -425,9 +425,9 @@ class AiAdvisor:
                         {'role': 'system', 'content': '你是专业的家庭财务顾问，给出务实、具体、可操作的建议。不要加免责声明。'},
                         {'role': 'user', 'content': prompt},
                     ],
-                    'max_tokens': 8192,
+                    'max_tokens': 4096,
                 },
-                timeout=120
+                timeout=180
             )
             resp.raise_for_status()
             text = self._extract_text(resp.json())
