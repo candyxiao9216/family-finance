@@ -22,12 +22,12 @@ class AiAdvisor:
 
     def __init__(self):
         self.api_key = os.environ.get('AI_API_KEY', '') or os.environ.get('MINIMAX_API_KEY', '')
-        # 文本模型（财务分析用）
-        self.model = os.environ.get('AI_MODEL', 'glm-4.7-flash')
+        # 文本模型（财务分析用）— GLM-5 旗舰 / GLM-5-Turbo 快速
+        self.model = os.environ.get('AI_MODEL', 'GLM-5')
         # 多模态模型（图片理解/OCR用）
-        self.vision_model = os.environ.get('AI_VISION_MODEL', 'glm-4.7v')
+        self.vision_model = os.environ.get('AI_VISION_MODEL', 'GLM-5V-Turbo')
         # 图像生成模型
-        self.image_model = os.environ.get('AI_IMAGE_MODEL', 'cogview-4')
+        self.image_model = os.environ.get('AI_IMAGE_MODEL', 'GLM-Image')
         # 兼容自定义 URL
         self._custom_url = os.environ.get('AI_API_URL', '')
 
