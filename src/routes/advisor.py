@@ -25,17 +25,30 @@ def _get_current_user():
 
 
 def _get_family_user_ids():
-    """获取家庭成员 ID 列表"""
+    """获取家庭成员 ID 列表（仅用于不区分视图的场景）"""
     user = _get_current_user()
     if user and user.family:
         return [m.id for m in user.family.members]
     return [user.id] if user else []
 
 
-def _calc_asset_allocation():
+def _get_user_ids_by_view():
+    """根据'我的/家庭'视图获取 user_ids，返回 (user_ids, current_view, family)"""
+    user = _get_current_user()
+    if not user:
+        return [], 'personal', None
+    family = user.family
+    current_view = request.args.get('view', 'family' if family else 'personal')
+    if current_view == 'family' and family:
+        return [m.id for m in family.members], 'family', family
+    return [user.id], 'personal', family
+
+
+def _calc_asset_allocation(user_ids=None):
     """聚合资产配置：储蓄从Account表，基金从FundHolding，股票从StockHolding(市值)，理财从WealthHolding"""
     from sqlalchemy import func
-    user_ids = _get_family_user_ids()
+    if user_ids is None:
+        user_ids = _get_family_user_ids()
 
     # 简单汇率
     exchange_rates = {'CNY': 1.0, 'HKD': 0.92, 'USD': 7.25}
@@ -102,8 +115,8 @@ def _calc_asset_allocation():
 @advisor_bp.route('/')
 def dashboard():
     """总览仪表盘"""
-    user_ids = _get_family_user_ids()
-    allocation = _calc_asset_allocation()
+    user_ids, current_view, family = _get_user_ids_by_view()
+    allocation = _calc_asset_allocation(user_ids)
 
     # 各类持仓数量
     stock_count = StockHolding.query.filter(StockHolding.user_id.in_(user_ids)).count()
@@ -119,13 +132,15 @@ def dashboard():
                            fund_count=fund_count,
                            wealth_count=wealth_count,
                            current_tab='dashboard',
+                           current_view=current_view,
+                           family=family,
                            page_title='财务顾问')
 
 
 @advisor_bp.route('/stocks')
 def stock_analysis():
     """股票分析页"""
-    user_ids = _get_family_user_ids()
+    user_ids, current_view, family = _get_user_ids_by_view()
     holdings = StockHolding.query.filter(
         StockHolding.user_id.in_(user_ids)
     ).order_by(StockHolding.account_id, StockHolding.stock_code).all()
@@ -140,13 +155,15 @@ def stock_analysis():
                            holdings=holdings,
                            stock_accounts=stock_accounts,
                            current_tab='stocks',
+                           current_view=current_view,
+                           family=family,
                            page_title='股票分析')
 
 
 @advisor_bp.route('/funds')
 def fund_analysis():
     """基金分析页"""
-    user_ids = _get_family_user_ids()
+    user_ids, current_view, family = _get_user_ids_by_view()
     holdings = FundHolding.query.filter(
         FundHolding.user_id.in_(user_ids)
     ).order_by(FundHolding.account_id, FundHolding.fund_code).all()
@@ -154,13 +171,15 @@ def fund_analysis():
     return render_template('advisor/funds.html',
                            holdings=holdings,
                            current_tab='funds',
+                           current_view=current_view,
+                           family=family,
                            page_title='基金分析')
 
 
 @advisor_bp.route('/wealth')
 def wealth_analysis():
     """理财产品分析页"""
-    user_ids = _get_family_user_ids()
+    user_ids, current_view, family = _get_user_ids_by_view()
     holdings = WealthHolding.query.filter(
         WealthHolding.user_id.in_(user_ids)
     ).order_by(WealthHolding.account_id, WealthHolding.product_name).all()
@@ -168,13 +187,15 @@ def wealth_analysis():
     return render_template('advisor/wealth.html',
                            holdings=holdings,
                            current_tab='wealth',
+                           current_view=current_view,
+                           family=family,
                            page_title='理财产品')
 
 
 @advisor_bp.route('/savings')
 def savings_advice():
     """储蓄建议页"""
-    user_ids = _get_family_user_ids()
+    user_ids, current_view, family = _get_user_ids_by_view()
 
     # 汇总储蓄数据
     from sqlalchemy import func, extract
@@ -226,6 +247,8 @@ def savings_advice():
     return render_template('advisor/savings.html',
                            savings_data=savings_data,
                            current_tab='savings',
+                           current_view=current_view,
+                           family=family,
                            page_title='储蓄建议')
 
 
@@ -243,10 +266,15 @@ def advice_history():
             AiAdviceHistory.generated_at.desc()
         ).limit(50).all()
 
+    user = _get_current_user()
+    family = user.family if user else None
+
     return render_template('advisor/history.html',
                            records=records,
                            current_type=advice_type,
                            current_tab='history',
+                           current_view=request.args.get('view', 'family' if family else 'personal'),
+                           family=family,
                            page_title='AI 分析历史')
 
 
@@ -464,7 +492,7 @@ def stock_quote(market, code):
 @advisor_bp.route('/api/stock/batch-quotes')
 def batch_stock_quotes():
     """批量获取持仓股票行情"""
-    user_ids = _get_family_user_ids()
+    user_ids, _, _ = _get_user_ids_by_view()
     holdings = StockHolding.query.filter(StockHolding.user_id.in_(user_ids)).all()
 
     from services.market_data import MarketDataService
@@ -514,9 +542,9 @@ def ai_comprehensive():
     from services.ai_advisor import AiAdvisor
     advisor = AiAdvisor()
     user_id = session.get('user_id')
-    user_ids = _get_family_user_ids()
+    user_ids, _, _ = _get_user_ids_by_view()
 
-    allocation = _calc_asset_allocation()
+    allocation = _calc_asset_allocation(user_ids)
 
     # 股票摘要
     stocks = StockHolding.query.filter(StockHolding.user_id.in_(user_ids)).all()
@@ -628,7 +656,7 @@ def ai_fund_advice(holding_id):
 def ai_stocks_overall():
     """AI 股票整体分析"""
     user_id = session.get('user_id')
-    user_ids = _get_family_user_ids()
+    user_ids, _, _ = _get_user_ids_by_view()
     holdings = StockHolding.query.filter(StockHolding.user_id.in_(user_ids)).all()
 
     if not holdings:
@@ -661,7 +689,7 @@ def ai_stocks_overall():
 def ai_funds_overall():
     """AI 基金整体分析"""
     user_id = session.get('user_id')
-    user_ids = _get_family_user_ids()
+    user_ids, _, _ = _get_user_ids_by_view()
     holdings = FundHolding.query.filter(
         FundHolding.user_id.in_(user_ids),
         db.or_(FundHolding.status == 'holding', FundHolding.status.is_(None))
@@ -687,7 +715,7 @@ def ai_funds_overall():
 def ai_wealth_advice():
     """AI 理财产品建议"""
     user_id = session.get('user_id')
-    user_ids = _get_family_user_ids()
+    user_ids, _, _ = _get_user_ids_by_view()
     holdings = WealthHolding.query.filter(WealthHolding.user_id.in_(user_ids)).all()
 
     from services.ai_advisor import AiAdvisor
@@ -713,7 +741,7 @@ def ai_savings_advice():
     from services.ai_advisor import AiAdvisor
     advisor = AiAdvisor()
     user_id = session.get('user_id')
-    user_ids = _get_family_user_ids()
+    user_ids, _, _ = _get_user_ids_by_view()
     from sqlalchemy import func, extract
     now = datetime.now()
 

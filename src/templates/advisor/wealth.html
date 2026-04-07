@@ -5,12 +5,18 @@
 {% block content %}
 <div class="advisor-container">
     <div class="advisor-tabs">
-        <a href="{{ url_for('advisor.dashboard') }}" class="advisor-tab">📊 总览</a>
-        <a href="{{ url_for('advisor.stock_analysis') }}" class="advisor-tab">📈 股票</a>
-        <a href="{{ url_for('advisor.fund_analysis') }}" class="advisor-tab">💎 基金</a>
-        <a href="{{ url_for('advisor.wealth_analysis') }}" class="advisor-tab active">🏦 理财</a>
-        <a href="{{ url_for('advisor.savings_advice') }}" class="advisor-tab">💰 储蓄</a>
+        <a href="{{ url_for('advisor.dashboard') }}?view={{ current_view }}" class="advisor-tab">📊 总览</a>
+        <a href="{{ url_for('advisor.stock_analysis') }}?view={{ current_view }}" class="advisor-tab">📈 股票</a>
+        <a href="{{ url_for('advisor.fund_analysis') }}?view={{ current_view }}" class="advisor-tab">💎 基金</a>
+        <a href="{{ url_for('advisor.wealth_analysis') }}?view={{ current_view }}" class="advisor-tab active">🏦 理财</a>
+        <a href="{{ url_for('advisor.savings_advice') }}?view={{ current_view }}" class="advisor-tab">💰 储蓄</a>
     </div>
+    {% if family %}
+    <div class="view-switcher">
+        <a href="?view=personal" class="view-btn {{ 'active' if current_view == 'personal' }}">我的</a>
+        <a href="?view=family" class="view-btn {{ 'active' if current_view == 'family' }}">家庭</a>
+    </div>
+    {% endif %}
 
     <div class="card advisor-card">
         <div class="card-header">
@@ -62,6 +68,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
 <script>
+var currentView = new URLSearchParams(window.location.search).get('view') || 'family';
 function filterWealth() {
     const account = document.getElementById('filter-account').value;
     const type = document.getElementById('filter-type').value;
@@ -77,7 +84,7 @@ function filterWealth() {
 
 // AI 分析（使用抽屉）
 function getWealthAdvice() {
-    window.aiDrawer.fetchAndShow('理财产品整体分析', '/advisor/api/ai/wealth', 'wealth', getWealthAdvice);
+    window.aiDrawer.fetchAndShow('理财产品整体分析', '/advisor/api/ai/wealth?view=' + currentView, 'wealth', getWealthAdvice);
 }
 
 if (typeof window.ffReapplyHide === 'function') window.ffReapplyHide();

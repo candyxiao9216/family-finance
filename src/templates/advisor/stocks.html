@@ -5,12 +5,18 @@
 {% block content %}
 <div class="advisor-container">
     <div class="advisor-tabs">
-        <a href="{{ url_for('advisor.dashboard') }}" class="advisor-tab">📊 总览</a>
-        <a href="{{ url_for('advisor.stock_analysis') }}" class="advisor-tab active">📈 股票</a>
-        <a href="{{ url_for('advisor.fund_analysis') }}" class="advisor-tab">💎 基金</a>
-        <a href="{{ url_for('advisor.wealth_analysis') }}" class="advisor-tab">🏦 理财</a>
-        <a href="{{ url_for('advisor.savings_advice') }}" class="advisor-tab">💰 储蓄</a>
+        <a href="{{ url_for('advisor.dashboard') }}?view={{ current_view }}" class="advisor-tab">📊 总览</a>
+        <a href="{{ url_for('advisor.stock_analysis') }}?view={{ current_view }}" class="advisor-tab active">📈 股票</a>
+        <a href="{{ url_for('advisor.fund_analysis') }}?view={{ current_view }}" class="advisor-tab">💎 基金</a>
+        <a href="{{ url_for('advisor.wealth_analysis') }}?view={{ current_view }}" class="advisor-tab">🏦 理财</a>
+        <a href="{{ url_for('advisor.savings_advice') }}?view={{ current_view }}" class="advisor-tab">💰 储蓄</a>
     </div>
+    {% if family %}
+    <div class="view-switcher">
+        <a href="?view=personal" class="view-btn {{ 'active' if current_view == 'personal' }}">我的</a>
+        <a href="?view=family" class="view-btn {{ 'active' if current_view == 'family' }}">家庭</a>
+    </div>
+    {% endif %}
 
     <!-- 搜索添加区域 -->
     <div class="card advisor-card">
@@ -88,6 +94,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
 <script>
+var currentView = new URLSearchParams(window.location.search).get('view') || 'family';
 // 搜索防抖
 let searchTimer = null;
 const searchInput = document.getElementById('stock-search-input');
@@ -167,11 +174,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function getStockAdvice(holdingId, btn) {
     const row = btn.closest('tr');
     const name = row.children[1].textContent.trim().split('\n')[0];
-    window.aiDrawer.fetchAndShow(name + ' · AI 分析', '/advisor/api/ai/stock/' + holdingId);
+    window.aiDrawer.fetchAndShow(name + ' · AI 分析', '/advisor/api/ai/stock/' + holdingId + '?view=' + currentView);
 }
 
 function getStocksOverallAdvice() {
-    window.aiDrawer.fetchAndShow('股票持仓整体分析', '/advisor/api/ai/stocks-overall', 'stocks', getStocksOverallAdvice);
+    window.aiDrawer.fetchAndShow('股票持仓整体分析', '/advisor/api/ai/stocks-overall?view=' + currentView, 'stocks', getStocksOverallAdvice);
 }
 </script>
 {% endblock %}
