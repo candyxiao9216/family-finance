@@ -393,11 +393,16 @@ class AiAdvisor:
         }
 
     def _extract_text(self, data):
-        """从 API 响应中提取文本内容"""
+        """从 API 响应中提取文本内容（兼容推理模型 reasoning_content）"""
         # OpenAI 兼容格式：choices[0].message.content
         choices = data.get('choices', [])
         if choices:
-            return choices[0].get('message', {}).get('content', '')
+            msg = choices[0].get('message', {})
+            content = msg.get('content', '')
+            # GLM-5 等推理模型：content 为空时用 reasoning_content
+            if not content:
+                content = msg.get('reasoning_content', '')
+            return content
         # Anthropic 兼容格式：content[0].text
         content = data.get('content', [])
         for item in content:
@@ -420,7 +425,7 @@ class AiAdvisor:
                         {'role': 'system', 'content': '你是专业的家庭财务顾问，给出务实、具体、可操作的建议。不要加免责声明。'},
                         {'role': 'user', 'content': prompt},
                     ],
-                    'max_tokens': 2000,
+                    'max_tokens': 8192,
                 },
                 timeout=120
             )
