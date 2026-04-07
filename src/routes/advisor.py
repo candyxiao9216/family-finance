@@ -4,10 +4,11 @@
 """
 import os
 import sys
+import json
 from datetime import datetime, date
 from decimal import Decimal
 
-from flask import Blueprint, render_template, request, session, url_for, flash, redirect, jsonify
+from flask import Blueprint, render_template, request, session, url_for, flash, redirect, jsonify, send_file
 
 from models import (db, Account, AccountType, AccountBalance, User,
                     StockHolding, FundHolding, WealthHolding,
@@ -784,3 +785,373 @@ def ai_history_detail(advice_type, record_id):
     if not detail:
         return jsonify({'error': '记录不存在'}), 404
     return jsonify(detail)
+
+
+# ============ 持仓批量导入 ============
+
+HOLDING_TYPES = {
+    'stock': '股票',
+    'fund': '基金',
+    'wealth': '理财',
+    'savings': '储蓄',
+}
+
+# Excel 列名 → 模型字段映射
+EXCEL_FIELD_MAP = {
+    'stock': {
+        '股票代码': 'stock_code', '股票名称': 'stock_name', '市场': 'market',
+        '持股数量': 'shares', '买入均价': 'avg_cost', '币种': 'currency',
+        '账户名': 'account_name', '备注': 'notes',
+    },
+    'fund': {
+        '基金代码': 'fund_code', '基金名称': 'fund_name', '基金类型': 'fund_type',
+        '持有份额': 'shares', '持有金额': 'amount', '买入均价': 'avg_cost',
+        '持有收益': 'profit', '收益率': 'profit_rate', '币种': 'currency',
+        '账户名': 'account_name', '备注': 'notes',
+    },
+    'wealth': {
+        '产品名称': 'product_name', '管理机构': 'manager',
+        '买入金额': 'buy_amount', '当前金额': 'current_amount',
+        '累计收益': 'total_profit', '年化收益率': 'annual_rate',
+        '买入日期': 'buy_date', '到期日期': 'expire_date',
+        '产品类型': 'product_type', '币种': 'currency',
+        '账户名': 'account_name', '备注': 'notes',
+    },
+    'savings': {
+        '账户名': 'account_name', '当前余额': 'balance', '币种': 'currency', '备注': 'notes',
+    },
+}
+
+# 截图识别的 JSON schema 提示
+VISION_PROMPTS = {
+    'stock': '''请从这张股票持仓截图中提取数据，返回严格的 JSON 数组：
+[{"stock_code":"00700","stock_name":"腾讯控股","market":"HK","shares":100,"avg_cost":350.5,"currency":"HKD"}]
+market 只能是 HK/A/US。只返回 JSON 数组，不要其他文字。''',
+    'fund': '''请从这张基金持仓截图中提取数据，返回严格的 JSON 数组：
+[{"fund_code":"004253","fund_name":"基金名称","fund_type":"混合型基金","shares":1000,"amount":15000,"avg_cost":1.5,"profit":500,"profit_rate":"+3.4%","currency":"CNY"}]
+只返回 JSON 数组，不要其他文字。''',
+    'wealth': '''请从这张理财产品持仓截图中提取数据，返回严格的 JSON 数组：
+[{"product_name":"产品名称","manager":"管理机构","buy_amount":50000,"current_amount":50500,"total_profit":500,"annual_rate":3.5,"buy_date":"2025-01-15","expire_date":"2025-07-15","product_type":"fixed","currency":"CNY"}]
+product_type 只能是 fixed/flexible/closed。annual_rate 是百分比数字（如 3.5 表示 3.5%）。只返回 JSON 数组，不要其他文字。''',
+    'savings': '''请从这张储蓄/银行账户截图中提取数据，返回严格的 JSON 数组：
+[{"account_name":"招行储蓄","balance":530000,"currency":"CNY"}]
+只返回 JSON 数组，不要其他文字。''',
+}
+
+
+@advisor_bp.route('/import')
+def import_page():
+    """持仓批量导入页面"""
+    user = _get_current_user()
+    if not user:
+        return redirect(url_for('auth.login'))
+
+    # 获取用户的所有账户（用于前端下拉映射）
+    accounts = Account.query.filter_by(user_id=user.id).all()
+    account_list = [{'id': a.id, 'name': a.name, 'category': a.account_type.category} for a in accounts]
+
+    return render_template('advisor/import.html',
+                           accounts=account_list,
+                           current_tab='import',
+                           current_view=request.args.get('view', 'personal'),
+                           family=user.family,
+                           page_title='批量导入持仓')
+
+
+@advisor_bp.route('/import/parse-excel', methods=['POST'])
+def parse_excel_holdings():
+    """解析 Excel/CSV 持仓文件"""
+    import tempfile
+    import pandas as pd
+
+    user_id = session.get('user_id')
+    holding_type = request.form.get('holding_type', '')
+    if holding_type not in EXCEL_FIELD_MAP:
+        return jsonify({'error': '无效的持仓类型'}), 400
+
+    if 'file' not in request.files:
+        return jsonify({'error': '未找到文件'}), 400
+    file = request.files['file']
+    if not file.filename:
+        return jsonify({'error': '空文件名'}), 400
+
+    _, ext = os.path.splitext(file.filename)
+    if ext.lower() not in ('.xlsx', '.csv'):
+        return jsonify({'error': '仅支持 .xlsx 和 .csv 格式'}), 400
+
+    tmp = tempfile.NamedTemporaryFile(suffix=ext, delete=False)
+    file.save(tmp.name)
+    tmp.close()
+
+    try:
+        if ext.lower() == '.csv':
+            for enc in ['utf-8', 'utf-8-sig', 'gbk', 'gb18030']:
+                try:
+                    df = pd.read_csv(tmp.name, encoding=enc)
+                    break
+                except UnicodeDecodeError:
+                    continue
+            else:
+                return jsonify({'error': '无法识别文件编码'}), 400
+        else:
+            df = pd.read_excel(tmp.name)
+
+        field_map = EXCEL_FIELD_MAP[holding_type]
+        records = []
+        for _, row in df.iterrows():
+            record = {}
+            for cn_col, en_field in field_map.items():
+                val = row.get(cn_col)
+                if pd.notna(val):
+                    record[en_field] = str(val).strip() if isinstance(val, str) else val
+                else:
+                    record[en_field] = None
+            # 跳过完全空行
+            if not any(v for v in record.values() if v is not None):
+                continue
+            records.append(record)
+
+        # 账户映射 + 重复检测
+        records = _map_accounts_and_detect_duplicates(records, holding_type, user_id)
+
+        return jsonify({
+            'records': records,
+            'total': len(records),
+            'holding_type': holding_type,
+            'file_name': file.filename,
+        })
+    except Exception as e:
+        return jsonify({'error': f'解析失败: {str(e)}'}), 400
+    finally:
+        os.unlink(tmp.name)
+
+
+@advisor_bp.route('/import/parse-image', methods=['POST'])
+def parse_image_holdings():
+    """App 截图识别持仓数据"""
+    import base64
+
+    user_id = session.get('user_id')
+    holding_type = request.form.get('holding_type', '')
+    if holding_type not in VISION_PROMPTS:
+        return jsonify({'error': '无效的持仓类型'}), 400
+
+    if 'file' not in request.files:
+        return jsonify({'error': '未找到图片'}), 400
+    file = request.files['file']
+    if not file.filename:
+        return jsonify({'error': '空文件名'}), 400
+
+    _, ext = os.path.splitext(file.filename)
+    if ext.lower() not in ('.jpg', '.jpeg', '.png', '.webp'):
+        return jsonify({'error': '仅支持 jpg/png/webp 图片'}), 400
+
+    # 读取图片并转 base64
+    img_data = file.read()
+    b64 = base64.b64encode(img_data).decode('utf-8')
+
+    # 调用 AI Vision
+    from services.ai_advisor import AiAdvisor
+    advisor = AiAdvisor()
+    if not advisor.available:
+        return jsonify({'error': 'AI 服务未配置'}), 500
+
+    result = advisor.call_vision(VISION_PROMPTS[holding_type], image_base64=b64)
+    if not result or result.startswith('❌') or result.startswith('⏳'):
+        return jsonify({'error': result or '图片识别失败'}), 500
+
+    # 解析 AI 返回的 JSON
+    try:
+        # 去掉可能的 markdown 代码块标记
+        text = result.strip()
+        if text.startswith('```'):
+            text = text.split('\n', 1)[1] if '\n' in text else text[3:]
+        if text.endswith('```'):
+            text = text[:-3]
+        text = text.strip()
+        if text.startswith('json'):
+            text = text[4:].strip()
+
+        records = json.loads(text)
+        if not isinstance(records, list):
+            records = [records]
+    except (json.JSONDecodeError, ValueError) as e:
+        return jsonify({'error': f'AI 返回格式无法解析: {str(e)}', 'raw': result}), 400
+
+    # 账户映射 + 重复检测
+    records = _map_accounts_and_detect_duplicates(records, holding_type, user_id)
+
+    return jsonify({
+        'records': records,
+        'total': len(records),
+        'holding_type': holding_type,
+        'file_name': file.filename,
+    })
+
+
+@advisor_bp.route('/import/confirm', methods=['POST'])
+def confirm_import_holdings():
+    """确认导入持仓数据"""
+    user_id = session.get('user_id')
+    data = request.get_json()
+    if not data or 'records' not in data:
+        return jsonify({'error': '无效数据'}), 400
+
+    holding_type = data.get('holding_type', '')
+    records = data['records']
+    imported = 0
+    skipped = 0
+
+    for r in records:
+        if r.get('skip'):
+            skipped += 1
+            continue
+        account_id = r.get('account_id')
+        if not account_id:
+            skipped += 1
+            continue
+
+        try:
+            if holding_type == 'stock':
+                db.session.add(StockHolding(
+                    user_id=user_id, account_id=int(account_id),
+                    stock_code=str(r.get('stock_code', '')).strip(),
+                    stock_name=str(r.get('stock_name', '')).strip(),
+                    market=r.get('market', 'HK'),
+                    shares=float(r.get('shares', 0)),
+                    avg_cost=float(r.get('avg_cost', 0)),
+                    currency=r.get('currency', 'HKD'),
+                    notes=r.get('notes', ''),
+                ))
+            elif holding_type == 'fund':
+                db.session.add(FundHolding(
+                    user_id=user_id, account_id=int(account_id),
+                    fund_code=str(r.get('fund_code', '')).strip(),
+                    fund_name=str(r.get('fund_name', '')).strip(),
+                    fund_type=r.get('fund_type', ''),
+                    shares=float(r['shares']) if r.get('shares') else None,
+                    amount=float(r['amount']) if r.get('amount') else None,
+                    avg_cost=float(r['avg_cost']) if r.get('avg_cost') else None,
+                    profit=float(r['profit']) if r.get('profit') else None,
+                    profit_rate=r.get('profit_rate', ''),
+                    currency=r.get('currency', 'CNY'),
+                    notes=r.get('notes', ''),
+                ))
+            elif holding_type == 'wealth':
+                bd = None
+                if r.get('buy_date'):
+                    try:
+                        bd = datetime.strptime(str(r['buy_date'])[:10], '%Y-%m-%d').date()
+                    except ValueError:
+                        pass
+                ed = None
+                if r.get('expire_date'):
+                    try:
+                        ed = datetime.strptime(str(r['expire_date'])[:10], '%Y-%m-%d').date()
+                    except ValueError:
+                        pass
+                annual = r.get('annual_rate')
+                if annual and float(annual) > 1:
+                    annual = float(annual) / 100  # 百分比转小数
+                db.session.add(WealthHolding(
+                    user_id=user_id, account_id=int(account_id),
+                    product_name=str(r.get('product_name', '')).strip(),
+                    manager=r.get('manager', ''),
+                    buy_amount=float(r.get('buy_amount', 0)),
+                    current_amount=float(r.get('current_amount', 0)) if r.get('current_amount') else None,
+                    total_profit=float(r.get('total_profit', 0)) if r.get('total_profit') else None,
+                    annual_rate=float(annual) if annual else None,
+                    buy_date=bd, expire_date=ed,
+                    product_type=r.get('product_type', 'fixed'),
+                    currency=r.get('currency', 'CNY'),
+                    notes=r.get('notes', ''),
+                ))
+            elif holding_type == 'savings':
+                # 储蓄：更新已有账户余额
+                acct = db.session.get(Account, int(account_id))
+                if acct:
+                    acct.current_balance = Decimal(str(r.get('balance', 0)))
+                    imported += 1
+                    continue
+
+            imported += 1
+        except Exception as e:
+            print(f"导入行失败: {e}")
+            skipped += 1
+
+    db.session.commit()
+    return jsonify({'imported_count': imported, 'skipped_count': skipped, 'total': len(records)})
+
+
+def _map_accounts_and_detect_duplicates(records, holding_type, user_id):
+    """账户名映射 + 重复检测"""
+    # 构建账户名 → id 映射
+    accounts = Account.query.filter_by(user_id=user_id).all()
+    acct_name_map = {}
+    for a in accounts:
+        acct_name_map[a.name] = a.id
+        # 也支持模糊匹配（去掉"股票"/"基金"等后缀）
+        short = a.name.replace('股票', '').replace('基金', '').replace('理财', '').replace('储蓄', '')
+        if short:
+            acct_name_map[short] = a.id
+
+    # 加载已有持仓用于重复检测
+    existing_keys = set()
+    if holding_type == 'stock':
+        for h in StockHolding.query.filter_by(user_id=user_id).all():
+            existing_keys.add(f"{h.stock_code}|{h.account_id}")
+    elif holding_type == 'fund':
+        for h in FundHolding.query.filter_by(user_id=user_id).all():
+            existing_keys.add(f"{h.fund_code}|{h.account_id}")
+    elif holding_type == 'wealth':
+        for h in WealthHolding.query.filter_by(user_id=user_id).all():
+            existing_keys.add(f"{h.product_name}|{h.account_id}")
+    elif holding_type == 'savings':
+        for a in accounts:
+            if a.account_type.category == 'savings':
+                existing_keys.add(str(a.id))
+
+    for r in records:
+        # 账户映射
+        acct_name = r.get('account_name', '')
+        if acct_name and acct_name in acct_name_map:
+            r['account_id'] = acct_name_map[acct_name]
+            r['account_matched'] = True
+        else:
+            r['account_id'] = None
+            r['account_matched'] = False
+
+        # 重复检测
+        r['is_duplicate'] = False
+        aid = r.get('account_id', '')
+        if holding_type == 'stock' and r.get('stock_code'):
+            if f"{r['stock_code']}|{aid}" in existing_keys:
+                r['is_duplicate'] = True
+        elif holding_type == 'fund' and r.get('fund_code'):
+            if f"{r['fund_code']}|{aid}" in existing_keys:
+                r['is_duplicate'] = True
+        elif holding_type == 'wealth' and r.get('product_name'):
+            if f"{r['product_name']}|{aid}" in existing_keys:
+                r['is_duplicate'] = True
+        elif holding_type == 'savings' and aid:
+            if str(aid) in existing_keys:
+                r['is_duplicate'] = True
+                r['is_update'] = True  # 储蓄是更新余额
+
+    return records
+
+
+@advisor_bp.route('/import/template/<holding_type>')
+def download_holding_template(holding_type):
+    """下载持仓导入模板"""
+    if holding_type not in EXCEL_FIELD_MAP:
+        flash('无效的模板类型', 'error')
+        return redirect(url_for('advisor.import_page'))
+
+    template_path = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)),
+        'static', f'holding_{holding_type}_template.csv'
+    )
+    type_names = {'stock': '股票', 'fund': '基金', 'wealth': '理财', 'savings': '储蓄'}
+    return send_file(template_path, as_attachment=True,
+                     download_name=f'{type_names[holding_type]}持仓导入模板.csv')

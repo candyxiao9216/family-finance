@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}批量导入持仓 - 智能财务顾问{% endblock %}
+
+{% block extra_head %}
+<style>
+    .steps-indicator { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+    .step-dot { display: flex; align-items: center; gap: .5rem; color: var(--text-secondary, #888); font-size: .9rem; }
+    .step-dot.active { color: var(--primary, #2563eb); font-weight: 600; }
+    .step-dot.done { color: var(--success, #16a34a); }
+    .step-dot .num { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .8rem; border: 2px solid currentColor; }
+    .step-dot.active .num { background: var(--primary, #2563eb); color: #fff; border-color: var(--primary, #2563eb); }
+    .step-dot.done .num { background: var(--success, #16a34a); color: #fff; border-color: var(--success, #16a34a); }
+    .step-panel { display: none; }
+    .step-panel.active { display: block; }
+
+    .type-selector { display: flex; gap: .75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .type-btn { padding: .5rem 1.2rem; border-radius: 20px; border: 1px solid var(--border, #ddd); background: #fff; cursor: pointer; font-size: .9rem; transition: all .2s; }
+    .type-btn.active { border-color: var(--primary, #2563eb); color: var(--primary, #2563eb); background: rgba(37,99,235,.06); font-weight: 600; }
+
+    .method-tabs { display: flex; gap: 0; margin-bottom: 1rem; border-bottom: 2px solid var(--border, #eee); }
+    .method-tab { padding: .6rem 1.5rem; cursor: pointer; font-size: .9rem; border-bottom: 2px solid transparent; margin-bottom: -2px; color: var(--text-secondary); }
+    .method-tab.active { border-bottom-color: var(--primary, #2563eb); color: var(--primary, #2563eb); font-weight: 600; }
+
+    .upload-zone { border: 2px dashed var(--border, #ddd); border-radius: 12px; padding: 2.5rem 2rem; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; }
+    .upload-zone:hover, .upload-zone.dragover { border-color: var(--primary, #2563eb); background: rgba(37,99,235,.04); }
+    .upload-zone-icon { font-size: 2.5rem; margin-bottom: .5rem; }
+    .upload-zone-text { color: var(--text-secondary, #888); margin-bottom: .5rem; }
+    .upload-zone-hint { font-size: .8rem; color: var(--text-muted, #aaa); }
+
+    .preview-table-wrap { overflow-x: auto; margin: 1rem 0; }
+    .preview-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+    .preview-table th { background: var(--bg-secondary, #f8f9fa); padding: .5rem .6rem; text-align: left; white-space: nowrap; }
+    .preview-table td { padding: .5rem .6rem; border-bottom: 1px solid var(--border, #eee); }
+    .preview-table tr.duplicate { background: #fef3c7; }
+    .preview-table tr.skipped { opacity: .4; text-decoration: line-through; }
+    .preview-table tr.no-account td:first-child { border-left: 3px solid #ef4444; }
+    .preview-actions { display: flex; gap: .75rem; margin: 1rem 0; flex-wrap: wrap; align-items: center; }
+    .preview-summary { font-size: .9rem; color: var(--text-secondary, #666); }
+
+    .result-box { text-align: center; padding: 2rem; }
+    .result-icon { font-size: 3rem; margin-bottom: .5rem; }
+    .result-title { font-size: 1.3rem; font-weight: 600; margin-bottom: 1rem; }
+    .result-stats { display: flex; gap: 2rem; justify-content: center; margin-bottom: 1.5rem; }
+    .result-stat-label { font-size: .8rem; color: var(--text-secondary, #888); }
+    .result-stat-value { font-size: 1.5rem; font-weight: 700; }
+
+    .template-link { display: inline-block; margin-top: .75rem; font-size: .85rem; }
+    .loading-overlay { text-align: center; padding: 3rem; color: var(--text-secondary); }
+    .loading-overlay .loading-text { font-size: 1rem; }
+    select.acct-select { font-size: .8rem; padding: 2px 4px; border-radius: 4px; border: 1px solid var(--border); }
+    select.acct-select.unmatched { border-color: #ef4444; background: #fef2f2; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="advisor-container">
+    <div class="advisor-tabs">
+        <a href="{{ url_for('advisor.dashboard') }}?view={{ current_view }}" class="advisor-tab">📊 总览</a>
+        <a href="{{ url_for('advisor.stock_analysis') }}?view={{ current_view }}" class="advisor-tab">📈 股票</a>
+        <a href="{{ url_for('advisor.fund_analysis') }}?view={{ current_view }}" class="advisor-tab">💎 基金</a>
+        <a href="{{ url_for('advisor.wealth_analysis') }}?view={{ current_view }}" class="advisor-tab">🏦 理财</a>
+        <a href="{{ url_for('advisor.savings_advice') }}?view={{ current_view }}" class="advisor-tab">💰 储蓄</a>
+    </div>
+
+    <!-- 步骤指示器 -->
+    <div class="steps-indicator" id="steps-indicator">
+        <div class="step-dot active" data-step="1"><span class="num">1</span> 选择导入</div>
+        <div class="step-dot" data-step="2"><span class="num">2</span> 预览确认</div>
+        <div class="step-dot" data-step="3"><span class="num">3</span> 导入结果</div>
+    </div>
+
+    <!-- Step 1: 选择类型和上传 -->
+    <div class="card step-panel active" id="step-1">
+        <h3 style="margin-bottom:1rem;">选择持仓类型</h3>
+        <div class="type-selector">
+            <button class="type-btn active" data-type="stock">📈 股票</button>
+            <button class="type-btn" data-type="fund">💎 基金</button>
+            <button class="type-btn" data-type="wealth">🏦 理财</button>
+            <button class="type-btn" data-type="savings">💰 储蓄</button>
+        </div>
+
+        <div class="method-tabs">
+            <div class="method-tab active" data-method="excel">📄 Excel/CSV 导入</div>
+            <div class="method-tab" data-method="image">📷 App 截图识别</div>
+        </div>
+
+        <!-- Excel 上传区 -->
+        <div id="upload-excel" class="upload-method">
+            <div class="upload-zone" id="excel-zone">
+                <div class="upload-zone-icon">📄</div>
+                <div class="upload-zone-text">拖拽 Excel/CSV 文件到此处，或点击选择</div>
+                <div class="upload-zone-hint">支持 .xlsx / .csv 格式</div>
+                <input type="file" id="excel-input" accept=".csv,.xlsx" style="display:none">
+            </div>
+            <div style="text-align:center">
+                <a href="#" class="template-link" id="template-download">📥 下载<span id="template-type-label">股票</span>导入模板</a>
+            </div>
+        </div>
+
+        <!-- 截图上传区 -->
+        <div id="upload-image" class="upload-method" style="display:none">
+            <div class="upload-zone" id="image-zone">
+                <div class="upload-zone-icon">📷</div>
+                <div class="upload-zone-text">拖拽 App 截图到此处，或点击选择</div>
+                <div class="upload-zone-hint">支持 .jpg / .png / .webp 格式</div>
+                <input type="file" id="image-input" accept=".jpg,.jpeg,.png,.webp" style="display:none">
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 2: 预览 -->
+    <div class="card step-panel" id="step-2">
+        <div class="preview-actions">
+            <div class="preview-summary" id="preview-summary"></div>
+            <div style="flex:1"></div>
+            <button class="btn-action btn-action--secondary" id="btn-skip-dup">跳过重复</button>
+            <button class="btn-action" id="btn-confirm-import">确认导入</button>
+        </div>
+        <div class="preview-table-wrap">
+            <table class="preview-table" id="preview-table">
+                <thead id="preview-thead"></thead>
+                <tbody id="preview-body"></tbody>
+            </table>
+        </div>
+        <div class="preview-actions">
+            <button class="btn-action btn-action--secondary" id="btn-back-step1">← 重新选择</button>
+        </div>
+    </div>
+
+    <!-- Step 3: 结果 -->
+    <div class="card step-panel" id="step-3">
+        <div class="result-box">
+            <div class="result-icon" id="result-icon">✅</div>
+            <div class="result-title" id="result-title">导入完成</div>
+            <div class="result-stats">
+                <div><div class="result-stat-value income" id="result-imported">0</div><div class="result-stat-label">成功导入</div></div>
+                <div><div class="result-stat-value" id="result-skipped">0</div><div class="result-stat-label">跳过</div></div>
+                <div><div class="result-stat-value" id="result-total">0</div><div class="result-stat-label">总计</div></div>
+            </div>
+            <a href="{{ url_for('advisor.dashboard') }}?view={{ current_view }}" class="btn-action">返回总览</a>
+            <button class="btn-action btn-action--secondary" id="btn-import-more" style="margin-left:.5rem">继续导入</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var holdingType = 'stock';
+    var importMethod = 'excel';
+    var parsedData = null;
+    var accounts = {{ accounts|tojson }};
+
+    var typeLabels = {stock:'股票', fund:'基金', wealth:'理财', savings:'储蓄'};
+    var typeTargets = {stock:'stock_analysis', fund:'fund_analysis', wealth:'wealth_analysis', savings:'savings_advice'};
+
+    // 各类型表头
+    var HEADERS = {
+        stock: ['状态','股票代码','股票名称','市场','持股数量','买入均价','币种','账户','操作'],
+        fund: ['状态','基金代码','基金名称','基金类型','持有份额','持有金额','持有收益','收益率','币种','账户','操作'],
+        wealth: ['状态','产品名称','管理机构','买入金额','当前金额','累计收益','年化收益率','产品类型','币种','账户','操作'],
+        savings: ['状态','账户名','当前余额','币种','操作'],
+    };
+
+    // 各类型显示字段
+    var FIELDS = {
+        stock: ['stock_code','stock_name','market','shares','avg_cost','currency'],
+        fund: ['fund_code','fund_name','fund_type','shares','amount','profit','profit_rate','currency'],
+        wealth: ['product_name','manager','buy_amount','current_amount','total_profit','annual_rate','product_type','currency'],
+        savings: ['account_name','balance','currency'],
+    };
+
+    var panels = [document.getElementById('step-1'), document.getElementById('step-2'), document.getElementById('step-3')];
+    var stepsEl = document.getElementById('steps-indicator');
+
+    function goStep(n) {
+        panels.forEach(function(p,i) { p.classList.toggle('active', i===n-1); });
+        stepsEl.querySelectorAll('.step-dot').forEach(function(d) {
+            var s = parseInt(d.dataset.step);
+            d.classList.remove('active','done');
+            if (s===n) d.classList.add('active');
+            else if (s<n) d.classList.add('done');
+        });
+    }
+
+    // 类型选择
+    document.querySelectorAll('.type-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.type-btn').forEach(function(b){b.classList.remove('active');});
+            btn.classList.add('active');
+            holdingType = btn.dataset.type;
+            document.getElementById('template-type-label').textContent = typeLabels[holdingType];
+            document.getElementById('template-download').href = '/advisor/import/template/' + holdingType;
+        });
+    });
+    document.getElementById('template-download').href = '/advisor/import/template/stock';
+
+    // 方式切换
+    document.querySelectorAll('.method-tab').forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            document.querySelectorAll('.method-tab').forEach(function(t){t.classList.remove('active');});
+            tab.classList.add('active');
+            importMethod = tab.dataset.method;
+            document.getElementById('upload-excel').style.display = importMethod==='excel' ? '' : 'none';
+            document.getElementById('upload-image').style.display = importMethod==='image' ? '' : 'none';
+        });
+    });
+
+    // Excel 上传
+    var excelZone = document.getElementById('excel-zone');
+    var excelInput = document.getElementById('excel-input');
+    excelZone.addEventListener('click', function() { excelInput.click(); });
+    excelZone.addEventListener('dragover', function(e) { e.preventDefault(); excelZone.classList.add('dragover'); });
+    excelZone.addEventListener('dragleave', function() { excelZone.classList.remove('dragover'); });
+    excelZone.addEventListener('drop', function(e) { e.preventDefault(); excelZone.classList.remove('dragover'); if(e.dataTransfer.files.length) handleExcel(e.dataTransfer.files[0]); });
+    excelInput.addEventListener('change', function() { if(excelInput.files.length) handleExcel(excelInput.files[0]); });
+
+    function handleExcel(file) {
+        var fd = new FormData();
+        fd.append('file', file);
+        fd.append('holding_type', holdingType);
+        excelZone.querySelector('.upload-zone-text').textContent = '解析中...';
+        fetch('/advisor/import/parse-excel', { method:'POST', body:fd })
+            .then(function(r){return r.json().then(function(d){return {ok:r.ok,data:d};});})
+            .then(function(res) {
+                excelZone.querySelector('.upload-zone-text').textContent = '拖拽 Excel/CSV 文件到此处，或点击选择';
+                if (!res.ok) { alert(res.data.error||'解析失败'); return; }
+                parsedData = res.data;
+                renderPreview();
+                goStep(2);
+            }).catch(function(){ alert('上传失败'); excelZone.querySelector('.upload-zone-text').textContent = '拖拽 Excel/CSV 文件到此处，或点击选择'; });
+    }
+
+    // 截图上传
+    var imageZone = document.getElementById('image-zone');
+    var imageInput = document.getElementById('image-input');
+    imageZone.addEventListener('click', function() { imageInput.click(); });
+    imageZone.addEventListener('dragover', function(e) { e.preventDefault(); imageZone.classList.add('dragover'); });
+    imageZone.addEventListener('dragleave', function() { imageZone.classList.remove('dragover'); });
+    imageZone.addEventListener('drop', function(e) { e.preventDefault(); imageZone.classList.remove('dragover'); if(e.dataTransfer.files.length) handleImage(e.dataTransfer.files[0]); });
+    imageInput.addEventListener('change', function() { if(imageInput.files.length) handleImage(imageInput.files[0]); });
+
+    function handleImage(file) {
+        var fd = new FormData();
+        fd.append('file', file);
+        fd.append('holding_type', holdingType);
+        imageZone.querySelector('.upload-zone-text').textContent = '🤖 AI 识别中，请稍候...';
+        fetch('/advisor/import/parse-image', { method:'POST', body:fd })
+            .then(function(r){return r.json().then(function(d){return {ok:r.ok,data:d};});})
+            .then(function(res) {
+                imageZone.querySelector('.upload-zone-text').textContent = '拖拽 App 截图到此处，或点击选择';
+                if (!res.ok) { alert(res.data.error||'识别失败'); return; }
+                parsedData = res.data;
+                renderPreview();
+                goStep(2);
+            }).catch(function(){ alert('上传失败'); imageZone.querySelector('.upload-zone-text').textContent = '拖拽 App 截图到此处，或点击选择'; });
+    }
+
+    // 预览渲染
+    function renderPreview() {
+        if (!parsedData) return;
+        var type = parsedData.holding_type;
+        var records = parsedData.records;
+        var headers = HEADERS[type];
+        var fields = FIELDS[type];
+
+        // 表头
+        document.getElementById('preview-thead').innerHTML = '<tr>' + headers.map(function(h){return '<th>'+h+'</th>';}).join('') + '</tr>';
+
+        // 表体
+        var dupCount = 0;
+        var html = '';
+        records.forEach(function(r, i) {
+            var cls = '';
+            if (r.is_duplicate) { cls += ' duplicate'; dupCount++; }
+            if (r.skip) cls += ' skipped';
+            if (!r.account_matched && type !== 'savings') cls += ' no-account';
+
+            html += '<tr class="'+cls.trim()+'" data-idx="'+i+'">';
+            html += '<td>' + (r.is_duplicate ? (r.is_update ? '🔄 更新' : '⚠️ 重复') : '✓ 新') + '</td>';
+            fields.forEach(function(f) {
+                var v = r[f];
+                if (v === null || v === undefined) v = '-';
+                if (typeof v === 'number') v = v.toLocaleString('zh-CN', {maximumFractionDigits:4});
+                html += '<td>' + v + '</td>';
+            });
+
+            // 账户列（储蓄类型用 account_name 显示）
+            if (type !== 'savings') {
+                html += '<td>';
+                if (r.account_matched) {
+                    var acctName = accounts.find(function(a){return a.id===r.account_id;});
+                    html += '<span>'+(acctName ? acctName.name : r.account_name||'-')+'</span>';
+                } else {
+                    html += '<select class="acct-select unmatched" data-idx="'+i+'">';
+                    html += '<option value="">请选择账户</option>';
+                    accounts.forEach(function(a){ html += '<option value="'+a.id+'">'+a.name+'</option>'; });
+                    html += '</select>';
+                }
+                html += '</td>';
+            }
+
+            html += '<td><button class="btn-delete-cat toggle-skip" data-idx="'+i+'">'+(r.skip?'恢复':'跳过')+'</button></td>';
+            html += '</tr>';
+        });
+        document.getElementById('preview-body').innerHTML = html;
+
+        var skipCount = records.filter(function(r){return r.skip;}).length;
+        var noAcct = records.filter(function(r){return !r.account_matched && !r.skip && type !== 'savings';}).length;
+        document.getElementById('preview-summary').textContent = '共 '+records.length+' 条，'+dupCount+' 条重复，'+skipCount+' 条跳过' + (noAcct ? '，'+noAcct+' 条待选账户' : '');
+
+        // 绑定事件
+        document.getElementById('preview-body').querySelectorAll('.toggle-skip').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                parsedData.records[parseInt(btn.dataset.idx)].skip = !parsedData.records[parseInt(btn.dataset.idx)].skip;
+                renderPreview();
+            });
+        });
+        document.getElementById('preview-body').querySelectorAll('.acct-select').forEach(function(sel) {
+            sel.addEventListener('change', function() {
+                var idx = parseInt(sel.dataset.idx);
+                parsedData.records[idx].account_id = sel.value ? parseInt(sel.value) : null;
+                parsedData.records[idx].account_matched = !!sel.value;
+                sel.classList.toggle('unmatched', !sel.value);
+            });
+        });
+    }
+
+    // 跳过重复
+    document.getElementById('btn-skip-dup').addEventListener('click', function() {
+        if (!parsedData) return;
+        parsedData.records.forEach(function(r) { if (r.is_duplicate) r.skip = true; });
+        renderPreview();
+    });
+
+    // 确认导入
+    document.getElementById('btn-confirm-import').addEventListener('click', function() {
+        if (!parsedData) return;
+        var btn = this;
+        btn.disabled = true; btn.textContent = '导入中...';
+        fetch('/advisor/import/confirm', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ records: parsedData.records, holding_type: parsedData.holding_type })
+        }).then(function(r){return r.json();}).then(function(data) {
+            document.getElementById('result-imported').textContent = data.imported_count;
+            document.getElementById('result-skipped').textContent = data.skipped_count;
+            document.getElementById('result-total').textContent = data.total;
+            document.getElementById('result-icon').textContent = data.imported_count > 0 ? '✅' : '⚠️';
+            document.getElementById('result-title').textContent = data.imported_count > 0 ? '导入完成' : '未导入任何记录';
+            goStep(3);
+            btn.disabled = false; btn.textContent = '确认导入';
+        }).catch(function(){ alert('导入失败'); btn.disabled = false; btn.textContent = '确认导入'; });
+    });
+
+    // 返回 / 继续
+    document.getElementById('btn-back-step1').addEventListener('click', function() { parsedData=null; excelInput.value=''; imageInput.value=''; goStep(1); });
+    document.getElementById('btn-import-more').addEventListener('click', function() { parsedData=null; excelInput.value=''; imageInput.value=''; goStep(1); });
+})();
+</script>
+{% endblock %}
