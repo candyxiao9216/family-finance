@@ -442,10 +442,11 @@ class AiAdvisor:
         except Exception as e:
             return f'❌ AI 服务异常: {str(e)}'
 
-    def call_vision(self, prompt, image_url=None, image_base64=None):
+    def call_vision(self, prompt, image_url=None, image_base64=None, image_mime='image/png'):
         """
         调用多模态模型（图片理解/OCR）
         支持传入 image_url 或 image_base64（二选一）
+        image_mime: 图片MIME类型（image/png, image/jpeg, image/webp）
         返回: 文本字符串 或 None
         """
         if not self.available:
@@ -456,7 +457,7 @@ class AiAdvisor:
         if image_base64:
             content_parts.append({
                 'type': 'image_url',
-                'image_url': {'url': f'data:image/png;base64,{image_base64}'}
+                'image_url': {'url': f'data:{image_mime};base64,{image_base64}'}
             })
         elif image_url:
             content_parts.append({
@@ -475,13 +476,19 @@ class AiAdvisor:
                     ],
                     'max_tokens': 4000,
                 },
-                timeout=120
+                timeout=180
             )
             resp.raise_for_status()
             return self._extract_text(resp.json())
         except requests.exceptions.Timeout:
             return '⏳ 图片识别超时，请稍后重试'
         except requests.exceptions.HTTPError as e:
+            detail = ''
+            try:
+                detail = e.response.text[:200]
+            except Exception:
+                pass
+            print(f"Vision API 错误: {e.response.status_code} {detail}")
             return f'❌ 图片识别服务错误: {e.response.status_code}'
         except Exception as e:
             return f'❌ 图片识别异常: {str(e)}'

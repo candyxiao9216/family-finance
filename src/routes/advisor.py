@@ -950,13 +950,17 @@ def parse_image_holdings():
     img_data = file.read()
     b64 = base64.b64encode(img_data).decode('utf-8')
 
+    # 根据扩展名确定 MIME
+    mime_map = {'.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp'}
+    image_mime = mime_map.get(ext.lower(), 'image/png')
+
     # 调用 AI Vision
     from services.ai_advisor import AiAdvisor
     advisor = AiAdvisor()
     if not advisor.available:
         return jsonify({'error': 'AI 服务未配置'}), 500
 
-    result = advisor.call_vision(VISION_PROMPTS[holding_type], image_base64=b64)
+    result = advisor.call_vision(VISION_PROMPTS[holding_type], image_base64=b64, image_mime=image_mime)
     if not result or result.startswith('❌') or result.startswith('⏳'):
         return jsonify({'error': result or '图片识别失败'}), 500
 
