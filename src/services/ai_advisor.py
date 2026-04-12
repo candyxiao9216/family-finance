@@ -466,8 +466,10 @@ class AiAdvisor:
             })
 
         try:
+            # Vision 始终用智谱 API（不走自定义 URL，因为 MiniMax 等不支持多模态）
+            vision_url = f'{self.BASE_URL}/chat/completions'
             resp = requests.post(
-                self._get_chat_url(),
+                vision_url,
                 headers=self._headers(),
                 json={
                     'model': self.vision_model,
