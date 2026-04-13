@@ -796,29 +796,51 @@ HOLDING_TYPES = {
     'savings': '储蓄',
 }
 
-# Excel 列名 → 模型字段映射
+# Excel 列名 → 模型字段映射（支持多种别名）
 EXCEL_FIELD_MAP = {
     'stock': {
-        '股票代码': 'stock_code', '股票名称': 'stock_name', '市场': 'market',
-        '持股数量': 'shares', '买入均价': 'avg_cost', '币种': 'currency',
-        '账户名': 'account_name', '备注': 'notes',
+        '股票代码': 'stock_code', '代码': 'stock_code',
+        '股票名称': 'stock_name', '名称': 'stock_name',
+        '市场': 'market',
+        '持股数量': 'shares', '持有股数': 'shares',
+        '买入均价': 'avg_cost', '买入均价(摊薄成本)': 'avg_cost', '买入均价（摊薄成本）': 'avg_cost', '摊薄成本': 'avg_cost',
+        '币种': 'currency',
+        '账户名': 'account_name', '所属账户': 'account_name',
+        '备注': 'notes',
     },
     'fund': {
-        '基金代码': 'fund_code', '基金名称': 'fund_name', '基金类型': 'fund_type',
-        '持有份额': 'shares', '持有金额': 'amount', '买入均价': 'avg_cost',
-        '持有收益': 'profit', '收益率': 'profit_rate', '币种': 'currency',
-        '账户名': 'account_name', '备注': 'notes',
+        '基金代码': 'fund_code', '代码': 'fund_code',
+        '基金名称': 'fund_name', '名称': 'fund_name',
+        '基金类型': 'fund_type', '类型': 'fund_type',
+        '持有份额': 'shares', '份额': 'shares',
+        '持有金额': 'amount', '金额': 'amount',
+        '买入均价': 'avg_cost', '买入均价(净值)': 'avg_cost', '买入均价（净值）': 'avg_cost',
+        '最新净值': 'latest_nav', '净值': 'latest_nav',
+        '持有收益': 'profit', '收益': 'profit',
+        '收益率': 'profit_rate', '持有收益率': 'profit_rate',
+        '币种': 'currency',
+        '账户名': 'account_name', '所属账户': 'account_name',
+        '备注': 'notes',
     },
     'wealth': {
-        '产品名称': 'product_name', '管理机构': 'manager',
-        '买入金额': 'buy_amount', '当前金额': 'current_amount',
-        '累计收益': 'total_profit', '年化收益率': 'annual_rate',
-        '买入日期': 'buy_date', '到期日期': 'expire_date',
-        '产品类型': 'product_type', '币种': 'currency',
-        '账户名': 'account_name', '备注': 'notes',
+        '产品名称': 'product_name', '名称': 'product_name',
+        '管理机构': 'manager',
+        '买入金额': 'buy_amount',
+        '当前金额': 'current_amount',
+        '累计收益': 'total_profit',
+        '年化收益率': 'annual_rate',
+        '买入日期': 'buy_date',
+        '到期日期': 'expire_date',
+        '产品类型': 'product_type',
+        '币种': 'currency',
+        '账户名': 'account_name', '所属账户': 'account_name',
+        '备注': 'notes',
     },
     'savings': {
-        '账户名': 'account_name', '当前余额': 'balance', '币种': 'currency', '备注': 'notes',
+        '账户名': 'account_name', '所属账户': 'account_name',
+        '当前余额': 'balance', '余额': 'balance',
+        '币种': 'currency',
+        '备注': 'notes',
     },
 }
 
@@ -904,11 +926,49 @@ def parse_excel_holdings():
                 val = row.get(cn_col)
                 if pd.notna(val):
                     record[en_field] = str(val).strip() if isinstance(val, str) else val
-                else:
+                elif en_field not in record:
+                    # 仅在字段尚未被其他别名填充时才设为 None
                     record[en_field] = None
             # 跳过完全空行
             if not any(v for v in record.values() if v is not None):
                 continue
+
+            # 数据后处理
+            if holding_type == 'stock':
+                # 市场名称标准化：港股→HK, A股/沪/深→A, 美股→US
+                m = str(record.get('market', '') or '')
+                if m in ('港股', 'HK', 'hk', '港'):
+                    record['market'] = 'HK'
+                elif m in ('A股', 'A', 'a', '沪', '深', '沪市', '深市'):
+                    record['market'] = 'A'
+                elif m in ('美股', 'US', 'us', '美'):
+                    record['market'] = 'US'
+                # 股票代码补零（港股5位，A股6位）
+                code = str(record.get('stock_code', '') or '').strip()
+                if record['market'] == 'HK' and code.isdigit() and len(code) < 5:
+                    code = code.zfill(5)
+                elif record['market'] == 'A' and code.isdigit() and len(code) < 6:
+                    code = code.zfill(6)
+                record['stock_code'] = code
+                # 默认币种
+                if not record.get('currency'):
+                    record['currency'] = 'HKD' if record['market'] == 'HK' else ('USD' if record['market'] == 'US' else 'CNY')
+
+            elif holding_type == 'fund':
+                # 收益率格式标准化
+                pr = record.get('profit_rate')
+                if pr and isinstance(pr, (int, float)):
+                    record['profit_rate'] = f"{pr:+.2f}%" if abs(pr) < 1 else f"{pr:+.2f}%"
+                # 默认币种
+                if not record.get('currency'):
+                    record['currency'] = 'CNY'
+
+            elif holding_type == 'wealth':
+                # 年化收益率：如果是小数（如0.0295）保持不变，confirm时会处理
+                # 默认币种
+                if not record.get('currency'):
+                    record['currency'] = 'CNY'
+
             records.append(record)
 
         # 账户映射 + 重复检测
