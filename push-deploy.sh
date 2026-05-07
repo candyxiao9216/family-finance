@@ -36,6 +36,16 @@ fi
 # 读取版本号
 VERSION=$(cat VERSION 2>/dev/null || echo "unknown")
 
+# 部署前自动备份数据库
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+echo -e "${YELLOW}⟳ 部署前备份数据库...${NC}"
+if "$SCRIPT_DIR/backup.sh" --rotate; then
+    echo ""
+else
+    echo -e "${YELLOW}⚠ 备份失败（可能是首次部署，线上无数据），继续部署...${NC}"
+    echo ""
+fi
+
 echo -e "${YELLOW}⟳ 部署 v${VERSION} 到 ${SERVER_IP}...${NC}"
 echo ""
 
