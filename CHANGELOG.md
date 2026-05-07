@@ -4,6 +4,17 @@
 
 ---
 
+## v2.0.1 (2026-05-08)
+
+### 新功能
+- feat(harness): 自动化发版管道脚本
+
+### 修复
+- fix(harness): .gitignore 过滤测试文件 + release.sh 精确 add 文档
+- fix(harness): release.sh CHANGELOG 多行插入改用临时文件方式
+
+---
+
 ## v2.0.0 (2026-04-08)
 
 ### 里程碑一：家庭资产数据数字化
