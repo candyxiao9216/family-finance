@@ -2702,14 +2702,14 @@ button.loading::after {
     color: #333;
 }
 
-.card-header {
+.advisor-container .card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 16px;
 }
 
-.card-header h3 {
+.advisor-container .card-header h3 {
     margin: 0;
 }
 
@@ -3126,7 +3126,7 @@ button.loading::after {
     border-top: 1px solid #f0ebe5;
 }
 
-.form-row {
+.add-holding-form .form-row {
     display: flex;
     gap: 8px;
     align-items: center;
