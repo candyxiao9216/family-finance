@@ -35,3 +35,13 @@ newuser_cookies.txt
 
 # 数据目录（运行时生成）
 data/
+
+# 测试覆盖率
+.coverage
+htmlcov/
+
+# 测试截图
+test-*.png
+
+# harness 临时文件
+.test-verified
