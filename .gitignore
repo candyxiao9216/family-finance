@@ -45,3 +45,6 @@ test-*.png
 
 # harness 临时文件
 .test-verified
+
+# 数据库备份（本地保留，不入库）
+backups/
