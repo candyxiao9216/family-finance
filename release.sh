@@ -12,7 +12,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-COVERAGE_THRESHOLD=50  # 临时设为 50%，目标 80%
+COVERAGE_THRESHOLD=80  # 全量覆盖率 ≥ 80%
 PROJECT_ROOT=$(git rev-parse --show-toplevel)
 
 # ============================================================

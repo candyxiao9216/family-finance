@@ -13,40 +13,9 @@ from config import BASE_DIR
 
 
 def _create_test_app():
-    """创建测试用 Flask 应用（使用独立临时数据库）"""
-    temp_db = tempfile.NamedTemporaryFile(suffix='.db', delete=False)
-    temp_db.close()
-
-    app = Flask(__name__)
-    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{temp_db.name}'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SECRET_KEY'] = 'test-secret'
-    app.config['TESTING'] = True
-    app.static_folder = str(BASE_DIR / 'src' / 'static')
-    app.template_folder = str(BASE_DIR / 'src' / 'templates')
-
-    db.init_app(app)
-
-    from routes.baby_fund import baby_fund_bp
-    # 注册需要的蓝图（用于 url_for）
-    from routes.auth import auth_bp
-    from routes.category import category_bp
-    from routes.reports import reports_bp
-    from routes.account import account_bp
-    from routes.savings import savings_bp
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(category_bp)
-    app.register_blueprint(reports_bp)
-    app.register_blueprint(account_bp)
-    app.register_blueprint(savings_bp)
-    app.register_blueprint(baby_fund_bp)
-
-    # 模拟主应用的 index 路由（模板中 url_for('index') 需要）
-    @app.route('/')
-    def index():
-        return 'ok'
-
-    return app, temp_db.name
+    """创建测试用 Flask 应用（使用 conftest 的公共函数）"""
+    from conftest import create_test_app
+    return create_test_app()
 
 
 def test_baby_fund_creates_transaction():

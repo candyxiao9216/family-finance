@@ -26,6 +26,29 @@ def _create_test_app():
     app.template_folder = str(BASE_DIR / 'src' / 'templates')
 
     db.init_app(app)
+
+    @app.template_filter('currency')
+    def currency_filter(value, decimals=2):
+        try:
+            value = float(value)
+        except (ValueError, TypeError):
+            return '0.00'
+        return f'{value:,.{decimals}f}'
+
+    @app.template_filter('signed_currency')
+    def signed_currency_filter(value, decimals=2):
+        try:
+            value = float(value)
+        except (ValueError, TypeError):
+            return '+0.00'
+        formatted = f'{abs(value):,.{decimals}f}'
+        return f'+{formatted}' if value >= 0 else f'-{formatted}'
+
+    from datetime import timedelta
+    @app.context_processor
+    def inject_timedelta():
+        return {'timedelta': timedelta}
+
     return app, temp_db.name
 
 
@@ -100,19 +123,9 @@ def test_savings_record_model():
 
 
 def _create_route_test_app():
-    """创建带路由的测试应用"""
-    from routes.savings import savings_bp
-    from routes.auth import auth_bp
-    from routes.category import category_bp
-    from routes.reports import reports_bp
-    from routes.account import account_bp
-
-    app, db_path = _create_test_app()
-    app.register_blueprint(savings_bp)
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(category_bp)
-    app.register_blueprint(reports_bp)
-    app.register_blueprint(account_bp)
+    """创建带路由的测试应用（使用 conftest 的公共函数）"""
+    from conftest import create_test_app
+    return create_test_app()
 
     # 添加 index 路由占位（模板中用到 url_for('index')）
     @app.route('/')
