@@ -2720,7 +2720,7 @@ button.loading::after {
     align-items: center;
 }
 
-.chart-container {
+.allocation-layout .chart-container {
     flex-shrink: 0;
     width: 250px;
 }
