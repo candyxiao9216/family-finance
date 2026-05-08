@@ -4,6 +4,19 @@
 
 ---
 
+## v2.0.5 (2026-05-08)
+
+### 文档
+- docs: README 重写（痛点对比+界面截图+功能精简+版本历史链接 CHANGELOG）
+
+### 修复
+- fix(css): stats-bar 固定4列改为 auto-fit 自适应列数
+
+### 测试
+- test: 新增 stats-bar 列数和 auto-fit CSS 回归测试
+
+---
+
 ## v2.0.4 (2026-05-08)
 
 ### 修复
