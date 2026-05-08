@@ -4,6 +4,15 @@
 
 ---
 
+## v2.0.7 (2026-05-08)
+
+### 文档
+- docs: 移除 CLAUDE.md 中的部署信息（IP/SSH 不应公开）
+- docs: CLAUDE.md 指令映射增加发版确认流程
+- docs: PROJECT_BRIEF.md 精简为 51 行 + release.sh 自动更新 README 版本号
+
+---
+
 ## v2.0.6 (2026-05-08)
 
 ### 文档
