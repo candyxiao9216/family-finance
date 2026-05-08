@@ -60,3 +60,25 @@ class TestPageRendering:
         html = resp.data.decode()
         assert 'form-row' in html
         assert 'add-holding-form' not in html
+
+    def test_transactions_stats_bar_has_3_items(self, logged_in_client):
+        """月度收支统计栏有且仅有 3 个 stat-item（收入/支出/结余），不能有空格子"""
+        resp = logged_in_client.get('/transactions', follow_redirects=True)
+        html = resp.data.decode()
+        assert html.count('stat-item') == 3
+
+    def test_savings_stats_bar_has_3_items(self, logged_in_client):
+        """储蓄计划统计栏有且仅有 3 个 stat-item（目标/已储蓄/完成率），不能有空格子"""
+        resp = logged_in_client.get('/savings/', follow_redirects=True)
+        html = resp.data.decode()
+        assert html.count('stat-item') == 3
+
+    def test_stats_bar_uses_auto_fit_grid(self):
+        """CSS 中 .stats-bar 使用 auto-fit 而非固定列数，确保 3/4 项都能撑满"""
+        import pathlib
+        css_path = pathlib.Path(__file__).parent.parent / 'src' / 'static' / 'css' / 'style.css'
+        css = css_path.read_text()
+        # 确保不是固定 4 列
+        assert 'repeat(4, 1fr)' not in css or '.stats-bar' not in css.split('repeat(4, 1fr)')[0].split('\n')[-3]
+        # 确保使用 auto-fit
+        assert 'auto-fit' in css

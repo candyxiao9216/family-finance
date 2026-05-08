@@ -490,7 +490,7 @@ body::before {
 /* 统计栏 */
 .stats-bar {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: var(--space-md);
     margin-bottom: var(--space-lg);
     animation: fadeInUp 0.6s ease-out 0.05s both;
