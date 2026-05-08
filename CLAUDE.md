@@ -85,33 +85,19 @@
 | 用户说 | Claude 执行 |
 |--------|------------|
 | "开个分支做 xxx" | `./start.sh feature/xxx` 或 `./start.sh fix/xxx` |
-| "发版" | 先确认分支上的改动，再执行 `./release.sh patch\|minor\|major` |
+| "提交" / "commit" | `git add` + `git commit` + `git push`（只提交到功能分支，**不发版**） |
+| "发版" | 见下方发版流程 |
 | "部署" | `./push-deploy.sh`（会自动备份） |
 | "备份" | `./backup.sh` |
-| "修 bug" | `./start.sh fix/xxx` → 修改 → 测试 → `./release.sh patch` → `./push-deploy.sh` |
-| "加功能" | `./start.sh feature/xxx` → 开发 → 测试 → `./release.sh minor` → `./push-deploy.sh` |
+| "修 bug" | `./start.sh fix/xxx` → 修改 → commit → 等用户确认发版 |
+| "加功能" | `./start.sh feature/xxx` → 开发 → commit → 等用户确认发版 |
 
-**注意**: 发版前确认文档已同步，deployment 前不需要额外确认（push-deploy.sh 内含备份+验证）。
+**发版流程（必须用户确认）：**
+1. Claude 展示：改动摘要 + 版本号 + Release Notes 预览
+2. 用户说"确认" → 执行 `./release.sh patch|minor|major`
+3. 用户未确认 → 不执行，继续开发
 
----
-
-## 部署信息
-
-| 项 | 值 |
-|----|---|
-| 服务器 | 腾讯云 Lighthouse 广州 |
-| IP | 119.91.205.137 |
-| SSH | `ssh -i ~/.ssh/candyworkbench.pem ubuntu@119.91.205.137` |
-| 应用目录 | /opt/family-finance |
-| 架构 | Gunicorn (5001) → Nginx (80) → SQLite |
-| 访问 | http://119.91.205.137 |
-
-**常用运维命令:**
-```bash
-sudo systemctl status family-finance    # 查状态
-sudo journalctl -u family-finance -f    # 看日志
-sudo systemctl restart family-finance   # 重启
-```
+**硬规则：commit ≠ release。** 做完改动只 commit + push 到功能分支。只有用户明确说"发版"时才跑 release.sh，且必须先展示发版内容让用户确认。
 
 ---
 

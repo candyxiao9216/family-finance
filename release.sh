@@ -352,8 +352,16 @@ if [ -f "$CLAUDE_FILE" ]; then
     ok "CLAUDE.md 版本号已更新"
 fi
 
+# 更新 README.md 版本号徽章
+README_FILE="$PROJECT_ROOT/README.md"
+if [ -f "$README_FILE" ]; then
+    sed -i '' "s/版本-v[0-9]*\.[0-9]*\.[0-9]*/版本-v${NEW_VERSION}/g" "$README_FILE" 2>/dev/null || \
+    sed -i "s/版本-v[0-9]*\.[0-9]*\.[0-9]*/版本-v${NEW_VERSION}/g" "$README_FILE"
+    ok "README.md 版本号已更新"
+fi
+
 # 提交文档更新
-git add VERSION CHANGELOG.md PROJECT_BRIEF.md CLAUDE.md 2>/dev/null || true
+git add VERSION CHANGELOG.md PROJECT_BRIEF.md CLAUDE.md README.md 2>/dev/null || true
 git commit -m "$(cat <<EOF
 docs: 自动更新版本号和 CHANGELOG 至 v${NEW_VERSION}
 
