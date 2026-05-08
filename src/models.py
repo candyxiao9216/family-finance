@@ -204,8 +204,8 @@ class AccountType(db.Model):
 # 预设账户类型
 DEFAULT_ACCOUNT_TYPES = [
     {'name': '银行', 'category': 'savings', 'is_default': True},
-    {'name': '微众', 'category': 'fund', 'is_default': True},
-    {'name': '中金', 'category': 'fund', 'is_default': True},
+    {'name': '微众理财', 'category': 'fund', 'is_default': True},
+    {'name': '中金基金', 'category': 'fund', 'is_default': True},
     {'name': '富途', 'category': 'stock', 'is_default': True},
     {'name': '中银国际', 'category': 'stock', 'is_default': True},
     {'name': '招行基金', 'category': 'fund', 'is_default': True},

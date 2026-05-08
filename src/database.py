@@ -14,6 +14,17 @@ def _safe_add_column(table, column, col_type):
         db.session.rollback()
 
 
+def _rename_account_type(old_name, new_name):
+    """安全地重命名账户类型，忽略不存在的"""
+    try:
+        existing = AccountType.query.filter_by(name=old_name).first()
+        if existing:
+            existing.name = new_name
+            db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+
 def init_database(app: Flask) -> None:
     """初始化数据库表和预设分类"""
     with app.app_context():
@@ -22,6 +33,10 @@ def init_database(app: Flask) -> None:
 
         # SQLite 兼容：给已有表添加新列（create_all 不会 ALTER 已有表）
         _safe_add_column('fund_holdings', 'status', "VARCHAR(20) DEFAULT 'holding'")
+
+        # 账户类型名称迁移（v2.0.10+）
+        _rename_account_type('微众', '微众理财')
+        _rename_account_type('中金', '中金基金')
 
         # 插入预设分类（仅当不存在时）
         for cat_data in DEFAULT_CATEGORIES:
