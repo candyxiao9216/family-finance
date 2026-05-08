@@ -1,117 +1,186 @@
-# 家庭财务管理系统
+<p align="center">
+  <h1 align="center">💰 家庭财务管理系统</h1>
+  <p align="center">自部署、隐私优先的家庭财务管理工具<br>记账 · 资产追踪 · AI 投资分析 · 家庭协作</p>
+</p>
 
-一个智能家庭财务管理工具，帮助追踪收支、管理资产持仓、AI 智能分析投资组合。
+<p align="center">
+  <img src="https://img.shields.io/badge/版本-v2.0.4-blue" alt="version">
+  <img src="https://img.shields.io/badge/Python-3.8+-green" alt="python">
+  <img src="https://img.shields.io/badge/Flask-3.0-lightgrey" alt="flask">
+  <img src="https://img.shields.io/badge/测试覆盖率-81%25-brightgreen" alt="coverage">
+  <img src="https://img.shields.io/badge/License-MIT-yellow" alt="license">
+</p>
 
-## 功能特性
+---
 
-### 核心记账
-- 收入/支出记录（手动录入 + 快捷模板 + 定期交易自动生成）
-- 自定义分类管理
-- CSV/Excel 批量导入（微信/支付宝账单 + 标准模板）
-- 月度收支统计和分页
+## 为什么选这个？
 
-### 资产管理
-- 多账户管理（储蓄/基金理财/股票三分类）
-- 多币种支持（CNY/HKD/USD + 实时汇率换算）
-- 月度余额快照 + 批量录入
-- 资产趋势图
+市面上的记账 App（随手记、MoneyForward）要么数据存在别人服务器，要么不支持投资分析，要么多人协作要收费。
 
-### 智能财务顾问 🤖
-- **持仓管理**: 股票/基金/理财产品 CRUD
-- **AI 分析**: 智谱GLM全系列（GLM-5-Turbo文本 + GLM-5V-Turbo多模态 + GLM-Image图像）
-- **7个分析端点**: 综合分析/股票整体+个股/基金整体+个基/理财/储蓄
-- **实时行情**: Sina Finance API（港股/A股/美股）
-- **资产配置**: 实时聚合分析 + 饼图展示
-- **分析历史**: 永久保存 + 类型筛选 + Markdown全文展开
-- **视图切换**: "我的/家庭"视图切换（与资产总览交互一致）
-- **视图切换**: "我的/家庭"视图切换（与资产总览交互一致）
-- **批量导入**: Excel模板 + App截图AI识别，支持4种持仓类型
+这个项目解决的是：**一个小家庭想要一个自己掌控的、能看全貌的财务工具。**
 
-### 储蓄与宝宝基金
-- 储蓄计划追踪（月度/年度目标 + 进度条）
-- 宝宝基金记录（自动生成收入交易 + 级联操作）
+| 痛点 | 解决方式 |
+|------|---------|
+| 💾 不想把家庭财务数据交给第三方 | 自部署到你的服务器，SQLite 本地存储 |
+| 🤖 想要 AI 帮我分析投资组合 | 接入智谱 GLM 大模型，7 个维度智能分析 |
+| 👨‍👩‍👧 夫妻共用一本账 | 家庭协作 + "我的/家庭"视图切换 |
+| 📊 想看资产全貌（银行+基金+股票） | 三分类资产管理 + 多币种汇率换算 |
+| 📱 手机也能用 | 响应式设计 + 底部 Tab + 小眼睛隐藏金额 |
 
-### 体验细节
-- 首页三模块仪表盘（收支+资产+储蓄概览）
-- 移动端适配（底部Tab + 汉堡菜单 + 响应式）
-- 财务数据隐藏（小眼睛，默认隐藏）
-- 月度待办 Checklist + 聚焦气泡引导
-- 所有金额千分位格式化
+> 🔒 私有部署，暂不提供公开 Demo。克隆到本地 5 分钟即可体验。
 
-## 技术栈
+---
 
-| 组件 | 技术 |
-|------|------|
-| 后端框架 | Python Flask |
-| 数据库 | SQLite |
-| 前端样式 | 原生 CSS（变量 + 媒体查询） |
-| 数据可视化 | Chart.js |
-| AI 模型 | 智谱GLM（GLM-5-Turbo / GLM-5V-Turbo / GLM-Image） |
-| 行情数据 | Sina Finance API |
-| 部署 | Gunicorn + Nginx |
+## 界面预览
 
-## 快速开始
+| 首页仪表盘 | 月度收支 | 智能财务顾问 |
+|:---:|:---:|:---:|
+| ![首页](docs/screenshots/dashboard.png) | ![月度收支](docs/screenshots/transactions.png) | ![财务顾问](docs/screenshots/advisor.png) |
 
-### 1. 安装依赖
+---
+
+## 功能概览
+
+### 📝 日常记账
+手动录入 · 快捷模板一键记账 · 定期交易自动生成 · 微信/支付宝账单 CSV 批量导入 · 自定义分类
+
+### 💳 资产管理
+储蓄/基金/股票三分类 · 多币种（CNY/HKD/USD）实时汇率 · 月度余额快照 · 资产趋势图
+
+### 🤖 智能财务顾问
+持仓管理（股票/基金/理财 CRUD） · AI 分析（综合建议/个股诊断/基金评估/配置优化） · Sina 实时行情（港股/A股/美股） · App 截图 AI 识别导入持仓
+
+### 🎯 储蓄 & 宝宝基金
+月度/年度储蓄目标 + 进度追踪 · 宝宝红包/礼金记录（自动生成收入流水）
+
+### 📊 数据报表
+收支趋势折线图 · 分类构成饼图 · 资产变化曲线（储蓄/基金/股票/总资产）
+
+### 👨‍👩‍👧 家庭协作
+邀请码加入 · 多人共享账本 · "我的/家庭"一键切换 · 月度待办 Checklist
+
+---
+
+## 🚀 快速开始
 
 ```bash
+# 克隆
+git clone https://github.com/candyxiao9216/family-finance.git
+cd family-finance
+
+# 安装依赖
 pip install -r requirements.txt
-```
 
-### 2. 配置环境变量
-
-```bash
+# （可选）配置 AI 分析
 cp .env.example .env
-# 编辑 .env 填入 AI_API_KEY（智谱开放平台密钥）
-```
+# 编辑 .env 填入智谱开放平台 API Key
 
-### 3. 运行应用
-
-```bash
+# 启动
 python src/main.py
 ```
 
-访问 http://localhost:5001
+访问 **http://localhost:5001** → 注册 → 开始使用。
 
-## 项目结构
+### 服务器一键部署
+
+```bash
+curl -sSL https://raw.githubusercontent.com/candyxiao9216/family-finance/main/deploy.sh \
+  -o /tmp/deploy.sh && bash /tmp/deploy.sh
+```
+
+自动完成：系统依赖 → 代码克隆 → Python 虚拟环境 → Gunicorn + Nginx → 启动服务。
+
+---
+
+## 🛠️ 技术栈
+
+| 层 | 技术 |
+|---|---|
+| 后端 | Python Flask + SQLAlchemy + SQLite |
+| 前端 | 原生 CSS（变量 + 媒体查询）+ Chart.js |
+| AI | 智谱 GLM（GLM-5-Turbo / GLM-5V-Turbo） |
+| 行情 | Sina Finance API |
+| 部署 | Gunicorn + Nginx + systemd |
+| 测试 | pytest + pytest-cov（覆盖率 81%） |
+| 发版 | 自动化 harness（start → release → deploy） |
+
+---
+
+## 📁 项目结构
 
 ```
 src/
-├── main.py                # Flask 应用入口 + 仪表盘首页
-├── models.py              # 16 个数据模型
-├── database.py            # 数据库配置和初始化
-├── config.py              # 配置管理
-├── routes/                # Flask 蓝图（12个）
-│   ├── advisor.py         # 智能财务顾问（持仓CRUD + AI分析 + 历史）
-│   ├── transaction.py     # 月度收支
-│   ├── account.py         # 资产总览
-│   ├── savings.py         # 储蓄计划
-│   └── ...                # auth/category/baby_fund/upload/family/template/recurring/monthly_todo
-├── services/              # 业务服务层
-│   ├── ai_advisor.py      # AI 分析引擎（智谱GLM全系列）
-│   └── market_data.py     # 行情数据（Sina API + 缓存）
-├── utils/
-│   └── importers.py       # CSV/Excel 解析
-├── static/
-│   ├── css/style.css      # 全局样式
-│   └── js/app.js          # 公共交互（菜单/Toast/AI抽屉/小眼睛）
-└── templates/             # Jinja2 模板
-    ├── base.html          # 公共模板
-    ├── advisor/           # 财务顾问6个页面
-    └── ...                # 其他页面模板
+├── main.py              # 应用入口 + 仪表盘首页
+├── models.py            # 数据模型（16 张表）
+├── database.py          # 数据库初始化
+├── routes/              # Flask 蓝图（12 个模块）
+│   ├── advisor.py       #   智能财务顾问（AI + 持仓）
+│   ├── transaction.py   #   月度收支
+│   ├── account.py       #   资产总览
+│   ├── savings.py       #   储蓄计划
+│   └── ...              #   auth/category/baby_fund/upload/family/template/recurring
+├── services/            # 业务服务
+│   ├── ai_advisor.py    #   AI 分析引擎
+│   └── market_data.py   #   行情数据
+├── static/              # CSS + JS
+└── templates/           # Jinja2 页面模板
 ```
 
-## 部署
+---
 
-已部署到腾讯云 Lighthouse，使用 Gunicorn + Nginx：
+## 🔧 开发工作流
 
 ```bash
-# 服务器更新
-ssh -i ~/.ssh/candyworkbench.pem ubuntu@119.91.205.137
-sudo -i
-cd /opt/family-finance && git pull origin main && systemctl restart family-finance
+./start.sh feature/xxx    # 创建功能分支
+# ... 开发 & commit ...
+./release.sh patch         # 发版：测试(≥80%) → squash merge → tag → CHANGELOG
+./push-deploy.sh           # 部署：自动备份 → SSH 推送 → 重启 → 验证
+./backup.sh                # 手动备份线上数据库到本地
 ```
 
-## 许可
+---
 
-MIT License
+## 📖 配置说明
+
+```bash
+# .env 文件
+AI_API_KEY=your_zhipu_api_key       # 智谱开放平台密钥（智能顾问需要）
+AI_API_URL=https://open.bigmodel.cn/api/paas/v4/chat/completions
+AI_MODEL=GLM-5-Turbo
+AI_VISION_MODEL=GLM-5V-Turbo
+SECRET_KEY=your-secret-key           # Flask 会话密钥
+FLASK_PORT=5001                      # 服务端口
+```
+
+---
+
+## 📋 版本历史
+
+### v2.0.4 (2026-05-08)
+- 🐛 修复 CSS 全局选择器覆盖导致多页面布局异常
+- ✅ 新增页面渲染回归测试
+
+### v2.0.1 (2026-05-08)
+- ✨ 自动化发版管道（harness 脚本全套）
+- ✅ 测试覆盖率达标 81%
+
+### v2.0.0 (2026-04-08) — 里程碑一
+- ✨ 智能财务顾问（AI 分析 + 持仓管理 + 实时行情）
+- ✨ 首页仪表盘 + 月度待办 Checklist
+- ✨ 资产三分类 + 多币种 + 批量导入
+- ✨ 移动端适配 + 体验优化
+- 🔒 安全审计修复（14 项）
+
+> 完整变更日志见 [CHANGELOG.md](./CHANGELOG.md)
+
+---
+
+## 📄 License
+
+MIT
+
+---
+
+<p align="center">
+  <sub>Built with ❤️ for family financial wellness</sub>
+</p>
