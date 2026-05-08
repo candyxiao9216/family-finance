@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/版本-v2.0.9-blue" alt="version">
+  <img src="https://img.shields.io/badge/版本-v2.0.10-blue" alt="version">
   <img src="https://img.shields.io/badge/Python-3.8+-green" alt="python">
   <img src="https://img.shields.io/badge/Flask-3.0-lightgrey" alt="flask">
   <img src="https://img.shields.io/badge/测试覆盖率-81%25-brightgreen" alt="coverage">
@@ -156,9 +156,19 @@ FLASK_PORT=5001                      # 服务端口
 
 ## 📋 版本历史
 
+## v2.0.10 (2026-05-08)
+
+### 新增
+- start.sh 重写 — 参考 devHireAI 智能分支创建
+
+### 修复
+- README 版本历史保留标题行（修复 tail -n +2 截断）
+
+## v2.0.9 (2026-05-08)
 
 ### 新增
 - release.sh 用户视角 Release Notes + README 版本历史自动更新
+
 
 ## v2.0.8 (2026-05-08)
 
@@ -182,18 +192,6 @@ FLASK_PORT=5001                      # 服务端口
 
 ### 文档
 - docs: CLAUDE.md 重写为 147 行操作速查卡
-
-
-## v2.0.5 (2026-05-08)
-
-### 文档
-- docs: README 重写（痛点对比+界面截图+功能精简+版本历史链接 CHANGELOG）
-
-### 修复
-- fix(css): stats-bar 固定4列改为 auto-fit 自适应列数
-
-### 测试
-- test: 新增 stats-bar 列数和 auto-fit CSS 回归测试
 
 
 > 完整变更日志见 [CHANGELOG.md](./CHANGELOG.md)
