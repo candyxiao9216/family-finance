@@ -421,8 +421,8 @@ if [ -f "$README_FILE" ]; then
         head -n "$HISTORY_START" "$README_FILE" > "$TEMP_README"
         echo "" >> "$TEMP_README"
 
-        # 插入最新版本条目
-        echo "$RELEASE_NOTES" | tail -n +2 >> "$TEMP_README"
+        # 插入最新版本条目（完整包含标题行）
+        echo "$RELEASE_NOTES" >> "$TEMP_README"
         echo "" >> "$TEMP_README"
 
         # 从 CHANGELOG 中提取之前的版本（最多再取 4 个，凑够 5 个总共）
