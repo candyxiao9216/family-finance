@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/版本-v2.0.11-blue" alt="version">
+  <img src="https://img.shields.io/badge/版本-v2.0.12-blue" alt="version">
   <img src="https://img.shields.io/badge/Python-3.8+-green" alt="python">
   <img src="https://img.shields.io/badge/Flask-3.0-lightgrey" alt="flask">
   <img src="https://img.shields.io/badge/测试覆盖率-81%25-brightgreen" alt="coverage">
@@ -156,10 +156,20 @@ FLASK_PORT=5001                      # 服务端口
 
 ## 📋 版本历史
 
+## v2.0.12 (2026-05-09)
+
+### 修复
+- 月度收支添加交易默认选中"收入" tab
+- 账户列表按拼音排序（pypinyin 替代 Unicode 码点排序）
+
+### 文档
+- 强化红线第一条 — 绝对禁止在 main 上 commit（无例外）
+
 ## v2.0.11 (2026-05-08)
 
 ### 修复
 - 账户类型命名统一为"平台+产品类型"格式
+
 
 ## v2.0.10 (2026-05-08)
 
@@ -184,14 +194,6 @@ FLASK_PORT=5001                      # 服务端口
 ### 其他
 - chore: .gitignore 添加 .DS_Store
 - refactor: 项目目录分层整理
-
-
-## v2.0.7 (2026-05-08)
-
-### 文档
-- docs: 移除 CLAUDE.md 中的部署信息（IP/SSH 不应公开）
-- docs: CLAUDE.md 指令映射增加发版确认流程
-- docs: PROJECT_BRIEF.md 精简为 51 行 + release.sh 自动更新 README 版本号
 
 
 > 完整变更日志见 [CHANGELOG.md](./CHANGELOG.md)
