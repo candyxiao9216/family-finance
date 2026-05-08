@@ -10,7 +10,7 @@
 
 **红线（违反立即停下）:**
 
-- ❌ 严禁在 main 上直接 commit（必须用 `./scripts/start.sh` 创建分支）
+- ❌ **绝对禁止在 main 上 commit 任何改动 — 无例外，包括"一行小改动"、"只是文档"、"只是脚本"。必须先 `./scripts/start.sh`，哪怕改动再小。Claude 每次执行 git commit 前必须检查 `git branch --show-current`，如果是 main 则停下来开分支。**
 - ❌ 严禁硬编码密钥（用 `.env` + `os.getenv`）
 - ❌ 严禁不更新文档就提交（代码改了对应文档必须同步）
 - ❌ 严禁不备份就部署（`scripts/push-deploy.sh` 已自动备份，手动部署前必须 `./scripts/backup.sh`）

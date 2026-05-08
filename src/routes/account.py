@@ -6,6 +6,7 @@ from decimal import Decimal
 
 from dateutil.relativedelta import relativedelta
 from flask import Blueprint, redirect, render_template, request, session, url_for, flash
+from pypinyin import lazy_pinyin
 
 from models import db, Account, AccountType, AccountBalance, User
 
@@ -35,10 +36,11 @@ def account_list():
     accounts = _get_family_accounts(user_id, current_view)
     account_types = AccountType.query.all()
 
-    # 按类型分组（三分类）
-    savings_accounts = sorted([a for a in accounts if a.account_type and a.account_type.category == 'savings'], key=lambda a: a.name)
-    fund_accounts = sorted([a for a in accounts if a.account_type and a.account_type.category == 'fund'], key=lambda a: a.name)
-    stock_accounts = sorted([a for a in accounts if a.account_type and a.account_type.category == 'stock'], key=lambda a: a.name)
+    # 按类型分组（三分类），按拼音排序
+    pinyin_key = lambda a: lazy_pinyin(a.name)
+    savings_accounts = sorted([a for a in accounts if a.account_type and a.account_type.category == 'savings'], key=pinyin_key)
+    fund_accounts = sorted([a for a in accounts if a.account_type and a.account_type.category == 'fund'], key=pinyin_key)
+    stock_accounts = sorted([a for a in accounts if a.account_type and a.account_type.category == 'stock'], key=pinyin_key)
 
     # 计算各组合计（外币转换为人民币）
     rates = _get_exchange_rates()
