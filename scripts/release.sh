@@ -247,29 +247,75 @@ TODAY=$(date +%Y-%m-%d)
 COMMITS=$(git log main.."$CURRENT_BRANCH" --oneline 2>/dev/null || \
           git log origin/main.."$CURRENT_BRANCH" --oneline)
 
-# 按类型分类
-FEATS=$(echo "$COMMITS" | grep -i "^[a-f0-9]* feat" | sed 's/^[a-f0-9]* /- /' || true)
-FIXES=$(echo "$COMMITS" | grep -i "^[a-f0-9]* fix" | sed 's/^[a-f0-9]* /- /' || true)
-DOCS=$(echo "$COMMITS" | grep -i "^[a-f0-9]* docs\?" | sed 's/^[a-f0-9]* /- /' || true)
-OTHERS=$(echo "$COMMITS" | grep -iv "^[a-f0-9]* \(feat\|fix\|docs\?\)" | sed 's/^[a-f0-9]* /- /' || true)
+# 用户视角分类：去掉技术前缀，保留有意义的描述
+# feat(xxx): yyy → 新增: yyy
+# fix(xxx): yyy → 修复: yyy
+# docs: yyy → 文档: yyy
+# refactor: yyy → 优化: yyy
+# chore/test: yyy → 维护: yyy
+format_entry() {
+    echo "$1" | sed 's/^[a-f0-9]* //' | sed \
+        -e 's/^feat([^)]*): *//' \
+        -e 's/^feat: *//' \
+        -e 's/^fix([^)]*): *//' \
+        -e 's/^fix: *//' \
+        -e 's/^docs([^)]*): *//' \
+        -e 's/^docs: *//' \
+        -e 's/^refactor([^)]*): *//' \
+        -e 's/^refactor: *//' \
+        -e 's/^chore([^)]*): *//' \
+        -e 's/^chore: *//' \
+        -e 's/^test([^)]*): *//' \
+        -e 's/^test: *//' \
+        -e 's/^perf([^)]*): *//' \
+        -e 's/^perf: *//' \
+        -e 's/^style([^)]*): *//'
+}
+
+FEATS=""
+FIXES=""
+DOCS_NOTES=""
+OTHERS=""
+
+while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    entry="- $(format_entry "$line")"
+    if echo "$line" | grep -iq "^[a-f0-9]* feat"; then
+        FEATS="${FEATS}${entry}\n"
+    elif echo "$line" | grep -iq "^[a-f0-9]* fix"; then
+        FIXES="${FIXES}${entry}\n"
+    elif echo "$line" | grep -iq "^[a-f0-9]* docs"; then
+        DOCS_NOTES="${DOCS_NOTES}${entry}\n"
+    elif echo "$line" | grep -iq "^[a-f0-9]* refactor"; then
+        OTHERS="${OTHERS}- 优化: $(format_entry "$line")\n"
+    else
+        OTHERS="${OTHERS}${entry}\n"
+    fi
+done <<< "$COMMITS"
+
+# 去掉尾部换行
+FEATS=$(echo -e "$FEATS" | sed '/^$/d')
+FIXES=$(echo -e "$FIXES" | sed '/^$/d')
+DOCS_NOTES=$(echo -e "$DOCS_NOTES" | sed '/^$/d')
+OTHERS=$(echo -e "$OTHERS" | sed '/^$/d')
 
 RELEASE_NOTES="## v${NEW_VERSION} (${TODAY})"
 [ -n "$FEATS" ] && RELEASE_NOTES="${RELEASE_NOTES}
 
-### 新功能
+### 新增
 ${FEATS}"
 [ -n "$FIXES" ] && RELEASE_NOTES="${RELEASE_NOTES}
 
 ### 修复
 ${FIXES}"
-[ -n "$DOCS" ] && RELEASE_NOTES="${RELEASE_NOTES}
-
-### 文档
-${DOCS}"
 [ -n "$OTHERS" ] && RELEASE_NOTES="${RELEASE_NOTES}
 
-### 其他
+### 优化
 ${OTHERS}"
+[ -n "$DOCS_NOTES" ] && RELEASE_NOTES="${RELEASE_NOTES}
+
+### 文档
+${DOCS_NOTES}"
 
 echo "$RELEASE_NOTES"
 echo ""
@@ -358,6 +404,52 @@ if [ -f "$README_FILE" ]; then
     sed -i '' "s/版本-v[0-9]*\.[0-9]*\.[0-9]*/版本-v${NEW_VERSION}/g" "$README_FILE" 2>/dev/null || \
     sed -i "s/版本-v[0-9]*\.[0-9]*\.[0-9]*/版本-v${NEW_VERSION}/g" "$README_FILE"
     ok "README.md 版本号已更新"
+
+    # 更新 README.md 版本历史（插入最新条目，保留最近 5 个版本）
+    README_HISTORY_MARKER="## 📋 版本历史"
+    README_FOOTER="> 完整变更日志见 \[CHANGELOG.md\](./CHANGELOG.md)"
+    if grep -q "$README_HISTORY_MARKER" "$README_FILE"; then
+        # 找到版本历史章节的起止行
+        HISTORY_START=$(grep -n "$README_HISTORY_MARKER" "$README_FILE" | head -1 | cut -d: -f1)
+        # 找到版本历史章节后面的下一个 --- 分隔符
+        HISTORY_END=$(tail -n +$((HISTORY_START + 1)) "$README_FILE" | grep -n "^---$" | head -1 | cut -d: -f1)
+        HISTORY_END=$((HISTORY_START + HISTORY_END))
+
+        # 重建版本历史章节
+        TEMP_README=$(mktemp)
+        # 保留版本历史之前的内容
+        head -n "$HISTORY_START" "$README_FILE" > "$TEMP_README"
+        echo "" >> "$TEMP_README"
+
+        # 插入最新版本条目
+        echo "$RELEASE_NOTES" | tail -n +2 >> "$TEMP_README"
+        echo "" >> "$TEMP_README"
+
+        # 从 CHANGELOG 中提取之前的版本（最多再取 4 个，凑够 5 个总共）
+        PREV_VERSIONS=$(grep -n "^## v" "$CHANGELOG_FILE" | head -5 | tail -4)
+        while IFS= read -r vline; do
+            [ -z "$vline" ] && continue
+            VLINE_NUM=$(echo "$vline" | cut -d: -f1)
+            # 找到这个版本的结束位置（下一个 --- 或文件末尾）
+            VEND=$(tail -n +$((VLINE_NUM + 1)) "$CHANGELOG_FILE" | grep -n "^---$" | head -1 | cut -d: -f1)
+            if [ -n "$VEND" ]; then
+                VEND=$((VLINE_NUM + VEND - 1))
+            else
+                VEND=$(wc -l < "$CHANGELOG_FILE")
+            fi
+            sed -n "${VLINE_NUM},${VEND}p" "$CHANGELOG_FILE" | grep -v "^---$" >> "$TEMP_README"
+            echo "" >> "$TEMP_README"
+        done <<< "$PREV_VERSIONS"
+
+        # 添加 footer
+        echo "> 完整变更日志见 [CHANGELOG.md](./CHANGELOG.md)" >> "$TEMP_README"
+        echo "" >> "$TEMP_README"
+
+        # 保留版本历史之后的内容
+        tail -n +$((HISTORY_END)) "$README_FILE" >> "$TEMP_README"
+        mv "$TEMP_README" "$README_FILE"
+        ok "README.md 版本历史已更新（保留最近 5 个版本）"
+    fi
 fi
 
 # 提交文档更新
