@@ -34,7 +34,7 @@ if [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
 fi
 
 # 读取版本号
-VERSION=$(cat VERSION 2>/dev/null || echo "unknown")
+VERSION=$(cat "$(git rev-parse --show-toplevel)/VERSION" 2>/dev/null || echo "unknown")
 
 # 部署前自动备份数据库
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

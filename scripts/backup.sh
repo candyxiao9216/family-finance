@@ -14,7 +14,7 @@ NC='\033[0m'
 SERVER_IP="119.91.205.137"
 SSH_KEY="$HOME/.ssh/candyworkbench.pem"
 REMOTE_DB="/opt/family-finance/data/family_finance.db"
-LOCAL_BACKUP_DIR="$(cd "$(dirname "$0")" && pwd)/backups"
+LOCAL_BACKUP_DIR="$(cd "$(dirname "$0")/.." && pwd)/backups"
 ROTATE_DAYS=30
 
 # 创建备份目录

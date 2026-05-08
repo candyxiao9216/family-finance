@@ -10,11 +10,11 @@
 
 **红线（违反立即停下）:**
 
-- ❌ 严禁在 main 上直接 commit（必须用 `./start.sh` 创建分支）
+- ❌ 严禁在 main 上直接 commit（必须用 `./scripts/start.sh` 创建分支）
 - ❌ 严禁硬编码密钥（用 `.env` + `os.getenv`）
 - ❌ 严禁不更新文档就提交（代码改了对应文档必须同步）
-- ❌ 严禁不备份就部署（`push-deploy.sh` 已自动备份，手动部署前必须 `./backup.sh`）
-- ❌ 严禁手动发版（必须用 `./release.sh`，确保测试+覆盖率+tag+CHANGELOG）
+- ❌ 严禁不备份就部署（`scripts/push-deploy.sh` 已自动备份，手动部署前必须 `./scripts/backup.sh`）
+- ❌ 严禁手动发版（必须用 `./scripts/release.sh`，确保测试+覆盖率+tag+CHANGELOG）
 
 ---
 
@@ -22,24 +22,28 @@
 
 ```
 项目根目录/
-├── start.sh             # 创建功能分支
-├── release.sh           # 10步发版管道
-├── push-deploy.sh       # 一键部署（自动备份）
-├── backup.sh            # 备份线上数据库
-├── cleanup.sh           # 清理已合并分支
-├── deploy.sh            # 服务器从零初始化（只执行一次）
-├── VERSION              # 当前版本号
-├── CHANGELOG.md         # 自动生成的变更日志
-└── src/
-    ├── main.py          # 应用入口 + 仪表盘首页路由
-    ├── models.py        # 数据模型（16 张表）
-    ├── database.py      # 数据库初始化 + Jinja2 过滤器
-    ├── routes/          # Flask 蓝图（12 个）
-    │   ├── advisor.py   #   智能财务顾问（590行，最大文件）
-    │   ├── transaction.py, account.py, savings.py, auth.py ...
-    ├── services/        # AI 分析 + 行情数据
-    ├── static/          # CSS + JS
-    └── templates/       # Jinja2 页面模板
+├── scripts/             # Harness 脚本
+│   ├── start.sh         #   创建功能分支
+│   ├── release.sh       #   10步发版管道
+│   ├── push-deploy.sh   #   一键部署（自动备份）
+│   ├── backup.sh        #   备份线上数据库
+│   ├── cleanup.sh       #   清理已合并分支
+│   └── deploy.sh        #   服务器从零初始化（只执行一次）
+├── src/
+│   ├── main.py          # 应用入口 + 仪表盘首页路由
+│   ├── models.py        # 数据模型（16 张表）
+│   ├── database.py      # 数据库初始化 + Jinja2 过滤器
+│   ├── routes/          # Flask 蓝图（12 个）
+│   ├── services/        # AI 分析 + 行情数据
+│   ├── static/          # CSS + JS
+│   └── templates/       # Jinja2 页面模板
+├── tests/               # pytest 测试
+├── docs/                # 文档
+│   ├── DEVELOPMENT_LOG.md
+│   ├── screenshots/
+│   └── archive/         # 历史文档（不再维护）
+├── data/                # SQLite 数据库（运行时生成）
+└── backups/             # 线上备份（不入库）
 ```
 
 ---
@@ -48,13 +52,13 @@
 
 | 命令 | 作用 | 什么时候用 |
 |------|------|-----------|
-| `./start.sh feature/xxx` | 从 main 创建功能分支 | 开始任何新工作前 |
-| `./release.sh patch` | 发版：测试→覆盖率→冒烟→squash merge→tag→CHANGELOG | 功能开发完成后 |
-| `./push-deploy.sh` | 备份数据库→SSH推送→重启→验证 | release 之后部署到生产 |
-| `./backup.sh` | 从线上 SCP 下载数据库到 backups/ | 任何时候想备份 |
-| `./cleanup.sh` | 删除已合并的本地+远程分支 | 发版后清理 |
+| `./scripts/start.sh feature/xxx` | 从 main 创建功能分支 | 开始任何新工作前 |
+| `./scripts/release.sh patch` | 发版：测试→覆盖率→冒烟→squash merge→tag→CHANGELOG | 功能开发完成后 |
+| `./scripts/push-deploy.sh` | 备份数据库→SSH推送→重启→验证 | release 之后部署到生产 |
+| `./scripts/backup.sh` | 从线上 SCP 下载数据库到 backups/ | 任何时候想备份 |
+| `./scripts/cleanup.sh` | 删除已合并的本地+远程分支 | 发版后清理 |
 
-**完整流程**: `start.sh` → 开发 & commit → `release.sh` → `push-deploy.sh` → `cleanup.sh`
+**完整流程**: `scripts/start.sh` → 开发 & commit → `scripts/release.sh` → `scripts/push-deploy.sh` → `scripts/cleanup.sh`
 
 ---
 
@@ -84,17 +88,17 @@
 
 | 用户说 | Claude 执行 |
 |--------|------------|
-| "开个分支做 xxx" | `./start.sh feature/xxx` 或 `./start.sh fix/xxx` |
+| "开个分支做 xxx" | `./scripts/start.sh feature/xxx` 或 `./scripts/start.sh fix/xxx` |
 | "提交" / "commit" | `git add` + `git commit` + `git push`（只提交到功能分支，**不发版**） |
 | "发版" | 见下方发版流程 |
-| "部署" | `./push-deploy.sh`（会自动备份） |
-| "备份" | `./backup.sh` |
-| "修 bug" | `./start.sh fix/xxx` → 修改 → commit → 等用户确认发版 |
-| "加功能" | `./start.sh feature/xxx` → 开发 → commit → 等用户确认发版 |
+| "部署" | `./scripts/push-deploy.sh`（会自动备份） |
+| "备份" | `./scripts/backup.sh` |
+| "修 bug" | `./scripts/start.sh fix/xxx` → 修改 → commit → 等用户确认发版 |
+| "加功能" | `./scripts/start.sh feature/xxx` → 开发 → commit → 等用户确认发版 |
 
 **发版流程（必须用户确认）：**
 1. Claude 展示：改动摘要 + 版本号 + Release Notes 预览
-2. 用户说"确认" → 执行 `./release.sh patch|minor|major`
+2. 用户说"确认" → 执行 `./scripts/release.sh patch|minor|major`
 3. 用户未确认 → 不执行，继续开发
 
 **硬规则：commit ≠ release。** 做完改动只 commit + push 到功能分支。只有用户明确说"发版"时才跑 release.sh，且必须先展示发版内容让用户确认。
