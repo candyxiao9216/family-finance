@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/版本-v2.0.8-blue" alt="version">
+  <img src="https://img.shields.io/badge/版本-v2.0.9-blue" alt="version">
   <img src="https://img.shields.io/badge/Python-3.8+-green" alt="python">
   <img src="https://img.shields.io/badge/Flask-3.0-lightgrey" alt="flask">
   <img src="https://img.shields.io/badge/测试覆盖率-81%25-brightgreen" alt="coverage">
@@ -156,28 +156,45 @@ FLASK_PORT=5001                      # 服务端口
 
 ## 📋 版本历史
 
-### v2.0.7 (2026-05-08)
-- 文档体系精简重构：CLAUDE.md 瘦身为操作速查卡、PROJECT_BRIEF 精简、移除公开文档中的敏感信息
-- 发版流程增加 README 版本号自动更新
 
-### v2.0.5 (2026-05-08)
-- README 全新改版：痛点对比 + 界面截图 + 功能紧凑展示
-- 修复统计栏布局：3 项数据自适应撑满整行
+### 新增
+- release.sh 用户视角 Release Notes + README 版本历史自动更新
 
-### v2.0.4 (2026-05-08)
-- 修复多页面布局异常：添加交易表单、储蓄计划卡片、趋势图不再挤在左侧
-- 新增 10 个页面渲染回归测试
+## v2.0.8 (2026-05-08)
 
-### v2.0.1 (2026-05-08)
-- 自动化开发管道上线：分支管理 → 测试验证(≥80%) → 一键发版 → 一键部署
-- 数据库自动备份（部署前自动执行）
+### 文档
+- docs: README 版本历史更新至 v2.0.7（用户视角精选）
 
-### v2.0.0 (2026-04-08) — 里程碑一
-- 智能财务顾问（AI 分析 + 持仓管理 + 实时行情）
-- 首页仪表盘 + 月度待办 Checklist
-- 资产三分类 + 多币种 + 批量导入
-- 移动端适配 + 体验优化
-- 安全审计修复（14 项）
+### 其他
+- chore: .gitignore 添加 .DS_Store
+- refactor: 项目目录分层整理
+
+
+## v2.0.7 (2026-05-08)
+
+### 文档
+- docs: 移除 CLAUDE.md 中的部署信息（IP/SSH 不应公开）
+- docs: CLAUDE.md 指令映射增加发版确认流程
+- docs: PROJECT_BRIEF.md 精简为 51 行 + release.sh 自动更新 README 版本号
+
+
+## v2.0.6 (2026-05-08)
+
+### 文档
+- docs: CLAUDE.md 重写为 147 行操作速查卡
+
+
+## v2.0.5 (2026-05-08)
+
+### 文档
+- docs: README 重写（痛点对比+界面截图+功能精简+版本历史链接 CHANGELOG）
+
+### 修复
+- fix(css): stats-bar 固定4列改为 auto-fit 自适应列数
+
+### 测试
+- test: 新增 stats-bar 列数和 auto-fit CSS 回归测试
+
 
 > 完整变更日志见 [CHANGELOG.md](./CHANGELOG.md)
 

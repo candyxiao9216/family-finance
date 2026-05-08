@@ -14,7 +14,7 @@
 Python 3.8+ / Flask / SQLAlchemy / SQLite / Chart.js / 智谱 GLM / Gunicorn + Nginx
 
 ## 当前状态
-- **版本**: v2.0.8
+- **版本**: v2.0.9
 - **里程碑一已完成**: 家庭资产数据数字化（记账+资产+储蓄+AI顾问+持仓+行情）
 - **harness 已建立**: start → release → deploy 全自动化
 - **测试**: 139+ 用例，覆盖率 81%
