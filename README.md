@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/版本-v2.0.13-blue" alt="version">
+  <img src="https://img.shields.io/badge/版本-v2.0.14-blue" alt="version">
   <img src="https://img.shields.io/badge/Python-3.8+-green" alt="python">
   <img src="https://img.shields.io/badge/Flask-3.0-lightgrey" alt="flask">
   <img src="https://img.shields.io/badge/测试覆盖率-81%25-brightgreen" alt="coverage">
@@ -156,12 +156,18 @@ FLASK_PORT=5001                      # 服务端口
 
 ## 📋 版本历史
 
+## v2.0.14 (2026-05-10)
+
+### 新增
+- 对账助手 + 交易余额逻辑修正 + 编辑页修复
+
 ## v2.0.13 (2026-05-09)
 
 ### 修复
 - 支出默认分类改为农行/民生/广发信用卡（删除餐饮/交通）
 - 复制邀请码改为静默复制完整文案（不弹窗）
 - 账户类型下拉框按拼音排序 + 部署自动 pip install
+
 
 ## v2.0.12 (2026-05-09)
 
@@ -186,12 +192,6 @@ FLASK_PORT=5001                      # 服务端口
 
 ### 修复
 - README 版本历史保留标题行（修复 tail -n +2 截断）
-
-
-## v2.0.9 (2026-05-08)
-
-### 新增
-- release.sh 用户视角 Release Notes + README 版本历史自动更新
 
 
 > 完整变更日志见 [CHANGELOG.md](./CHANGELOG.md)
