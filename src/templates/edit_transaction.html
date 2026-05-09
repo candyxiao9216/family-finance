@@ -63,11 +63,9 @@
                     </div>
                 </div>
 
-                <div style="display: flex; gap: 12px;">
-                    <button type="submit" class="btn-submit" style="flex: 1;">
-                        <span>保存修改</span>
-                    </button>
-                    <a href="/" class="btn-submit" style="flex: 0 0 auto; background: var(--text-muted); text-decoration: none; text-align: center;">取消</a>
+                <div style="display: flex; gap: 12px; margin-top: 8px;">
+                    <button type="submit" class="btn-submit" style="flex: 1;">保存修改</button>
+                    <a href="{{ url_for('transaction.transaction_list') }}#txn-{{ transaction.id }}" class="btn-submit" style="flex: 1; background: #999; text-decoration: none; text-align: center;">取消</a>
                 </div>
             </form>
         </div>

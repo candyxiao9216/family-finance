@@ -224,16 +224,6 @@ def add_transaction():
     )
 
     db.session.add(transaction)
-
-    # 如果关联了账户，更新账户余额
-    if account_id:
-        account = Account.query.get(account_id)
-        if account:
-            if transaction_type == 'income':
-                account.current_balance = account.current_balance + Decimal(amount)
-            else:
-                account.current_balance = account.current_balance - Decimal(amount)
-
     db.session.commit()
 
     return redirect(url_for('transaction.transaction_list'))
@@ -306,31 +296,13 @@ def edit_transaction(transaction_id):
 
     # 如果有变化，更新记录
     if modifications:
-        # 先处理账户余额修正（需要用旧值），再更新交易字段
+        # 先记录旧值用于字段对比
         old_account_id = transaction.account_id
         old_amount = transaction.amount
         old_type = transaction.type
 
-        # 反向修正旧账户余额
-        if old_account_id:
-            old_account = Account.query.get(old_account_id)
-            if old_account:
-                if old_type == 'income':
-                    old_account.current_balance = old_account.current_balance - old_amount
-                else:
-                    old_account.current_balance = old_account.current_balance + old_amount
-
         # 更新交易的 account_id
         transaction.account_id = new_account_id
-
-        # 正向更新新账户余额
-        if new_account_id:
-            new_account = Account.query.get(new_account_id)
-            if new_account:
-                if new_type == 'income':
-                    new_account.current_balance = new_account.current_balance + Decimal(new_amount)
-                else:
-                    new_account.current_balance = new_account.current_balance - Decimal(new_amount)
 
         # 更新交易字段
         transaction.type = new_type
@@ -364,15 +336,6 @@ def delete_transaction(transaction_id):
     if transaction.user_id != user_id:
         if not (user.family_id and user.family_id == transaction.user.family_id):
             return "无权删除此交易", 403
-
-    # 反向修正关联账户余额
-    if transaction.account_id:
-        account = Account.query.get(transaction.account_id)
-        if account:
-            if transaction.type == 'income':
-                account.current_balance = account.current_balance - transaction.amount
-            else:
-                account.current_balance = account.current_balance + transaction.amount
 
     db.session.delete(transaction)
     db.session.commit()

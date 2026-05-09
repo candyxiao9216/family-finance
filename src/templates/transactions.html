@@ -149,7 +149,7 @@
             <div class="transactions-list" id="transactions-list">
                 {% if transactions %}
                     {% for t in transactions %}
-                    <div class="transaction-item {{ 'income' if t.type == 'income' else 'expense' }}">
+                    <div id="txn-{{ t.id }}" class="transaction-item {{ 'income' if t.type == 'income' else 'expense' }}">
                         <div class="t-icon">
                             {{ '💰' if t.type == 'income' else '📤' }}
                         </div>
@@ -300,7 +300,7 @@
         // 初始化
         setCurrentDate();
         setDefaultDate();
-        updateCategories('expense');
+        updateCategories('income');
 
         // 快捷模板应用
         function applyTemplate(btn) {

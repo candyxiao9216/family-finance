@@ -8,7 +8,7 @@ from dateutil.relativedelta import relativedelta
 from flask import Blueprint, redirect, render_template, request, session, url_for, flash
 from pypinyin import lazy_pinyin
 
-from models import db, Account, AccountType, AccountBalance, User
+from models import db, Account, AccountType, AccountBalance, User, Transaction
 
 account_bp = Blueprint('account', __name__, url_prefix='/accounts')
 
@@ -87,6 +87,22 @@ def account_list():
         for r in prev_records:
             prev_snapshots[r.account_id] = r
 
+    # 对账助手：计算本月每个账户的理论变化（关联交易净收支合计）
+    next_month = this_month + relativedelta(months=1)
+    account_theory = {}  # {account_id: net_change}
+    if account_ids:
+        for aid in account_ids:
+            txns = Transaction.query.filter(
+                Transaction.account_id == aid,
+                Transaction.transaction_date >= this_month,
+                Transaction.transaction_date < next_month
+            ).all()
+            net = sum(
+                float(t.amount) if t.type == 'income' else -float(t.amount)
+                for t in txns
+            )
+            account_theory[aid] = net
+
     return render_template('accounts.html',
                            savings_accounts=savings_accounts,
                            fund_accounts=fund_accounts,
@@ -99,6 +115,7 @@ def account_list():
                            prev_snapshots=prev_snapshots,
                            latest_snapshots=latest_snapshots,
                            all_snapshots=all_snapshots,
+                           account_theory=account_theory,
                            exchange_rates=_get_exchange_rates(),
                            current_view=current_view,
                            family=family,
