@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/版本-v2.0.14-blue" alt="version">
+  <img src="https://img.shields.io/badge/版本-v2.0.15-blue" alt="version">
   <img src="https://img.shields.io/badge/Python-3.8+-green" alt="python">
   <img src="https://img.shields.io/badge/Flask-3.0-lightgrey" alt="flask">
   <img src="https://img.shields.io/badge/测试覆盖率-81%25-brightgreen" alt="coverage">
@@ -156,10 +156,16 @@ FLASK_PORT=5001                      # 服务端口
 
 ## 📋 版本历史
 
+## v2.0.15 (2026-05-10)
+
+### 新增
+- 新增账户间转账功能 + 对账汇总栏 + pytest数据库保护
+
 ## v2.0.14 (2026-05-10)
 
 ### 新增
 - 对账助手 + 交易余额逻辑修正 + 编辑页修复
+
 
 ## v2.0.13 (2026-05-09)
 
@@ -183,15 +189,6 @@ FLASK_PORT=5001                      # 服务端口
 
 ### 修复
 - 账户类型命名统一为"平台+产品类型"格式
-
-
-## v2.0.10 (2026-05-08)
-
-### 新增
-- start.sh 重写 — 参考 devHireAI 智能分支创建
-
-### 修复
-- README 版本历史保留标题行（修复 tail -n +2 截断）
 
 
 > 完整变更日志见 [CHANGELOG.md](./CHANGELOG.md)
