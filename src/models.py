@@ -70,7 +70,7 @@ class Transaction(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     amount = db.Column(db.Numeric(10, 2), nullable=False)
-    type = db.Column(db.String(10), nullable=False)  # 'income' 或 'expense'
+    type = db.Column(db.String(20), nullable=False)  # 'income', 'expense', 'transfer_in', 'transfer_out'
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     description = db.Column(db.Text, nullable=True)
@@ -80,6 +80,9 @@ class Transaction(db.Model):
     # 账户关联
     account_id = db.Column(db.Integer, db.ForeignKey('accounts.id'), nullable=True)
     account = db.relationship('Account', backref='transactions', lazy=True)
+
+    # 转账配对
+    transfer_pair_id = db.Column(db.Integer, db.ForeignKey('transactions.id'), nullable=True)
 
     # 修改追踪字段
     last_modified_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # 最后修改人

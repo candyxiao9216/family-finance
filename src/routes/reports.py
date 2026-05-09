@@ -90,14 +90,15 @@ def api_trend():
     today = date.today()
     start_date = (today.replace(day=1) - relativedelta(months=months - 1))
 
-    # 按月聚合收入和支出
+    # 按月聚合收入和支出（排除转账）
     results = db.session.query(
         func.strftime('%Y-%m', Transaction.transaction_date).label('month'),
         Transaction.type,
         func.sum(Transaction.amount).label('total')
     ).filter(
         user_filter,
-        Transaction.transaction_date >= start_date
+        Transaction.transaction_date >= start_date,
+        Transaction.type.in_(['income', 'expense'])
     ).group_by(
         func.strftime('%Y-%m', Transaction.transaction_date),
         Transaction.type

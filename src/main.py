@@ -188,14 +188,8 @@ def add_transaction():
 
     transaction_type = request.form.get('type')
     amount = request.form.get('amount')
-    category_id = request.form.get('category')
     transaction_date_str = request.form.get('date')
     description = request.form.get('description')
-    account_id = request.form.get('account_id', type=int)
-
-    # 基本验证
-    if not all([transaction_type, amount, category_id, transaction_date_str]):
-        return "缺少必填字段", 400
 
     # 金额范围校验
     try:
@@ -212,7 +206,59 @@ def add_transaction():
     except ValueError:
         return "日期格式错误", 400
 
-    # 创建交易记录
+    # === 转账逻辑 ===
+    if transaction_type == 'transfer':
+        from_account_id = request.form.get('from_account_id', type=int)
+        to_account_id = request.form.get('to_account_id', type=int)
+
+        if not from_account_id or not to_account_id:
+            flash('请选择转出和转入账户', 'error')
+            return redirect(url_for('transaction.transaction_list'))
+        if from_account_id == to_account_id:
+            flash('转出和转入账户不能相同', 'error')
+            return redirect(url_for('transaction.transaction_list'))
+
+        from_account = Account.query.get(from_account_id)
+        to_account = Account.query.get(to_account_id)
+
+        # 转出记录
+        txn_out = Transaction(
+            amount=Decimal(amount),
+            type='transfer_out',
+            category_id=None,
+            description=description or f'转账→{to_account.name}',
+            transaction_date=transaction_date,
+            user_id=user_id,
+            account_id=from_account_id
+        )
+        # 转入记录
+        txn_in = Transaction(
+            amount=Decimal(amount),
+            type='transfer_in',
+            category_id=None,
+            description=description or f'转账←{from_account.name}',
+            transaction_date=transaction_date,
+            user_id=user_id,
+            account_id=to_account_id
+        )
+        db.session.add(txn_out)
+        db.session.add(txn_in)
+        db.session.flush()  # 获取 id
+
+        # 互相引用
+        txn_out.transfer_pair_id = txn_in.id
+        txn_in.transfer_pair_id = txn_out.id
+        db.session.commit()
+
+        return redirect(url_for('transaction.transaction_list'))
+
+    # === 普通收入/支出逻辑 ===
+    category_id = request.form.get('category')
+    account_id = request.form.get('account_id', type=int)
+
+    if not all([transaction_type, amount, category_id, transaction_date_str]):
+        return "缺少必填字段", 400
+
     transaction = Transaction(
         amount=Decimal(amount),
         type=transaction_type,

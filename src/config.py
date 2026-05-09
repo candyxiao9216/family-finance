@@ -11,7 +11,7 @@ DATA_DIR = BASE_DIR / "data"
 DATA_DIR.mkdir(exist_ok=True)
 
 # 数据库配置
-DATABASE_PATH = DATA_DIR / "family_finance.db"
+DATABASE_PATH = os.environ.get('DATABASE_PATH', str(DATA_DIR / "family_finance.db"))
 SQLALCHEMY_DATABASE_URI = f'sqlite:///{DATABASE_PATH}'
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 

@@ -275,6 +275,16 @@ body::before {
     background: var(--color-expense);
 }
 
+.type-option input:checked + .type-label.transfer {
+    background: #e8f4fd;
+    color: #1a6fa8;
+    font-weight: 600;
+}
+
+.type-option input:checked + .type-label.transfer::before {
+    background: #3498db;
+}
+
 /* 提交按钮 */
 .btn-submit {
     width: 100%;

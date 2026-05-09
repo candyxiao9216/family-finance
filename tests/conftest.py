@@ -3,6 +3,11 @@ import sys
 import os
 import tempfile
 
+# ⚠️ 关键：在 import src 模块之前设置测试数据库路径，防止 pytest 覆盖生产数据
+_test_db = tempfile.NamedTemporaryFile(suffix='.db', delete=False)
+_test_db.close()
+os.environ['DATABASE_PATH'] = _test_db.name
+
 # 确保 src 在 path 中
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 

@@ -85,8 +85,14 @@
                         <input type="radio" name="type" value="expense" required>
                         <span class="type-label expense">📤 支出</span>
                     </label>
+                    <label class="type-option">
+                        <input type="radio" name="type" value="transfer" required>
+                        <span class="type-label transfer">🔄 转账</span>
+                    </label>
                 </div>
 
+                <!-- 收入/支出表单字段 -->
+                <div id="normal-fields">
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">金额</label>
@@ -94,7 +100,7 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">分类</label>
-                        <select name="category" class="form-select" required id="category-select">
+                        <select name="category" class="form-select" id="category-select">
                             <option value="">选择分类</option>
                             <optgroup label="收入">
                                 {% for c in categories if c.type == 'income' %}
@@ -121,6 +127,37 @@
                             {% endfor %}
                         </select>
                     </div>
+                </div>
+                </div>
+
+                <!-- 转账表单字段（默认隐藏） -->
+                <div id="transfer-fields" style="display:none;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">金额</label>
+                        <input type="number" name="amount" class="form-input" placeholder="0.00" step="0.01" min="0.01" disabled>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">从（转出账户）</label>
+                        <select name="from_account_id" class="form-select" disabled>
+                            <option value="">选择转出账户</option>
+                            {% for a in accounts %}
+                            <option value="{{ a.id }}">{{ a.name }}（{{ a.account_type.name }}）</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">到（转入账户）</label>
+                        <select name="to_account_id" class="form-select" disabled>
+                            <option value="">选择转入账户</option>
+                            {% for a in accounts %}
+                            <option value="{{ a.id }}">{{ a.name }}（{{ a.account_type.name }}）</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
                 </div>
 
                 <div class="form-row">
@@ -149,9 +186,9 @@
             <div class="transactions-list" id="transactions-list">
                 {% if transactions %}
                     {% for t in transactions %}
-                    <div id="txn-{{ t.id }}" class="transaction-item {{ 'income' if t.type == 'income' else 'expense' }}">
+                    <div id="txn-{{ t.id }}" class="transaction-item {{ 'income' if t.type == 'income' else ('expense' if t.type == 'expense' else '') }}" {% if t.type in ('transfer_in', 'transfer_out') %}style="border-left-color:#3498db;"{% endif %}>
                         <div class="t-icon">
-                            {{ '💰' if t.type == 'income' else '📤' }}
+                            {{ '💰' if t.type == 'income' else ('📤' if t.type == 'expense' else '🔄') }}
                         </div>
                         <div class="t-info">
                             <span class="t-description">{{ t.description or (t.category_name if t.category_name else '未分类') }}</span>
@@ -167,7 +204,13 @@
                             </span>
                         </div>
                         <div class="t-amount">
+                            {% if t.type == 'transfer_in' %}
+                            <span style="color:#3498db;">+¥{{ t.amount|currency }}</span>
+                            {% elif t.type == 'transfer_out' %}
+                            <span style="color:#3498db;">-¥{{ t.amount|currency }}</span>
+                            {% else %}
                             {{ '+' if t.type == 'income' else '-' }}¥{{ t.amount|currency }}
+                            {% endif %}
                         </div>
                         <div class="t-actions">
                             <a href="/edit/{{ t.id }}" class="btn-edit" title="编辑">
@@ -286,7 +329,29 @@
 
         typeInputs.forEach(input => {
             input.addEventListener('change', (e) => {
-                updateCategories(e.target.value);
+                var type = e.target.value;
+                var normalFields = document.getElementById('normal-fields');
+                var transferFields = document.getElementById('transfer-fields');
+
+                if (type === 'transfer') {
+                    normalFields.style.display = 'none';
+                    transferFields.style.display = '';
+                    // 启用转账字段，禁用普通字段
+                    normalFields.querySelectorAll('input,select').forEach(el => { el.disabled = true; el.removeAttribute('required'); });
+                    transferFields.querySelectorAll('input,select').forEach(el => { el.disabled = false; });
+                    transferFields.querySelector('input[name="amount"]').required = true;
+                    transferFields.querySelector('select[name="from_account_id"]').required = true;
+                    transferFields.querySelector('select[name="to_account_id"]').required = true;
+                } else {
+                    normalFields.style.display = '';
+                    transferFields.style.display = 'none';
+                    // 启用普通字段，禁用转账字段
+                    normalFields.querySelectorAll('input,select').forEach(el => { el.disabled = false; });
+                    normalFields.querySelector('input[name="amount"]').required = true;
+                    normalFields.querySelector('select[name="category"]').required = true;
+                    transferFields.querySelectorAll('input,select').forEach(el => { el.disabled = true; el.removeAttribute('required'); });
+                    updateCategories(type);
+                }
             });
         });
 

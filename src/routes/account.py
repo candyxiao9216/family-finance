@@ -98,7 +98,7 @@ def account_list():
                 Transaction.transaction_date < next_month
             ).all()
             net = sum(
-                float(t.amount) if t.type == 'income' else -float(t.amount)
+                float(t.amount) if t.type in ('income', 'transfer_in') else -float(t.amount)
                 for t in txns
             )
             account_theory[aid] = net

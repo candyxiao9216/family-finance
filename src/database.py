@@ -33,6 +33,7 @@ def init_database(app: Flask) -> None:
 
         # SQLite 兼容：给已有表添加新列（create_all 不会 ALTER 已有表）
         _safe_add_column('fund_holdings', 'status', "VARCHAR(20) DEFAULT 'holding'")
+        _safe_add_column('transactions', 'transfer_pair_id', 'INTEGER')
 
         # 账户类型名称迁移（v2.0.10+）
         _rename_account_type('微众', '微众理财')

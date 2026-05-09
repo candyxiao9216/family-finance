@@ -395,17 +395,32 @@
                             <option value="CNY" {{ 'selected' if a.currency == 'CNY' }}>人民币</option>
                             <option value="USD" {{ 'selected' if a.currency == 'USD' }}>美元</option>
                         </select>
-                        <input type="number" name="balance_{{ a.id }}" style="flex:1;padding:6px 6px;border:1px solid #e0dcd7;border-radius:6px;font-size:13px;background:#fff;" placeholder="余额" step="0.01" min="0" data-prev="{{ prev_bal if prev_bal is not none else '' }}" data-expected="{{ expected if expected is not none else '' }}" data-currency="{{ a.currency or 'HKD' }}" data-aid="{{ a.id }}" oninput="calcDiff(this)">
+                        <input type="number" name="balance_{{ a.id }}" style="flex:1;width:100%;padding:6px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:13px;background:#fff;" placeholder="输入余额" step="0.01" min="0" data-prev="{{ prev_bal if prev_bal is not none else '' }}" data-expected="{{ expected if expected is not none else '' }}" data-currency="{{ a.currency or 'HKD' }}" data-aid="{{ a.id }}" oninput="calcDiff(this)">
                     </div>
-                    <div id="diff_{{ a.id }}" style="font-size:11px;line-height:1.3;">—</div>
+                    <div id="diff_{{ a.id }}" style="font-size:12px;">—</div>
                     <div><input type="text" name="note_{{ a.id }}" style="width:100%;padding:6px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:12px;color:#666;" placeholder="备注..." maxlength="200"></div>
                 </div>
                 {% endfor %}
                 {% endif %}
 
                 <!-- 汇总栏 -->
-                <div id="batch-summary" style="margin-top:16px;padding:12px;background:#f8f5f1;border-radius:8px;display:flex;justify-content:space-between;font-size:13px;">
-                    <div>填写完余额后自动计算汇总</div>
+                <div id="batch-summary" style="margin-top:16px;padding:12px;background:#f8f5f1;border-radius:8px;display:flex;gap:12px;font-size:13px;">
+                    <div style="flex:1;text-align:center;">
+                        <div style="color:#999;font-size:11px;margin-bottom:4px;">本月总记账收支</div>
+                        <div id="summary-theory" style="font-weight:700;font-family:'Outfit',monospace;color:#D4A574;">—</div>
+                    </div>
+                    <div style="flex:1;text-align:center;">
+                        <div style="color:#999;font-size:11px;margin-bottom:4px;">实际总变化</div>
+                        <div id="summary-actual-change" style="font-weight:700;font-family:'Outfit',monospace;">—</div>
+                    </div>
+                    <div style="flex:1;text-align:center;">
+                        <div style="color:#999;font-size:11px;margin-bottom:4px;">总差额</div>
+                        <div id="summary-total-diff" style="font-weight:700;font-family:'Outfit',monospace;">—</div>
+                    </div>
+                    <div style="flex:1;text-align:center;">
+                        <div style="color:#999;font-size:11px;margin-bottom:4px;">需关注</div>
+                        <div id="summary-warn-count" style="font-weight:700;font-family:'Outfit',monospace;">—</div>
+                    </div>
                 </div>
             </form>
         </div>
@@ -466,6 +481,7 @@
 
         // ===== 对账助手：差额实时计算 =====
         var RATES = {{ exchange_rates | tojson }};
+        var ACCOUNT_THEORY = {{ account_theory | tojson }};
 
         function calcDiff(input) {
             var aid = input.dataset.aid;
@@ -473,8 +489,8 @@
             var expected = parseFloat(input.dataset.expected);
             var curr = parseFloat(input.value);
 
-            if (isNaN(curr) || input.value === '') { el.innerHTML = '—'; return; }
-            if (isNaN(expected)) { el.innerHTML = '<span style="color:#999;">—</span>'; return; }
+            if (isNaN(curr) || input.value === '') { el.innerHTML = '—'; updateSummary(); return; }
+            if (isNaN(expected)) { el.innerHTML = '<span style="color:#999;">—</span>'; updateSummary(); return; }
 
             var diff = curr - expected;
             var absDiff = Math.abs(diff);
@@ -487,7 +503,73 @@
             } else {
                 el.innerHTML = '<span style="color:#c0392b;font-weight:500;">' + sign + absDiff.toLocaleString('zh-CN', {maximumFractionDigits:0}) + '</span>';
             }
+            updateSummary();
         }
+
+        function updateSummary() {
+            var inputs = document.querySelectorAll('input[data-aid][data-expected]');
+            var totalTheory = 0;
+            var totalActualChange = 0;
+            var totalDiff = 0;
+            var warnCount = 0;
+            var hasData = false;
+
+            // 本月总记账收支（所有账户理论变化之和）
+            for (var key in ACCOUNT_THEORY) {
+                totalTheory += ACCOUNT_THEORY[key];
+            }
+
+            inputs.forEach(function(input) {
+                var curr = parseFloat(input.value);
+                var prev = parseFloat(input.dataset.prev);
+                var expected = parseFloat(input.dataset.expected);
+
+                if (isNaN(curr) || input.value === '') return;
+                hasData = true;
+
+                // 实际总变化
+                if (!isNaN(prev)) {
+                    totalActualChange += (curr - prev);
+                }
+
+                // 总差额 + 需关注
+                if (!isNaN(expected)) {
+                    var diff = curr - expected;
+                    totalDiff += diff;
+                    if (Math.abs(diff) > 100) warnCount++;
+                }
+            });
+
+            // 更新 UI
+            var theoryEl = document.getElementById('summary-theory');
+            var sign = totalTheory >= 0 ? '+' : '-';
+            theoryEl.textContent = sign + '¥' + Math.abs(totalTheory).toLocaleString('zh-CN', {maximumFractionDigits:0});
+            theoryEl.style.color = totalTheory >= 0 ? '#D4A574' : '#c0392b';
+
+            if (!hasData) {
+                document.getElementById('summary-actual-change').textContent = '—';
+                document.getElementById('summary-total-diff').textContent = '—';
+                document.getElementById('summary-warn-count').textContent = '—';
+                return;
+            }
+
+            var actualEl = document.getElementById('summary-actual-change');
+            var aSign = totalActualChange >= 0 ? '+' : '-';
+            actualEl.textContent = aSign + '¥' + Math.abs(totalActualChange).toLocaleString('zh-CN', {maximumFractionDigits:0});
+            actualEl.style.color = totalActualChange >= 0 ? '#D4A574' : '#c0392b';
+
+            var diffEl = document.getElementById('summary-total-diff');
+            var dSign = totalDiff >= 0 ? '+' : '-';
+            diffEl.textContent = dSign + '¥' + Math.abs(totalDiff).toLocaleString('zh-CN', {maximumFractionDigits:0});
+            diffEl.style.color = Math.abs(totalDiff) <= 100 ? '#27ae60' : '#c0392b';
+
+            var warnEl = document.getElementById('summary-warn-count');
+            warnEl.textContent = warnCount > 0 ? warnCount + ' 个账户' : '无 ✓';
+            warnEl.style.color = warnCount > 0 ? '#c0392b' : '#27ae60';
+        }
+
+        // 初始化汇总（显示理论收支）
+        updateSummary();
 
         // 币种切换时更新 data-currency 并重新计算
         function updateCurrencyDisplay(select) {

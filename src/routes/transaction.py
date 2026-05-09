@@ -62,11 +62,18 @@ def transaction_list():
                 ((Transaction.type == 'expense') & (extract('month', Transaction.transaction_date) == current_month) &
                  (extract('year', Transaction.transaction_date) == current_year) & user_filter, Transaction.amount)
             )
-        ).label('expense')
+        ).label('expense'),
+        func.sum(
+            case(
+                ((Transaction.type == 'transfer_out') & (extract('month', Transaction.transaction_date) == current_month) &
+                 (extract('year', Transaction.transaction_date) == current_year) & user_filter, Transaction.amount)
+            )
+        ).label('transfer')
     ).first()
 
     monthly_income = month_stats.income or Decimal('0')
     monthly_expense = month_stats.expense or Decimal('0')
+    monthly_transfer = month_stats.transfer or Decimal('0')
     monthly_balance = monthly_income - monthly_expense
 
     # 获取分类
@@ -87,6 +94,7 @@ def transaction_list():
                           monthly_income=float(monthly_income),
                           monthly_expense=float(monthly_expense),
                           monthly_balance=float(monthly_balance),
+                          monthly_transfer=float(monthly_transfer),
                           stat_year=current_year,
                           stat_month=current_month,
                           categories=categories,
