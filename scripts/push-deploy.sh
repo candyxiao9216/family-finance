@@ -52,7 +52,7 @@ echo ""
 # SSH 部署
 if ! ssh -i "$SSH_KEY" -o ConnectTimeout=10 -o StrictHostKeyChecking=no \
     "ubuntu@${SERVER_IP}" \
-    "sudo bash -c 'cd ${APP_DIR} && git pull origin main && ${APP_DIR}/venv/bin/python -c \"import sys; sys.path.insert(0, \\\"src\\\"); from database import create_app, init_database; app = create_app(); init_database(app)\" && systemctl restart family-finance'"; then
+    "sudo bash -c 'cd ${APP_DIR} && git pull origin main && ${APP_DIR}/venv/bin/pip install -r requirements.txt --quiet && ${APP_DIR}/venv/bin/python -c \"import sys; sys.path.insert(0, \\\"src\\\"); from database import create_app, init_database; app = create_app(); init_database(app)\" && systemctl restart family-finance'"; then
     echo -e "${RED}✗ SSH 部署失败，请检查网络或服务器状态。${NC}"
     exit 1
 fi

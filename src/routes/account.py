@@ -34,7 +34,7 @@ def account_list():
         current_view = 'personal'
 
     accounts = _get_family_accounts(user_id, current_view)
-    account_types = AccountType.query.all()
+    account_types = sorted(AccountType.query.all(), key=lambda t: lazy_pinyin(t.name))
 
     # 按类型分组（三分类），按拼音排序
     pinyin_key = lambda a: lazy_pinyin(a.name)

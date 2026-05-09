@@ -38,6 +38,12 @@ def init_database(app: Flask) -> None:
         _rename_account_type('微众', '微众理财')
         _rename_account_type('中金', '中金基金')
 
+        # 删除旧的预设支出分类（v2.0.12+）
+        for old_cat in ['餐饮', '交通']:
+            cat = Category.query.filter_by(name=old_cat, is_default=True).first()
+            if cat:
+                db.session.delete(cat)
+
         # 插入预设分类（仅当不存在时）
         for cat_data in DEFAULT_CATEGORIES:
             existing = Category.query.filter_by(name=cat_data['name']).first()

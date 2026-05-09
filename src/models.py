@@ -114,8 +114,9 @@ class Transaction(db.Model):
 DEFAULT_CATEGORIES = [
     {'name': '工资', 'type': 'income', 'is_default': True},
     {'name': '奖金', 'type': 'income', 'is_default': True},
-    {'name': '餐饮', 'type': 'expense', 'is_default': True},
-    {'name': '交通', 'type': 'expense', 'is_default': True},
+    {'name': '农行信用卡', 'type': 'expense', 'is_default': True},
+    {'name': '民生信用卡', 'type': 'expense', 'is_default': True},
+    {'name': '广发信用卡', 'type': 'expense', 'is_default': True},
 ]
 
 

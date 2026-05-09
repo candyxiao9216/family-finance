@@ -84,14 +84,32 @@
 {% block scripts %}
     <script>
         function copyInviteCode() {
-            var code = '{{ family.invite_code }}';
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(code).then(function() {
-                    alert('邀请码已复制：' + code);
+            var text = '我在用一个家庭财务工具，邀请你一起用。注册后输入邀请码 {{ family.invite_code }} 加入「{{ family.name }}」家庭。';
+            // 优先用 clipboard API
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(function() {
+                    showToast('邀请文案已复制到剪贴板');
                 });
             } else {
-                prompt('请手动复制邀请码：', code);
+                // HTTP 环境兜底：隐藏 textarea + execCommand
+                var textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showToast('邀请文案已复制到剪贴板');
             }
+        }
+
+        function showToast(msg) {
+            var toast = document.createElement('div');
+            toast.textContent = msg;
+            toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#4a9;color:#fff;padding:10px 20px;border-radius:8px;z-index:9999;font-size:14px;';
+            document.body.appendChild(toast);
+            setTimeout(function() { toast.remove(); }, 2000);
         }
 
         function regenerateInviteCode() {
