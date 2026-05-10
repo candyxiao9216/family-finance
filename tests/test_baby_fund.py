@@ -143,8 +143,8 @@ def test_baby_fund_edit_syncs_transaction():
     os.unlink(db_path)
 
 
-def test_baby_fund_invalid_event_type():
-    """测试无效的事件类型被拒绝"""
+def test_baby_fund_custom_event_type():
+    """测试自定义事件类型可以成功保存"""
     app, db_path = _create_test_app()
 
     with app.app_context():
@@ -163,13 +163,15 @@ def test_baby_fund_invalid_event_type():
 
     resp = client.post('/baby-fund/add', data={
         'giver_name': '测试', 'amount': '1000',
-        'event_date': '2026-03-01', 'event_type': '无效类型'
+        'event_date': '2026-03-01', 'event_type': '自定义类型'
     }, follow_redirects=True)
 
     with app.app_context():
-        assert BabyFund.query.count() == 0
+        assert BabyFund.query.count() == 1
+        fund = BabyFund.query.first()
+        assert fund.event_type == '自定义类型'
 
-    print("✅ test_baby_fund_invalid_event_type passed")
+    print("✅ test_baby_fund_custom_event_type passed")
     os.unlink(db_path)
 
 
@@ -177,4 +179,4 @@ if __name__ == '__main__':
     test_baby_fund_creates_transaction()
     test_baby_fund_delete_cascades()
     test_baby_fund_edit_syncs_transaction()
-    test_baby_fund_invalid_event_type()
+    test_baby_fund_custom_event_type()

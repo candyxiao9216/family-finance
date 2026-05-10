@@ -43,6 +43,13 @@ def create_test_app(db_path=None):
             return '0.00'
         return f'{value:,.{decimals}f}'
 
+    @app.template_filter('to_beijing')
+    def to_beijing_filter(value, fmt='%H:%M'):
+        if not value:
+            return ''
+        from datetime import timedelta as td
+        return (value + td(hours=8)).strftime(fmt)
+
     @app.template_filter('signed_currency')
     def signed_currency_filter(value, decimals=2):
         try:
@@ -66,6 +73,7 @@ def create_test_app(db_path=None):
     from routes.recurring import recurring_bp
     from routes.monthly_todo import monthly_todo_bp
     from routes.advisor import advisor_bp
+    from routes.settings import settings_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(account_bp)
@@ -80,6 +88,7 @@ def create_test_app(db_path=None):
     app.register_blueprint(recurring_bp)
     app.register_blueprint(monthly_todo_bp)
     app.register_blueprint(advisor_bp)
+    app.register_blueprint(settings_bp)
 
     # 注册 timedelta context processor（与 main.py 一致）
     from datetime import timedelta

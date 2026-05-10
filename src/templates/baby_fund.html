@@ -108,13 +108,12 @@
             </div>
             <div class="form-group">
                 <label class="form-label">事件类型</label>
-                <select name="event_type" class="form-select">
-                    <option value="">选择类型</option>
-                    <option value="满月">🌙 满月</option>
-                    <option value="生日">🎂 生日</option>
-                    <option value="红包">🧧 红包</option>
-                    <option value="其他">🎁 其他</option>
-                </select>
+                <input type="text" name="event_type" class="form-input" list="event-type-list" placeholder="选择或输入类型" maxlength="20">
+                <datalist id="event-type-list">
+                    {% for et in event_types %}
+                    <option value="{{ et }}">
+                    {% endfor %}
+                </datalist>
             </div>
             <div class="form-group">
                 <label class="form-label">备注</label>
@@ -146,13 +145,7 @@
             </div>
             <div class="form-group">
                 <label class="form-label">事件类型</label>
-                <select name="event_type" id="edit-event-type" class="form-select">
-                    <option value="">选择类型</option>
-                    <option value="满月">🌙 满月</option>
-                    <option value="生日">🎂 生日</option>
-                    <option value="红包">🧧 红包</option>
-                    <option value="其他">🎁 其他</option>
-                </select>
+                <input type="text" name="event_type" id="edit-event-type" class="form-input" list="event-type-list" placeholder="选择或输入类型" maxlength="20">
             </div>
             <div class="form-group">
                 <label class="form-label">备注</label>

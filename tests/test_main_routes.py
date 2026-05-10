@@ -261,6 +261,7 @@ def main_app():
     from routes.recurring import recurring_bp
     from routes.monthly_todo import monthly_todo_bp
     from routes.advisor import advisor_bp
+    from routes.settings import settings_bp
 
     application.register_blueprint(auth_bp)
     application.register_blueprint(account_bp)
@@ -275,6 +276,7 @@ def main_app():
     application.register_blueprint(recurring_bp)
     application.register_blueprint(monthly_todo_bp)
     application.register_blueprint(advisor_bp)
+    application.register_blueprint(settings_bp)
 
     with application.app_context():
         db.create_all()

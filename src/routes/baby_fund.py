@@ -3,6 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from flask import Blueprint, redirect, render_template, request, session, url_for, flash
+from pypinyin import lazy_pinyin
 from sqlalchemy import func
 
 from models import db, User, BabyFund, Transaction, TransactionModification, Account, Category
@@ -46,11 +47,21 @@ def baby_fund_list():
 
     accounts = Account.query.filter(Account.user_id.in_(member_ids)).all()
 
+    # 事件类型列表：预设 + 已有自定义类型（去重，按拼音排序）
+    existing_types = db.session.query(BabyFund.event_type).filter(
+        BabyFund.created_by.in_(member_ids),
+        BabyFund.event_type != None
+    ).distinct().all()
+    existing_set = {t[0] for t in existing_types}
+    all_types = list(set(BabyFund.DEFAULT_EVENT_TYPES) | existing_set)
+    event_types = sorted(all_types, key=lambda t: lazy_pinyin(t))
+
     return render_template('baby_fund.html',
                            funds=funds,
                            total_amount=float(total_amount),
                            fund_count=len(funds),
                            accounts=accounts,
+                           event_types=event_types,
                            current_view=current_view,
                            family=family,
                            username=session.get('nickname', session.get('username', '用户')),
@@ -71,10 +82,9 @@ def add_fund():
         flash('请填写所有必填字段', 'error')
         return redirect(url_for('baby_fund.baby_fund_list'))
 
-    # event_type 校验
-    if event_type and event_type not in BabyFund.VALID_EVENT_TYPES:
-        flash('无效的事件类型', 'error')
-        return redirect(url_for('baby_fund.baby_fund_list'))
+    # event_type: 自由输入，限制长度
+    if event_type and len(event_type) > 20:
+        event_type = event_type[:20]
 
     try:
         event_date = datetime.strptime(event_date_str, '%Y-%m-%d').date()
@@ -126,9 +136,9 @@ def edit_fund(fund_id):
     new_event_date_str = request.form.get('event_date')
     new_event_type = request.form.get('event_type', fund.event_type)
 
-    if new_event_type and new_event_type not in BabyFund.VALID_EVENT_TYPES:
-        flash('无效的事件类型', 'error')
-        return redirect(url_for('baby_fund.baby_fund_list'))
+    # event_type: 自由输入，限制长度
+    if new_event_type and len(new_event_type) > 20:
+        new_event_type = new_event_type[:20]
 
     try:
         new_event_date = datetime.strptime(new_event_date_str, '%Y-%m-%d').date() if new_event_date_str else fund.event_date

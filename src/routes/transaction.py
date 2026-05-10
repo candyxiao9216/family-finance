@@ -39,10 +39,13 @@ def transaction_list():
         family_members = []
 
     # 获取交易列表，按日期降序（分页，每页 10 条）
+    # 转账只显示 transfer_out（合并为一条），隐藏 transfer_in
     page = request.args.get('page', 1, type=int)
     per_page = 10
-    pagination = Transaction.query.filter(user_filter)\
-        .order_by(Transaction.transaction_date.desc())\
+    pagination = Transaction.query.filter(
+        user_filter,
+        Transaction.type != 'transfer_in'
+    ).order_by(Transaction.transaction_date.desc(), Transaction.created_at.desc())\
         .paginate(page=page, per_page=per_page, error_out=False)
     transactions = pagination.items
 
@@ -81,8 +84,17 @@ def transaction_list():
         (Category.user_id == None) | (Category.user_id == user_id)
     ).all()
 
-    # 获取账户列表
-    accounts = Account.query.filter_by(user_id=user_id).all()
+    # 获取账户列表（家庭视图显示全家，按成员分组）
+    if current_view == 'family' and family:
+        family_accounts = {}  # {member: [accounts]}
+        for member in family.members:
+            member_accounts = Account.query.filter_by(user_id=member.id).all()
+            if member_accounts:
+                family_accounts[member] = member_accounts
+        accounts = Account.query.filter(Account.user_id.in_(family_member_ids)).all()
+    else:
+        family_accounts = {}
+        accounts = Account.query.filter_by(user_id=user_id).all()
 
     # 获取快捷模板
     quick_templates = TransactionTemplate.query.filter_by(user_id=user_id)\
@@ -99,6 +111,7 @@ def transaction_list():
                           stat_month=current_month,
                           categories=categories,
                           accounts=accounts,
+                          family_accounts=family_accounts,
                           quick_templates=quick_templates,
                           current_view=current_view,
                           family=family,

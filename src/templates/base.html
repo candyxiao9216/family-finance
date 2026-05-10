@@ -19,7 +19,6 @@
                 <p id="current-date"></p>
             </div>
             <div class="user-info">
-                <span class="username">{{ username }}</span>
                 <div class="user-actions">
                     <a href="{{ url_for('index') }}" class="nav-link">首页</a>
                     <a href="{{ url_for('transaction.transaction_list') }}" class="nav-link">月度收支</a>
@@ -40,7 +39,13 @@
                             {% endif %}
                         </div>
                     </div>
-                    <a href="{{ url_for('auth.logout') }}" class="logout-btn">退出</a>
+                    <div class="nav-dropdown">
+                        <a href="#" class="nav-link nav-dropdown-trigger">{{ username }} ▾</a>
+                        <div class="nav-dropdown-menu">
+                            <a href="{{ url_for('settings.settings_page') }}" class="nav-dropdown-item">⚙️ 账号设置</a>
+                            <a href="{{ url_for('auth.logout') }}" class="nav-dropdown-item" style="color:#c0392b;">🚪 退出</a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </header>
@@ -85,6 +90,7 @@
                 {% endif %}
             </div>
             <div class="side-menu-footer">
+                <a href="{{ url_for('settings.settings_page') }}" class="side-menu-item">⚙️ 账号设置</a>
                 <a href="{{ url_for('auth.logout') }}" class="side-menu-item side-menu-logout">🚪 退出登录</a>
             </div>
         </nav>

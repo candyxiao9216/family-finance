@@ -968,6 +968,21 @@ body::before {
     color: #8B6914;
 }
 
+.category-badge.savings {
+    background: var(--color-income-bg);
+    color: #8B6914;
+}
+
+.category-badge.fund {
+    background: #e8f4fd;
+    color: #1a6fa8;
+}
+
+.category-badge.stock {
+    background: #eef0f4;
+    color: #5a6678;
+}
+
 .category-badge.custom {
     background: var(--color-expense-bg);
     color: var(--color-expense);

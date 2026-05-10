@@ -34,6 +34,40 @@ def init_database(app: Flask) -> None:
         # SQLite 兼容：给已有表添加新列（create_all 不会 ALTER 已有表）
         _safe_add_column('fund_holdings', 'status', "VARCHAR(20) DEFAULT 'holding'")
         _safe_add_column('transactions', 'transfer_pair_id', 'INTEGER')
+        _safe_add_column('users', 'avatar_text', 'VARCHAR(4)')
+        _safe_add_column('account_balance', 'source', "VARCHAR(20) DEFAULT 'snapshot'")
+
+        # 移除 account_balance 的 unique constraint（允许同月多条转账记录）
+        try:
+            check = db.session.execute(db.text(
+                "SELECT sql FROM sqlite_master WHERE tbl_name='account_balance' AND type='table'"
+            )).fetchone()
+            if check and 'uq_account_month' in (check[0] or ''):
+                db.session.execute(db.text('''
+                    CREATE TABLE account_balance_new (
+                        id INTEGER NOT NULL PRIMARY KEY,
+                        account_id INTEGER NOT NULL,
+                        balance NUMERIC(10, 2) NOT NULL,
+                        change_amount NUMERIC(10, 2),
+                        record_month DATE NOT NULL,
+                        note VARCHAR(200),
+                        source VARCHAR(20) DEFAULT 'snapshot',
+                        recorded_by INTEGER,
+                        created_at DATETIME,
+                        FOREIGN KEY(account_id) REFERENCES accounts (id),
+                        FOREIGN KEY(recorded_by) REFERENCES users (id)
+                    )
+                '''))
+                db.session.execute(db.text('''
+                    INSERT INTO account_balance_new (id, account_id, balance, change_amount, record_month, note, source, recorded_by, created_at)
+                    SELECT id, account_id, balance, change_amount, record_month, note, source, recorded_by, created_at
+                    FROM account_balance
+                '''))
+                db.session.execute(db.text('DROP TABLE account_balance'))
+                db.session.execute(db.text('ALTER TABLE account_balance_new RENAME TO account_balance'))
+                db.session.commit()
+        except Exception:
+            db.session.rollback()
 
         # 账户类型名称迁移（v2.0.10+）
         _rename_account_type('微众', '微众理财')
@@ -86,6 +120,13 @@ def create_app() -> Flask:
         except (ValueError, TypeError):
             return '0.00'
         return f'{value:,.{decimals}f}'
+
+    @app.template_filter('to_beijing')
+    def to_beijing_filter(value, fmt='%H:%M'):
+        """UTC 时间转北京时间（+8小时）"""
+        if not value:
+            return ''
+        return (value + timedelta(hours=8)).strftime(fmt)
 
     @app.template_filter('signed_currency')
     def signed_currency_filter(value, decimals=2):

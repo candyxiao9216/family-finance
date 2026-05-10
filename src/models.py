@@ -13,6 +13,7 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
     nickname = db.Column(db.String(80), nullable=True)
+    avatar_text = db.Column(db.String(4), nullable=True)  # 展示图标（1-2字或emoji）
     role = db.Column(db.String(20), default='member')
     family_id = db.Column(db.Integer, db.ForeignKey('families.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -254,21 +255,19 @@ class Account(db.Model):
 
 
 class AccountBalance(db.Model):
-    """账户余额月度快照表 - 记录每月账户余额变化"""
+    """账户余额变更记录表 - 记录快照和转账引起的余额变化"""
     __tablename__ = 'account_balance'
 
     id = db.Column(db.Integer, primary_key=True)
     account_id = db.Column(db.Integer, db.ForeignKey('accounts.id'), nullable=False)
-    balance = db.Column(db.Numeric(10, 2), nullable=False)
-    change_amount = db.Column(db.Numeric(10, 2), nullable=True)
+    balance = db.Column(db.Numeric(10, 2), nullable=False)  # 变更后余额
+    change_amount = db.Column(db.Numeric(10, 2), nullable=True)  # 变更金额
     record_month = db.Column(db.Date, nullable=False)
-    note = db.Column(db.String(200), nullable=True)  # 本月备注
+    note = db.Column(db.String(200), nullable=True)
+    source = db.Column(db.String(20), default='snapshot')  # 'snapshot' 或 'transfer'
     recorded_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    __table_args__ = (
-        db.UniqueConstraint('account_id', 'record_month', name='uq_account_month'),
-    )
 
     recorder = db.relationship('User', foreign_keys=[recorded_by])
 
@@ -354,7 +353,8 @@ class BabyFund(db.Model):
     """宝宝基金表"""
     __tablename__ = 'baby_funds'
 
-    VALID_EVENT_TYPES = ['满月', '生日', '红包', '其他']
+    # 预设事件类型（仅作为建议，不限制输入）
+    DEFAULT_EVENT_TYPES = ['生日', '2026压岁钱', '周岁宴']
 
     id = db.Column(db.Integer, primary_key=True)
     giver_name = db.Column(db.String(50), nullable=False)

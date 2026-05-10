@@ -4,6 +4,30 @@
 <style>
     /* 资产页加宽容器 */
     .container { max-width: 1100px; }
+
+    /* 理论变化 tooltip */
+    .theory-cell { position: relative; }
+    .theory-tooltip {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        margin-top: 6px;
+        background: #fff;
+        border: 1px solid #e0dcd7;
+        border-radius: 8px;
+        padding: 10px 12px;
+        min-width: 200px;
+        max-width: 280px;
+        font-size: 12px;
+        color: #333;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        z-index: 100;
+        white-space: nowrap;
+        line-height: 1.8;
+    }
+    .theory-cell:hover .theory-tooltip { display: block; }
 </style>
 {% endblock %}
 
@@ -165,10 +189,10 @@
         </div>
         {% endif %}
 
-        <!-- 快照记录 -->
+        <!-- 变更记录 -->
         <div class="card">
             <div class="card-header">
-                <h2 class="card-title">快照记录</h2>
+                <h2 class="card-title">变更记录</h2>
                 <span class="account-count" id="snapshot-count">{{ all_snapshots|length }} 条</span>
             </div>
 
@@ -211,24 +235,24 @@
                     <table class="snapshot-table" id="snapshot-table">
                         <thead>
                             <tr>
-                                <th>月份</th>
+                                <th>时间</th>
                                 <th>账户</th>
                                 <th>类型</th>
-                                <th>余额</th>
-                                <th>月度变化</th>
+                                <th>变更金额</th>
+                                <th>变更后余额</th>
+                                <th>来源</th>
                                 <th>操作人</th>
-                                <th>录入时间</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for s in all_snapshots %}
                             <tr data-account="{{ s.account.name if s.account else '' }}"
                                 data-month="{{ s.record_month.strftime('%Y-%m') }}"
-                                data-recorder="{{ s.recorder.nickname or s.recorder.username if s.recorder else '' }}">
-                                <td>{{ s.record_month.strftime('%Y年%m月') }}</td>
+                                data-recorder="{{ s.recorder.nickname or s.recorder.username if s.recorder else '' }}"
+                                {% if s.source == 'transfer' %}style="background:#f8fcff;"{% endif %}>
+                                <td class="td-meta">{{ (s.created_at + timedelta(hours=8)).strftime('%m-%d %H:%M') if s.created_at else '-' }}</td>
                                 <td>{{ s.account.name if s.account else '-' }}</td>
-                                <td><span class="category-badge {{ 'default' if s.account and s.account.account_type and s.account.account_type.category == 'savings' else 'custom' }}">{{ s.account.account_type.name if s.account and s.account.account_type else '-' }}</span></td>
-                                <td class="td-amount">¥{{ s.balance|float|currency }}</td>
+                                <td><span class="category-badge {% if s.account and s.account.account_type %}{{ s.account.account_type.category }}{% endif %}">{{ s.account.account_type.name if s.account and s.account.account_type else '-' }}</span></td>
                                 <td class="td-amount">
                                     {% if s.change_amount is not none %}
                                     <span class="account-change {{ 'positive' if s.change_amount >= 0 else 'negative' }}">
@@ -238,8 +262,15 @@
                                     <span class="account-owner">-</span>
                                     {% endif %}
                                 </td>
+                                <td class="td-amount">¥{{ s.balance|float|currency }}</td>
+                                <td>
+                                    {% if s.source == 'transfer' %}
+                                    <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:500;background:#e8f4fd;color:#1a6fa8;">🔄 转账</span>
+                                    {% else %}
+                                    <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:500;background:#fdf3e7;color:#8B6914;">📸 快照</span>
+                                    {% endif %}
+                                </td>
                                 <td>{{ s.recorder.nickname or s.recorder.username if s.recorder else '-' }}</td>
-                                <td class="td-meta">{{ (s.created_at + timedelta(hours=8)).strftime('%m-%d %H:%M') if s.created_at else '-' }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -247,7 +278,7 @@
                 </div>
                 {% else %}
                 <div class="empty-state">
-                    <p class="empty-state-text">暂无快照记录</p>
+                    <p class="empty-state-text">暂无变更记录</p>
                 </div>
                 {% endif %}
             </div>
@@ -340,7 +371,7 @@
                 <div style="display:grid;grid-template-columns:110px 90px 90px 90px 130px 80px 1fr;gap:6px;padding:8px 12px;align-items:center;border-bottom:1px solid #f0ece7;">
                     <div style="font-size:13px;font-weight:500;">{{ a.name }}</div>
                     <div style="font-size:12px;color:#999;">{% if prev_bal is not none %}¥{{ prev_bal|currency(0) }}{% else %}—{% endif %}</div>
-                    <div style="font-size:12px;{% if theory > 0 %}color:#4CAF50;{% elif theory < 0 %}color:#f44336;{% else %}color:#999;{% endif %}">{% if prev_bal is not none %}{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}{% else %}—{% endif %}</div>
+                    <div class="theory-cell" style="font-size:12px;position:relative;cursor:help;{% if theory > 0 %}color:#4CAF50;{% elif theory < 0 %}color:#f44336;{% else %}color:#999;{% endif %}">{% if prev_bal is not none %}{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}{% if account_theory_details.get(a.id) %}<div class="theory-tooltip">{% for d in account_theory_details[a.id] %}<div style="display:flex;justify-content:space-between;gap:12px;"><span>{{ d.desc[:15] }}</span><span style="{% if d.sign == '+' %}color:#4CAF50{% else %}color:#f44336{% endif %}">{{ d.sign }}¥{{ d.amount|currency(0) }}</span></div>{% endfor %}<div style="border-top:1px solid #e0dcd7;margin-top:4px;padding-top:4px;display:flex;justify-content:space-between;font-weight:600;"><span>合计</span><span>{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}</span></div></div>{% endif %}{% else %}—{% endif %}</div>
                     <div style="font-size:12px;color:#666;font-weight:500;">{% if expected is not none %}¥{{ expected|currency(0) }}{% else %}—{% endif %}</div>
                     <div><input type="number" name="balance_{{ a.id }}" style="width:100%;padding:6px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:13px;background:#fff;" placeholder="输入余额" step="0.01" min="0" data-prev="{{ prev_bal if prev_bal is not none else '' }}" data-expected="{{ expected if expected is not none else '' }}" data-currency="CNY" data-aid="{{ a.id }}" oninput="calcDiff(this)"></div>
                     <div id="diff_{{ a.id }}" style="font-size:12px;">—</div>
@@ -359,7 +390,7 @@
                 <div style="display:grid;grid-template-columns:110px 90px 90px 90px 130px 80px 1fr;gap:6px;padding:8px 12px;align-items:center;border-bottom:1px solid #f0ece7;">
                     <div style="font-size:13px;font-weight:500;">{{ a.name }}</div>
                     <div style="font-size:12px;color:#999;">{% if prev_bal is not none %}{% if a.currency and a.currency != 'CNY' %}{{ a.currency }}{% else %}¥{% endif %}{{ prev_bal|currency(0) }}{% else %}—{% endif %}</div>
-                    <div style="font-size:12px;{% if theory > 0 %}color:#4CAF50;{% elif theory < 0 %}color:#f44336;{% else %}color:#999;{% endif %}">{% if prev_bal is not none %}{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}{% else %}—{% endif %}</div>
+                    <div class="theory-cell" style="font-size:12px;position:relative;cursor:help;{% if theory > 0 %}color:#4CAF50;{% elif theory < 0 %}color:#f44336;{% else %}color:#999;{% endif %}">{% if prev_bal is not none %}{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}{% if account_theory_details.get(a.id) %}<div class="theory-tooltip">{% for d in account_theory_details[a.id] %}<div style="display:flex;justify-content:space-between;gap:12px;"><span>{{ d.desc[:15] }}</span><span style="{% if d.sign == '+' %}color:#4CAF50{% else %}color:#f44336{% endif %}">{{ d.sign }}¥{{ d.amount|currency(0) }}</span></div>{% endfor %}<div style="border-top:1px solid #e0dcd7;margin-top:4px;padding-top:4px;display:flex;justify-content:space-between;font-weight:600;"><span>合计</span><span>{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}</span></div></div>{% endif %}{% else %}—{% endif %}</div>
                     <div style="font-size:12px;color:#666;font-weight:500;">{% if expected is not none %}{% if a.currency and a.currency != 'CNY' %}{{ a.currency }}{% else %}¥{% endif %}{{ expected|currency(0) }}{% else %}—{% endif %}</div>
                     <div style="display:flex;gap:4px;">
                         {% if a.currency and a.currency != 'CNY' %}
@@ -387,7 +418,7 @@
                 <div style="display:grid;grid-template-columns:110px 90px 90px 90px 130px 80px 1fr;gap:6px;padding:8px 12px;align-items:center;border-bottom:1px solid #f0ece7;">
                     <div style="font-size:13px;font-weight:500;">{{ a.name }}</div>
                     <div style="font-size:12px;color:#999;">{% if prev_bal is not none %}{{ a.currency or 'CNY' }} {{ prev_bal|currency(0) }}{% else %}—{% endif %}</div>
-                    <div style="font-size:12px;{% if theory > 0 %}color:#4CAF50;{% elif theory < 0 %}color:#f44336;{% else %}color:#999;{% endif %}">{% if prev_bal is not none %}{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}{% else %}—{% endif %}</div>
+                    <div class="theory-cell" style="font-size:12px;position:relative;cursor:help;{% if theory > 0 %}color:#4CAF50;{% elif theory < 0 %}color:#f44336;{% else %}color:#999;{% endif %}">{% if prev_bal is not none %}{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}{% if account_theory_details.get(a.id) %}<div class="theory-tooltip">{% for d in account_theory_details[a.id] %}<div style="display:flex;justify-content:space-between;gap:12px;"><span>{{ d.desc[:15] }}</span><span style="{% if d.sign == '+' %}color:#4CAF50{% else %}color:#f44336{% endif %}">{{ d.sign }}¥{{ d.amount|currency(0) }}</span></div>{% endfor %}<div style="border-top:1px solid #e0dcd7;margin-top:4px;padding-top:4px;display:flex;justify-content:space-between;font-weight:600;"><span>合计</span><span>{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}</span></div></div>{% endif %}{% else %}—{% endif %}</div>
                     <div style="font-size:12px;color:#666;font-weight:500;">{% if expected is not none %}{{ a.currency or 'CNY' }} {{ expected|currency(0) }}{% else %}—{% endif %}</div>
                     <div style="display:flex;gap:4px;">
                         <select name="currency_{{ a.id }}" style="width:55px;padding:4px;border:1px solid #e0dcd7;border-radius:6px;font-size:10px;" data-aid="{{ a.id }}" onchange="updateCurrencyDisplay(this)">

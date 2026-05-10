@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block content %}
+        <div class="card">
+            <!-- 头像区 -->
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--color-border-light);">
+                <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#e8a87c,#d4956a);display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff;font-weight:600;">
+                    {{ user.avatar_text or (user.nickname or user.username)[-1] }}
+                </div>
+                <div>
+                    <div style="font-size:16px;font-weight:600;">{{ user.nickname or user.username }}</div>
+                    <div style="font-size:12px;color:var(--color-text-muted);margin-top:2px;">{{ '成员' if user.role == 'member' else (user.role or '成员') }} · @{{ user.username }}</div>
+                </div>
+            </div>
+
+            <!-- 基本信息 -->
+            <h3 style="font-size:15px;font-weight:600;color:#8B7355;margin-bottom:16px;">基本信息</h3>
+            <form action="{{ url_for('settings.update_nickname') }}" method="POST">
+                <div style="margin-bottom:16px;">
+                    <label style="display:block;font-size:13px;color:#666;margin-bottom:6px;font-weight:500;">昵称</label>
+                    <div style="display:flex;gap:8px;">
+                        <input type="text" name="nickname" class="form-input" value="{{ user.nickname or '' }}" required maxlength="20" style="flex:1;">
+                        <button type="submit" class="btn-submit" style="width:auto;padding:10px 20px;">保存</button>
+                    </div>
+                    <span style="font-size:11px;color:#999;margin-top:4px;display:block;">修改后全站显示名称都会更新</span>
+                </div>
+            </form>
+        </div>
+
+        <!-- 展示图标 -->
+        <div class="card">
+            <h3 style="font-size:15px;font-weight:600;color:#8B7355;margin-bottom:16px;">展示图标</h3>
+            <form action="{{ url_for('settings.update_avatar') }}" method="POST">
+                <div style="display:flex;align-items:center;gap:16px;">
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                        <div id="icon-preview" style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#e8a87c,#d4956a);display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;font-weight:600;">
+                            {{ user.avatar_text or (user.nickname or user.username)[-1] }}
+                        </div>
+                        <span style="font-size:11px;color:#999;">预览</span>
+                    </div>
+                    <div style="flex:1;">
+                        <div style="display:flex;gap:8px;">
+                            <input type="text" name="avatar_text" class="form-input" value="{{ user.avatar_text or (user.nickname or user.username)[-1] }}" maxlength="2" id="icon-input" placeholder="1-2个字或emoji" style="flex:1;" oninput="updateIconPreview(this.value)">
+                            <button type="submit" class="btn-submit" style="width:auto;padding:10px 20px;">保存</button>
+                        </div>
+                        <span style="font-size:11px;color:#999;margin-top:4px;display:block;">显示在账户卡片的头像圆圈中</span>
+                    </div>
+                </div>
+                <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+                    <span style="font-size:11px;color:#999;line-height:28px;">快捷选择：</span>
+                    {% for emoji in ['💰', '🐱', '🌟', '👶', '🏠', '💎', '🐻', '🌸'] %}
+                    <button type="button" style="padding:4px 10px;border:1px solid #e0dcd7;border-radius:6px;background:#fff;font-size:14px;cursor:pointer;" onclick="document.getElementById('icon-input').value='{{ emoji }}';updateIconPreview('{{ emoji }}')">{{ emoji }}</button>
+                    {% endfor %}
+                </div>
+            </form>
+        </div>
+
+        <!-- 修改密码 -->
+        <div class="card">
+            <h3 style="font-size:15px;font-weight:600;color:#8B7355;margin-bottom:16px;">修改密码</h3>
+            <form action="{{ url_for('settings.update_password') }}" method="POST">
+                <div style="margin-bottom:16px;">
+                    <label style="display:block;font-size:13px;color:#666;margin-bottom:6px;font-weight:500;">当前密码</label>
+                    <input type="password" name="old_password" class="form-input" placeholder="输入当前密码" required>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+                    <div>
+                        <label style="display:block;font-size:13px;color:#666;margin-bottom:6px;font-weight:500;">新密码</label>
+                        <div style="position:relative;">
+                            <input type="password" name="new_password" id="new-pwd" class="form-input" style="padding-right:36px;" placeholder="8位以上，含字母和数字" required>
+                            <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:16px;user-select:none;" onclick="togglePwd('new-pwd',this)">🙈</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:13px;color:#666;margin-bottom:6px;font-weight:500;">确认新密码</label>
+                        <div style="position:relative;">
+                            <input type="password" name="confirm_password" id="confirm-pwd" class="form-input" style="padding-right:36px;" placeholder="再次输入新密码" required>
+                            <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:16px;user-select:none;" onclick="togglePwd('confirm-pwd',this)">🙈</span>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" style="padding:10px 20px;border:none;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;background:#f0ece7;color:#8B7355;">修改密码</button>
+            </form>
+        </div>
+
+        <!-- 账号信息 -->
+        <div class="card">
+            <h3 style="font-size:15px;font-weight:600;color:#8B7355;margin-bottom:16px;">账号信息</h3>
+            <div style="font-size:14px;">
+                <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--color-border-light);">
+                    <span style="color:#999;">用户名</span>
+                    <span style="font-weight:500;">{{ user.username }}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--color-border-light);">
+                    <span style="color:#999;">注册时间</span>
+                    <span style="font-weight:500;">{{ user.created_at.strftime('%Y年%m月%d日') }}</span>
+                </div>
+                {% if family %}
+                <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--color-border-light);">
+                    <span style="color:#999;">所属家庭</span>
+                    <span style="font-weight:500;">{{ family.name }}</span>
+                </div>
+                {% endif %}
+                <div style="display:flex;justify-content:space-between;padding:12px 0;">
+                    <span style="color:#999;">角色</span>
+                    <span style="font-weight:500;">{{ '成员' if user.role == 'member' else (user.role or '成员') }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 危险操作 -->
+        <div class="card" style="border:1px solid #f5c6cb;">
+            <h3 style="font-size:15px;font-weight:600;color:#c0392b;margin-bottom:16px;">危险操作</h3>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <div style="font-size:14px;font-weight:500;">注销账号</div>
+                    <div style="font-size:12px;color:#999;margin-top:2px;">删除账号及所有数据，此操作不可恢复</div>
+                </div>
+                <button style="padding:8px 16px;border:1px solid #f5c6cb;border-radius:8px;background:#fff;color:#c0392b;font-size:13px;cursor:pointer;white-space:nowrap;" onclick="alert('请联系管理员注销账号')">注销账号</button>
+            </div>
+        </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function updateIconPreview(val) {
+        document.getElementById('icon-preview').textContent = val || '{{ (user.nickname or user.username)[-1] }}';
+    }
+
+    function togglePwd(inputId, toggle) {
+        var input = document.getElementById(inputId);
+        if (input.type === 'password') {
+            input.type = 'text';
+            toggle.textContent = '👁';
+        } else {
+            input.type = 'password';
+            toggle.textContent = '🙈';
+        }
+    }
+</script>
+{% endblock %}

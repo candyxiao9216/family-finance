@@ -6,7 +6,7 @@ from flask import Flask, redirect, render_template, request, url_for
 from sqlalchemy import func, extract, case
 
 from database import create_app, init_database
-from models import db, Transaction, Category, User, Family, TransactionModification, Account, TransactionTemplate, SavingsPlan, SavingsRecord, MonthlyTodo
+from models import db, Transaction, Category, User, Family, TransactionModification, Account, AccountBalance, TransactionTemplate, SavingsPlan, SavingsRecord, MonthlyTodo
 from routes.auth import auth_bp
 from routes.family import family_bp
 from routes.category import category_bp
@@ -20,6 +20,7 @@ from routes.recurring import recurring_bp
 from routes.transaction import transaction_bp
 from routes.monthly_todo import monthly_todo_bp
 from routes.advisor import advisor_bp
+from routes.settings import settings_bp
 from flask import session, flash
 
 app = create_app()
@@ -43,6 +44,7 @@ app.register_blueprint(recurring_bp)
 app.register_blueprint(monthly_todo_bp)
 app.register_blueprint(transaction_bp)
 app.register_blueprint(advisor_bp)
+app.register_blueprint(settings_bp)
 
 @app.before_request
 def require_login():
@@ -220,10 +222,11 @@ def add_transaction():
 
         from_account = Account.query.get(from_account_id)
         to_account = Account.query.get(to_account_id)
+        transfer_amount = Decimal(amount)
 
         # 转出记录
         txn_out = Transaction(
-            amount=Decimal(amount),
+            amount=transfer_amount,
             type='transfer_out',
             category_id=None,
             description=description or f'转账→{to_account.name}',
@@ -233,7 +236,7 @@ def add_transaction():
         )
         # 转入记录
         txn_in = Transaction(
-            amount=Decimal(amount),
+            amount=transfer_amount,
             type='transfer_in',
             category_id=None,
             description=description or f'转账←{from_account.name}',
@@ -248,6 +251,31 @@ def add_transaction():
         # 互相引用
         txn_out.transfer_pair_id = txn_in.id
         txn_in.transfer_pair_id = txn_out.id
+
+        # 更新账户余额
+        from_account.current_balance = from_account.current_balance - transfer_amount
+        to_account.current_balance = to_account.current_balance + transfer_amount
+
+        # 插入变更记录
+        this_month = transaction_date.replace(day=1)
+        bal_out = AccountBalance(
+            account_id=from_account_id,
+            balance=from_account.current_balance,
+            change_amount=-transfer_amount,
+            record_month=this_month,
+            source='transfer',
+            recorded_by=user_id
+        )
+        bal_in = AccountBalance(
+            account_id=to_account_id,
+            balance=to_account.current_balance,
+            change_amount=transfer_amount,
+            record_month=this_month,
+            source='transfer',
+            recorded_by=user_id
+        )
+        db.session.add(bal_out)
+        db.session.add(bal_in)
         db.session.commit()
 
         return redirect(url_for('transaction.transaction_list'))
@@ -382,6 +410,41 @@ def delete_transaction(transaction_id):
     if transaction.user_id != user_id:
         if not (user.family_id and user.family_id == transaction.user.family_id):
             return "无权删除此交易", 403
+
+    # 转账联动删除：删配对记录 + 回滚余额 + 删变更记录
+    if transaction.type in ('transfer_out', 'transfer_in') and transaction.transfer_pair_id:
+        pair = Transaction.query.get(transaction.transfer_pair_id)
+
+        # 找出哪个是 out、哪个是 in
+        if transaction.type == 'transfer_out':
+            txn_out, txn_in = transaction, pair
+        else:
+            txn_out, txn_in = pair, transaction
+
+        # 回滚余额
+        if txn_out and txn_out.account_id:
+            from_account = Account.query.get(txn_out.account_id)
+            if from_account:
+                from_account.current_balance = from_account.current_balance + txn_out.amount
+        if txn_in and txn_in.account_id:
+            to_account = Account.query.get(txn_in.account_id)
+            if to_account:
+                to_account.current_balance = to_account.current_balance - txn_in.amount
+
+        # 删除对应的变更记录
+        this_month = transaction.transaction_date.replace(day=1)
+        if txn_out and txn_out.account_id:
+            AccountBalance.query.filter_by(
+                account_id=txn_out.account_id, record_month=this_month, source='transfer'
+            ).filter(AccountBalance.change_amount == -txn_out.amount).delete()
+        if txn_in and txn_in.account_id:
+            AccountBalance.query.filter_by(
+                account_id=txn_in.account_id, record_month=this_month, source='transfer'
+            ).filter(AccountBalance.change_amount == txn_in.amount).delete()
+
+        # 删除配对记录
+        if pair:
+            db.session.delete(pair)
 
     db.session.delete(transaction)
     db.session.commit()

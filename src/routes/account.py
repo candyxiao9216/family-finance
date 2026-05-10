@@ -55,16 +55,18 @@ def account_list():
     if account_ids:
         records = AccountBalance.query.filter(
             AccountBalance.account_id.in_(account_ids),
-            AccountBalance.record_month == this_month
+            AccountBalance.record_month == this_month,
+            db.or_(AccountBalance.source == 'snapshot', AccountBalance.source == None)
         ).all()
         for r in records:
             snapshots[r.account_id] = r
 
-    # 获取每个账户的最新快照（用于显示余额对应的月份）
+    # 获取每个账户的最新快照（用于显示余额对应的月份，只取快照类型）
     latest_snapshots = {}
     for a in accounts:
-        latest = AccountBalance.query.filter_by(
-            account_id=a.id
+        latest = AccountBalance.query.filter(
+            AccountBalance.account_id == a.id,
+            db.or_(AccountBalance.source == 'snapshot', AccountBalance.source == None)
         ).order_by(AccountBalance.record_month.desc()).first()
         if latest:
             latest_snapshots[a.id] = latest
@@ -76,13 +78,14 @@ def account_list():
             AccountBalance.account_id.in_(account_ids)
         ).order_by(AccountBalance.record_month.desc(), AccountBalance.created_at.desc()).all()
 
-    # 获取上月快照（用于批量录入面板显示上月余额）
+    # 获取上月快照（用于批量录入面板显示上月余额，只取快照类型）
     prev_month = this_month - relativedelta(months=1)
     prev_snapshots = {}
     if account_ids:
         prev_records = AccountBalance.query.filter(
             AccountBalance.account_id.in_(account_ids),
-            AccountBalance.record_month == prev_month
+            AccountBalance.record_month == prev_month,
+            db.or_(AccountBalance.source == 'snapshot', AccountBalance.source == None)
         ).all()
         for r in prev_records:
             prev_snapshots[r.account_id] = r
@@ -90,6 +93,7 @@ def account_list():
     # 对账助手：计算本月每个账户的理论变化（关联交易净收支合计）
     next_month = this_month + relativedelta(months=1)
     account_theory = {}  # {account_id: net_change}
+    account_theory_details = {}  # {account_id: [{'desc': ..., 'amount': ..., 'sign': ...}, ...]}
     if account_ids:
         for aid in account_ids:
             txns = Transaction.query.filter(
@@ -97,11 +101,18 @@ def account_list():
                 Transaction.transaction_date >= this_month,
                 Transaction.transaction_date < next_month
             ).all()
-            net = sum(
-                float(t.amount) if t.type in ('income', 'transfer_in') else -float(t.amount)
-                for t in txns
-            )
+            net = 0
+            details = []
+            for t in txns:
+                if t.type in ('income', 'transfer_in'):
+                    val = float(t.amount)
+                    details.append({'desc': t.description or t.type, 'amount': val, 'sign': '+'})
+                else:
+                    val = -float(t.amount)
+                    details.append({'desc': t.description or t.type, 'amount': float(t.amount), 'sign': '-'})
+                net += val
             account_theory[aid] = net
+            account_theory_details[aid] = details
 
     return render_template('accounts.html',
                            savings_accounts=savings_accounts,
@@ -116,6 +127,7 @@ def account_list():
                            latest_snapshots=latest_snapshots,
                            all_snapshots=all_snapshots,
                            account_theory=account_theory,
+                           account_theory_details=account_theory_details,
                            exchange_rates=_get_exchange_rates(),
                            current_view=current_view,
                            family=family,
