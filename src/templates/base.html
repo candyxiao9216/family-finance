@@ -30,8 +30,6 @@
                         <div class="nav-dropdown-menu">
                             <a href="{{ url_for('baby_fund.baby_fund_list') }}" class="nav-dropdown-item">宝宝基金</a>
                             <a href="{{ url_for('category.category_list') }}" class="nav-dropdown-item">分类管理</a>
-                            <a href="{{ url_for('template.template_list') }}" class="nav-dropdown-item">快捷模板</a>
-                            <a href="{{ url_for('recurring.recurring_list') }}" class="nav-dropdown-item">定期交易</a>
                             <a href="{{ url_for('upload.upload_page') }}" class="nav-dropdown-item">批量导入</a>
                             <a href="{{ url_for('reports.reports_page', view=current_view) }}" class="nav-dropdown-item">报表</a>
                             {% if family %}
@@ -80,8 +78,6 @@
                 <div class="side-menu-divider"></div>
                 <a href="{{ url_for('baby_fund.baby_fund_list') }}" class="side-menu-item">👶 宝宝基金</a>
                 <a href="{{ url_for('category.category_list') }}" class="side-menu-item">🏷️ 分类管理</a>
-                <a href="{{ url_for('template.template_list') }}" class="side-menu-item">⚡ 快捷模板</a>
-                <a href="{{ url_for('recurring.recurring_list') }}" class="side-menu-item">🔄 定期交易</a>
                 <a href="{{ url_for('upload.upload_page') }}" class="side-menu-item">📥 批量导入</a>
                 <a href="{{ url_for('reports.reports_page', view=current_view) }}" class="side-menu-item">📊 报表</a>
                 {% if family %}

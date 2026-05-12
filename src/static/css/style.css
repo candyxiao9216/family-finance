@@ -1030,6 +1030,8 @@ body::before {
 
 .chart-container-pie {
     height: 280px;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .chart-row {
@@ -1048,6 +1050,7 @@ body::before {
     grid-template-columns: 1fr 1fr 1fr;
     gap: var(--space-md);
     margin-bottom: var(--space-lg);
+    overflow: hidden;
 }
 
 .family-contrib-table {
@@ -1091,12 +1094,15 @@ body::before {
 }
 
 /* 响应式：移动端饼图堆叠 */
-@media (max-width: 640px) {
+@media (max-width: 768px) {
     .chart-row {
         grid-template-columns: 1fr;
     }
     .chart-row-3 {
         grid-template-columns: 1fr;
+    }
+    .chart-container-pie {
+        height: 220px;
     }
 }
 
