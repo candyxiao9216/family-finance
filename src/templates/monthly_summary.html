@@ -205,11 +205,22 @@
 
 {% block content %}
 
+<!-- 视图切换 -->
+{% if family %}
+<div class="view-switcher" style="margin-bottom:12px;">
+    <a href="{{ url_for('reports.monthly_summary', year=year, month=month, view='personal') }}" class="view-btn {{ 'active' if current_view == 'personal' }}">我的</a>
+    <a href="{{ url_for('reports.monthly_summary', year=year, month=month, view='family') }}" class="view-btn {{ 'active' if current_view == 'family' }}">家庭</a>
+</div>
+{% endif %}
+
 <!-- 月份导航 -->
 <div class="summary-nav">
     <a href="{{ url_for('reports.monthly_summary', year=prev_year, month=prev_month_num, view=current_view) }}">← {{ prev_month_num }}月</a>
     <span class="current-month">{{ year }}年{{ month }}月</span>
     <a href="{{ url_for('reports.monthly_summary', year=next_year, month=next_month_num, view=current_view) }}">{{ next_month_num }}月 →</a>
+</div>
+<div style="text-align:right;margin-bottom:12px;">
+    <button onclick="refreshAiSummary()" id="btn-refresh-ai" style="background:none;border:1px solid var(--color-border,#E8E4E0);border-radius:6px;padding:6px 12px;font-size:12px;color:var(--color-text-muted,#9A9A9A);cursor:pointer;">🔄 刷新 AI 总结</button>
 </div>
 
 <!-- 1. 收支概况 -->
@@ -258,10 +269,8 @@
             </div>
         </div>
     </div>
-    <div class="ai-summary">{{ asset_ai_summary }}</div>
+    <div class="ai-summary">🤖 {{ asset_ai_summary }}</div>
 </div>
-
-<!-- 3. 转账记录 -->
 <div class="summary-section">
     <h3>🔄 转账记录</h3>
     <div class="summary-stats">
@@ -313,10 +322,8 @@
         {% endfor %}
     </div>
     {% endif %}
-    <div class="ai-summary">{{ baby_ai_summary }}</div>
+    <div class="ai-summary">🤖 {{ baby_ai_summary }}</div>
 </div>
-
-<!-- 5. 储蓄目标 -->
 <div class="summary-section">
     <h3>🎯 储蓄目标</h3>
     <div class="summary-stats">
@@ -377,5 +384,29 @@
 <div class="summary-section" style="padding:16px 20px;">
     <button class="share-btn" onclick="alert('分享功能即将上线，敬请期待！')">📱 分享本月总结</button>
 </div>
+
+<script>
+function refreshAiSummary() {
+    var btn = document.getElementById('btn-refresh-ai');
+    btn.textContent = '⏳ 刷新中...';
+    btn.disabled = true;
+    fetch('/reports/api/refresh-summary?year={{ year }}&month={{ month }}', { method: 'POST' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.ok) {
+                location.reload();
+            } else {
+                alert(data.error || '刷新失败');
+                btn.textContent = '🔄 刷新 AI 总结';
+                btn.disabled = false;
+            }
+        })
+        .catch(function() {
+            alert('网络错误，请重试');
+            btn.textContent = '🔄 刷新 AI 总结';
+            btn.disabled = false;
+        });
+}
+</script>
 
 {% endblock %}

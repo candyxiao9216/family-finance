@@ -11,7 +11,8 @@ from flask import Blueprint, jsonify, render_template, request, session
 from sqlalchemy import func, extract
 
 from models import (db, Transaction, Category, User, Account, AccountType,
-                    AccountBalance, BabyFund, SavingsPlan, SavingsRecord, MonthlyTodo)
+                    AccountBalance, BabyFund, SavingsPlan, SavingsRecord, MonthlyTodo,
+                    MonthlySummaryCache)
 from routes.account import _get_exchange_rates
 
 reports_bp = Blueprint('reports', __name__, url_prefix='/reports')
@@ -370,6 +371,79 @@ def api_family_contribution():
     })
 
 
+def _get_ai_summary(user_id, year, month, section, data):
+    """获取 AI 月度总结文案（带缓存）。
+    先查缓存，有就返回；没有就调 AI 生成，存缓存后返回。
+    AI 不可用时返回降级文案。
+    """
+    # 1. 查缓存
+    cached = MonthlySummaryCache.query.filter_by(
+        user_id=user_id, year=year, month=month, section=section
+    ).first()
+    if cached:
+        return cached.content
+
+    # 2. 构造 prompt
+    if section.startswith('asset'):
+        if not data.get('income_details'):
+            return "本月暂无收入记录。"
+        income_lines = '、'.join([f"{d['desc']}(¥{d['amount']:,.0f})" for d in data['income_details']])
+        prompt = (
+            f"帮我用1-2句话总结本月资产变动，要求：纯数据驱动，量化说明变动来源，不要感性描述，不要给建议，不要用markdown。\n"
+            f"数据：收入 ¥{data['income_total']:,.0f}，支出 ¥{data['expense_total']:,.0f}，"
+            f"资产从 ¥{data['asset_start']:,.0f} → ¥{data['asset_end']:,.0f}（{'+'if data['asset_growth']>=0 else ''}{data['asset_growth']:,.0f}）。"
+            f"主要收入：{income_lines}。"
+            f"\n示例风格：'本月资产增长¥X，主要来自工资¥A和公积金¥B，支出¥C以信用卡还款为主。'"
+        )
+    elif section.startswith('baby_fund'):
+        if data['month_count'] == 0:
+            return "本月暂无新增宝宝基金。"
+        details_lines = '、'.join([f"{d['giver']}{('(' + d['event'] + ')') if d['event'] else ''} ¥{d['amount']:,.0f}" for d in data['details']])
+        prompt = (
+            f"帮我用1句话总结本月宝宝基金变动，纯数据，不要感性描述，不要用markdown。\n"
+            f"数据：本月新增 {data['month_count']} 笔共 ¥{data['month_amount']:,.0f}，"
+            f"明细：{details_lines}。累计 ¥{data['cumulative_total']:,.0f}。"
+            f"\n示例风格：'本月新增2笔共¥6,000（爷爷¥3,000、奶奶¥3,000），累计¥50,000。'"
+        )
+    else:
+        return ""
+
+    # 3. 调用 AI
+    from services.ai_advisor import AiAdvisor
+    advisor = AiAdvisor()
+    if not advisor.available:
+        # AI 不可用，降级为模板文案
+        if section.startswith('asset'):
+            income_lines = '、'.join([f"{d['desc']}(¥{d['amount']:,.0f})" for d in data['income_details']])
+            return f"本月资产变动主要来源于{income_lines}。"
+        elif section.startswith('baby_fund'):
+            details_lines = '、'.join([f"{d['giver']}{('(' + d['event'] + ')') if d['event'] else ''} ¥{d['amount']:,.0f}" for d in data['details']])
+            return f"本月宝宝基金新增：{details_lines}。"
+        return ""
+
+    result = advisor._call_api(prompt)
+    if not result or result.startswith('❌') or result.startswith('⏳'):
+        # 调用失败，返回降级文案，不缓存
+        if section.startswith('asset'):
+            income_lines = '、'.join([f"{d['desc']}(¥{d['amount']:,.0f})" for d in data['income_details']])
+            return f"本月资产变动主要来源于{income_lines}。"
+        elif section.startswith('baby_fund'):
+            details_lines = '、'.join([f"{d['giver']}{('(' + d['event'] + ')') if d['event'] else ''} ¥{d['amount']:,.0f}" for d in data['details']])
+            return f"本月宝宝基金新增：{details_lines}。"
+        return ""
+
+    # 4. 存缓存
+    from datetime import datetime
+    cache = MonthlySummaryCache(
+        user_id=user_id, year=year, month=month,
+        section=section, content=result, created_at=datetime.utcnow()
+    )
+    db.session.add(cache)
+    db.session.commit()
+
+    return result
+
+
 @reports_bp.route('/monthly-summary')
 def monthly_summary():
     """月度总结报告页面
@@ -472,14 +546,15 @@ def monthly_summary():
         Transaction.type == 'income'
     ).order_by(Transaction.amount.desc()).all()
 
-    asset_summary_parts = []
-    for txn in income_transactions[:5]:
-        desc = txn.description or '未备注收入'
-        asset_summary_parts.append(f"{desc}(¥{float(txn.amount):,.0f})")
-    if asset_summary_parts:
-        asset_ai_summary = f"本月资产变动主要来源于{'、'.join(asset_summary_parts)}。"
-    else:
-        asset_ai_summary = "本月暂无收入记录。"
+    # 资产变动 AI 总结（带缓存，按视图区分）
+    asset_ai_summary = _get_ai_summary(user_id, year, month, f'asset_{current_view}', {
+        'income_total': income_total,
+        'expense_total': expense_total,
+        'asset_start': asset_start,
+        'asset_end': asset_end,
+        'asset_growth': asset_growth,
+        'income_details': [{'desc': t.description or '未备注', 'amount': float(t.amount)} for t in income_transactions[:5]],
+    })
 
     # ── 3. 转账记录 ──
     transfers = Transaction.query.filter(
@@ -514,17 +589,13 @@ def monthly_summary():
     ).scalar()
     baby_cumulative_total = float(baby_cumulative) if baby_cumulative else 0.0
 
-    # 宝宝基金 AI 摘要
-    baby_summary_parts = []
-    for bf in baby_funds_this_month[:5]:
-        desc = f"{bf.giver_name}"
-        if bf.event_type:
-            desc += f"({bf.event_type})"
-        baby_summary_parts.append(f"{desc} ¥{float(bf.amount):,.0f}")
-    if baby_summary_parts:
-        baby_ai_summary = f"本月宝宝基金新增：{'、'.join(baby_summary_parts)}。"
-    else:
-        baby_ai_summary = "本月暂无新增宝宝基金。"
+    # 宝宝基金 AI 摘要（带缓存）
+    baby_ai_summary = _get_ai_summary(user_id, year, month, f'baby_fund_{current_view}', {
+        'month_count': baby_month_count,
+        'month_amount': baby_month_amount,
+        'cumulative_total': baby_cumulative_total,
+        'details': [{'giver': bf.giver_name, 'event': bf.event_type or '', 'amount': float(bf.amount)} for bf in baby_funds_this_month[:5]],
+    })
 
     # ── 5. 储蓄目标 ──
     annual_plan = SavingsPlan.query.filter_by(
@@ -604,3 +675,22 @@ def monthly_summary():
                            family=family,
                            username=session.get('nickname', session.get('username', '用户')),
                            page_title=f'{year}年{month}月总结')
+
+
+@reports_bp.route('/api/refresh-summary', methods=['POST'])
+def refresh_summary():
+    """手动刷新月度总结 AI 文案（清除缓存，下次访问重新生成）"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': '未登录'}), 401
+
+    year = request.args.get('year', date.today().year, type=int)
+    month = request.args.get('month', date.today().month, type=int)
+
+    # 删除该月的缓存
+    MonthlySummaryCache.query.filter_by(
+        user_id=user_id, year=year, month=month
+    ).delete()
+    db.session.commit()
+
+    return jsonify({'ok': True, 'message': f'{year}年{month}月 AI 总结已刷新，请重新打开页面查看。'})

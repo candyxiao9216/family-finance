@@ -724,3 +724,18 @@ class AiAdviceHistory(db.Model):
     generated_at = db.Column(db.DateTime, nullable=False)
 
     owner = db.relationship('User', foreign_keys=[user_id])
+
+
+class MonthlySummaryCache(db.Model):
+    """月度总结 AI 文案缓存（按月存储，避免重复调用）"""
+    __tablename__ = 'monthly_summary_cache'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    year = db.Column(db.Integer, nullable=False)
+    month = db.Column(db.Integer, nullable=False)
+    section = db.Column(db.String(30), nullable=False)  # 'asset' / 'baby_fund' / 'overall'
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    owner = db.relationship('User', foreign_keys=[user_id])
