@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/版本-v2.1.0-blue" alt="version">
+  <img src="https://img.shields.io/badge/版本-v2.1.1-blue" alt="version">
   <img src="https://img.shields.io/badge/Python-3.8+-green" alt="python">
   <img src="https://img.shields.io/badge/Flask-3.0-lightgrey" alt="flask">
   <img src="https://img.shields.io/badge/测试覆盖率-81%25-brightgreen" alt="coverage">
@@ -156,6 +156,11 @@ FLASK_PORT=5001                      # 服务端口
 
 ## 📋 版本历史
 
+## v2.1.1 (2026-05-12)
+
+### 修复
+- 修复分类页测试断言与实际预设分类不匹配
+
 ## v2.1.0 (2026-05-12)
 
 ### 新增
@@ -166,6 +171,7 @@ FLASK_PORT=5001                      # 服务端口
 
 ### 优化
 - 补充 v2 新功能测试 — 待办自动检测/最近常用/AI缓存/仪表盘优化
+
 
 ## v2.0.17 (2026-05-12)
 
@@ -186,12 +192,6 @@ FLASK_PORT=5001                      # 服务端口
 
 ### 新增
 - 新增账户间转账功能 + 对账汇总栏 + pytest数据库保护
-
-
-## v2.0.14 (2026-05-10)
-
-### 新增
-- 对账助手 + 交易余额逻辑修正 + 编辑页修复
 
 
 > 完整变更日志见 [CHANGELOG.md](./CHANGELOG.md)
