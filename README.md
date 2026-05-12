@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/版本-v2.0.17-blue" alt="version">
+  <img src="https://img.shields.io/badge/版本-v2.1.0-blue" alt="version">
   <img src="https://img.shields.io/badge/Python-3.8+-green" alt="python">
   <img src="https://img.shields.io/badge/Flask-3.0-lightgrey" alt="flask">
   <img src="https://img.shields.io/badge/测试覆盖率-81%25-brightgreen" alt="coverage">
@@ -156,10 +156,22 @@ FLASK_PORT=5001                      # 服务端口
 
 ## 📋 版本历史
 
+## v2.1.0 (2026-05-12)
+
+### 新增
+- AI 文案接入智谱 GLM + 按月缓存 + 视图区分
+- 记账页新增「最近常用」快捷填充 + 清理导航
+- 首页仪表盘优化 — 合并顶部栏、精简资产卡片、新增快捷操作
+- 数据导出+月度总结报告+家庭贡献视图+月度待办自动检测
+
+### 优化
+- 补充 v2 新功能测试 — 待办自动检测/最近常用/AI缓存/仪表盘优化
+
 ## v2.0.17 (2026-05-12)
 
 ### 新增
 - 页面重做为表格+饼图，统计栏增强
+
 
 ## v2.0.16 (2026-05-11)
 
@@ -180,14 +192,6 @@ FLASK_PORT=5001                      # 服务端口
 
 ### 新增
 - 对账助手 + 交易余额逻辑修正 + 编辑页修复
-
-
-## v2.0.13 (2026-05-09)
-
-### 修复
-- 支出默认分类改为农行/民生/广发信用卡（删除餐饮/交通）
-- 复制邀请码改为静默复制完整文案（不弹窗）
-- 账户类型下拉框按拼音排序 + 部署自动 pip install
 
 
 > 完整变更日志见 [CHANGELOG.md](./CHANGELOG.md)
