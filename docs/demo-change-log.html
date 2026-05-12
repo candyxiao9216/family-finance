@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>资产总览 - 变更记录 Demo</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #faf8f5; padding: 20px; }
+
+.container { max-width: 960px; margin: 0 auto; }
+
+.title { text-align: center; margin-bottom: 24px; }
+.title h1 { color: #8B7355; font-size: 20px; }
+.title p { color: #999; font-size: 13px; margin-top: 6px; }
+
+.card { background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.card-title { font-size: 15px; font-weight: 600; color: #8B7355; margin-bottom: 16px; }
+
+.desc { color: #666; font-size: 13px; margin-bottom: 20px; padding: 12px; background: #f9f6f2; border-radius: 8px; line-height: 1.8; }
+
+.tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+.tag-new { background: #e8f4fd; color: #1a6fa8; }
+.tag-changed { background: #fff3e0; color: #e65100; }
+
+/* 表格 */
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; padding: 10px 8px; color: #999; font-size: 12px; border-bottom: 2px solid #f0ebe5; white-space: nowrap; }
+td { padding: 12px 8px; border-bottom: 1px solid #f0ece7; font-size: 13px; }
+
+.amount { font-family: 'Outfit', monospace; font-weight: 500; }
+.positive { color: #4CAF50; }
+.negative { color: #f44336; }
+
+/* 来源标签 */
+.source-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+.source-snapshot { background: #fdf3e7; color: #8B6914; }
+.source-transfer { background: #e8f4fd; color: #1a6fa8; }
+
+/* 类型标签 */
+.type-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+.type-savings { background: #fdf3e7; color: #8B6914; }
+.type-fund { background: #e8f4fd; color: #1a6fa8; }
+.type-stock { background: #eef0f4; color: #5a6678; }
+
+.meta { color: #999; font-size: 12px; }
+
+/* 对比 */
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+.compare-card { padding: 16px; border-radius: 8px; border: 1px solid #f0ece7; }
+.compare-label { font-size: 12px; color: #999; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="title">
+        <h1>📊 资产总览 — 变更记录 Demo</h1>
+        <p>"快照记录"升级为"变更记录"，转账自动记录余额变化</p>
+    </div>
+
+    <!-- 改动说明 -->
+    <div class="card">
+        <h3 class="card-title">改动说明</h3>
+        <div class="desc">
+            <strong>1. 转账立即更新余额</strong> <span class="tag tag-new">新增</span><br>
+            转账提交后，源账户 current_balance 自动减少，目标账户自动增加<br><br>
+            <strong>2. "快照记录"→"变更记录"</strong> <span class="tag tag-changed">改进</span><br>
+            表格标题改名，新增"来源"列，区分 📸快照 和 🔄转账<br><br>
+            <strong>3. 转账自动插入变更记录</strong> <span class="tag tag-new">新增</span><br>
+            转账时自动生成两条变更记录（一出一入），和快照记录共存
+        </div>
+    </div>
+
+    <!-- 前后对比 -->
+    <div class="card">
+        <h3 class="card-title">前后对比</h3>
+        <div class="compare">
+            <div class="compare-card">
+                <div class="compare-label">改前：快照记录</div>
+                <table>
+                    <tr><th>月份</th><th>账户</th><th>类型</th><th>余额</th><th>月度变化</th><th>操作人</th><th>时间</th></tr>
+                    <tr>
+                        <td>2026年05月</td>
+                        <td>招行储蓄</td>
+                        <td><span class="type-badge type-savings">银行</span></td>
+                        <td class="amount">¥600,000</td>
+                        <td class="amount positive">+¥35,000</td>
+                        <td>小美</td>
+                        <td class="meta">05-01 10:30</td>
+                    </tr>
+                    <tr>
+                        <td>2026年05月</td>
+                        <td>微众理财</td>
+                        <td><span class="type-badge type-fund">理财</span></td>
+                        <td class="amount">¥900,000</td>
+                        <td class="amount positive">+¥50,000</td>
+                        <td>小美</td>
+                        <td class="meta">05-01 10:30</td>
+                    </tr>
+                </table>
+                <p style="margin-top:12px;font-size:12px;color:#999;">只有手动录入的快照，看不到转账导致的变化</p>
+            </div>
+            <div class="compare-card" style="border-color:#3498db;">
+                <div class="compare-label" style="color:#1a6fa8;">改后：变更记录 ✨</div>
+                <table>
+                    <tr><th>时间</th><th>账户</th><th>类型</th><th>变更金额</th><th>变更后余额</th><th>来源</th><th>操作人</th></tr>
+                    <tr style="background:#f8fcff;">
+                        <td class="meta">05-10 14:32</td>
+                        <td>微众理财</td>
+                        <td><span class="type-badge type-fund">理财</span></td>
+                        <td class="amount positive">+¥50,000</td>
+                        <td class="amount">¥950,000</td>
+                        <td><span class="source-badge source-transfer">🔄 转账</span></td>
+                        <td>小美</td>
+                    </tr>
+                    <tr style="background:#f8fcff;">
+                        <td class="meta">05-10 14:32</td>
+                        <td>招行储蓄</td>
+                        <td><span class="type-badge type-savings">银行</span></td>
+                        <td class="amount negative">-¥50,000</td>
+                        <td class="amount">¥550,000</td>
+                        <td><span class="source-badge source-transfer">🔄 转账</span></td>
+                        <td>小美</td>
+                    </tr>
+                    <tr>
+                        <td class="meta">05-01 10:30</td>
+                        <td>微众理财</td>
+                        <td><span class="type-badge type-fund">理财</span></td>
+                        <td class="amount positive">+¥50,000</td>
+                        <td class="amount">¥900,000</td>
+                        <td><span class="source-badge source-snapshot">📸 快照</span></td>
+                        <td>小美</td>
+                    </tr>
+                    <tr>
+                        <td class="meta">05-01 10:30</td>
+                        <td>招行储蓄</td>
+                        <td><span class="type-badge type-savings">银行</span></td>
+                        <td class="amount positive">+¥35,000</td>
+                        <td class="amount">¥600,000</td>
+                        <td><span class="source-badge source-snapshot">📸 快照</span></td>
+                        <td>小美</td>
+                    </tr>
+                </table>
+                <p style="margin-top:12px;font-size:12px;color:#1a6fa8;">转账和快照都有记录，来源一目了然</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 完整变更记录示例 -->
+    <div class="card">
+        <h3 class="card-title">变更记录（完整示例）</h3>
+        <table>
+            <tr>
+                <th>时间</th>
+                <th>账户</th>
+                <th>类型</th>
+                <th>变更金额</th>
+                <th>变更后余额</th>
+                <th>来源</th>
+                <th>操作人</th>
+            </tr>
+            <tr style="background:#f8fcff;">
+                <td class="meta">05-10 14:32</td>
+                <td>微众理财</td>
+                <td><span class="type-badge type-fund">理财</span></td>
+                <td class="amount positive">+¥50,000</td>
+                <td class="amount">¥950,000</td>
+                <td><span class="source-badge source-transfer">🔄 转账</span></td>
+                <td>小美</td>
+            </tr>
+            <tr style="background:#f8fcff;">
+                <td class="meta">05-10 14:32</td>
+                <td>招行储蓄</td>
+                <td><span class="type-badge type-savings">银行</span></td>
+                <td class="amount negative">-¥50,000</td>
+                <td class="amount">¥550,000</td>
+                <td><span class="source-badge source-transfer">🔄 转账</span></td>
+                <td>小美</td>
+            </tr>
+            <tr>
+                <td class="meta">05-08 20:15</td>
+                <td>招行基金</td>
+                <td><span class="type-badge type-fund">基金</span></td>
+                <td class="amount negative">-¥10,000</td>
+                <td class="amount">¥38,658</td>
+                <td><span class="source-badge source-snapshot">📸 快照</span></td>
+                <td>小美</td>
+            </tr>
+            <tr>
+                <td class="meta">05-01 10:30</td>
+                <td>微众理财</td>
+                <td><span class="type-badge type-fund">理财</span></td>
+                <td class="amount positive">+¥50,000</td>
+                <td class="amount">¥900,000</td>
+                <td><span class="source-badge source-snapshot">📸 快照</span></td>
+                <td>小美</td>
+            </tr>
+            <tr>
+                <td class="meta">05-01 10:30</td>
+                <td>招行储蓄</td>
+                <td><span class="type-badge type-savings">银行</span></td>
+                <td class="amount positive">+¥35,000</td>
+                <td class="amount">¥600,000</td>
+                <td><span class="source-badge source-snapshot">📸 快照</span></td>
+                <td>小美</td>
+            </tr>
+            <tr>
+                <td class="meta">05-01 10:30</td>
+                <td>富途股票</td>
+                <td><span class="type-badge type-stock">股票</span></td>
+                <td class="amount negative">-¥120,000</td>
+                <td class="amount">HKD 2,833,165</td>
+                <td><span class="source-badge source-snapshot">📸 快照</span></td>
+                <td>小美</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- 对账助手体现 -->
+    <div class="card">
+        <h3 class="card-title">对账助手中的体现</h3>
+        <div class="desc">
+            场景：5月1日快照后，5月10日从招行储蓄转了 ¥50,000 到微众理财。月底打开批量快照弹窗：
+        </div>
+        <table>
+            <tr>
+                <th>账户</th>
+                <th>上月余额</th>
+                <th>理论变化</th>
+                <th>预计余额</th>
+                <th>实际余额</th>
+                <th>差额</th>
+            </tr>
+            <tr>
+                <td style="font-weight:500;">招行储蓄</td>
+                <td class="amount">¥600,000</td>
+                <td class="amount negative">-50,000</td>
+                <td class="amount" style="font-weight:600;">¥550,000</td>
+                <td><input type="text" value="550,000" style="padding:6px 8px;border:1px solid #e0dcd7;border-radius:6px;width:100px;font-size:13px;text-align:center;"></td>
+                <td><span class="source-badge source-snapshot" style="background:#e0f7e6;color:#27ae60;">¥0 ✓</span></td>
+            </tr>
+            <tr>
+                <td style="font-weight:500;">微众理财</td>
+                <td class="amount">¥900,000</td>
+                <td class="amount positive">+50,000</td>
+                <td class="amount" style="font-weight:600;">¥950,000</td>
+                <td><input type="text" value="950,000" style="padding:6px 8px;border:1px solid #e0dcd7;border-radius:6px;width:100px;font-size:13px;text-align:center;"></td>
+                <td><span class="source-badge source-snapshot" style="background:#e0f7e6;color:#27ae60;">¥0 ✓</span></td>
+            </tr>
+        </table>
+        <div style="margin-top:12px;padding:12px;background:#f0faf0;border-radius:8px;font-size:13px;color:#27ae60;">
+            ✅ 转账金额精确，理论变化已包含转账，预计余额 = 实际余额，差额为 0。无需额外处理。
+        </div>
+    </div>
+
+    <!-- 数据模型变更 -->
+    <div class="card">
+        <h3 class="card-title">技术变更</h3>
+        <div class="desc" style="margin-bottom:0;">
+            <strong>AccountBalance 模型新增字段：</strong><br>
+            • <code>source</code> — VARCHAR(20)，默认 <code>'snapshot'</code>，转账时设为 <code>'transfer'</code><br><br>
+            <strong>转账逻辑变更：</strong><br>
+            • 提交转账时，除了生成 Transaction 记录外，同时：<br>
+            &nbsp;&nbsp;① 更新源账户 current_balance -= 金额<br>
+            &nbsp;&nbsp;② 更新目标账户 current_balance += 金额<br>
+            &nbsp;&nbsp;③ 插入源账户 AccountBalance（source='transfer'，变更金额为负）<br>
+            &nbsp;&nbsp;④ 插入目标账户 AccountBalance（source='transfer'，变更金额为正）<br><br>
+            <strong>页面变更：</strong><br>
+            • 表格标题：快照记录 → 变更记录<br>
+            • 新增"来源"列：📸 快照 / 🔄 转账<br>
+            • 转账行浅蓝底色区分<br>
+            • 按时间倒序排列（最新的在上面）
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

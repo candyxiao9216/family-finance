@@ -55,13 +55,31 @@ def baby_fund_list():
     existing_set = {t[0] for t in existing_types}
     all_types = list(set(BabyFund.DEFAULT_EVENT_TYPES) | existing_set)
     event_types = sorted(all_types, key=lambda t: lazy_pinyin(t))
+    event_type_count = len(existing_set)
+
+    # 饼图数据：按人员分布
+    person_data = {}
+    for f in funds:
+        person_data[f.giver_name] = person_data.get(f.giver_name, 0) + float(f.amount)
+    # 按金额降序
+    person_chart = sorted(person_data.items(), key=lambda x: -x[1])
+
+    # 饼图数据：按事件类型分布
+    event_data = {}
+    for f in funds:
+        key = f.event_type or '未分类'
+        event_data[key] = event_data.get(key, 0) + float(f.amount)
+    event_chart = sorted(event_data.items(), key=lambda x: -x[1])
 
     return render_template('baby_fund.html',
                            funds=funds,
                            total_amount=float(total_amount),
                            fund_count=len(funds),
+                           event_type_count=event_type_count,
                            accounts=accounts,
                            event_types=event_types,
+                           person_chart=person_chart,
+                           event_chart=event_chart,
                            current_view=current_view,
                            family=family,
                            username=session.get('nickname', session.get('username', '用户')),

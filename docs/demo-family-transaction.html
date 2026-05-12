@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>月度收支 - 家庭视图 Demo</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #faf8f5; padding: 20px; }
+
+.container { max-width: 700px; margin: 0 auto; }
+
+.title { text-align: center; margin-bottom: 24px; }
+.title h1 { color: #8B7355; font-size: 20px; }
+.title p { color: #999; font-size: 13px; margin-top: 6px; }
+
+.card { background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.card-title { font-size: 15px; font-weight: 600; color: #8B7355; margin-bottom: 16px; }
+
+/* 视图切换 */
+.view-tabs { display: flex; gap: 0; margin-bottom: 20px; background: #f0ece7; border-radius: 8px; padding: 3px; }
+.view-tab { flex: 1; padding: 8px 16px; text-align: center; font-size: 13px; font-weight: 500; border-radius: 6px; cursor: pointer; color: #999; transition: all 0.2s; }
+.view-tab.active { background: #fff; color: #8B7355; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+/* 类型选择器 */
+.type-selector { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; margin-bottom: 20px; background: #f8f5f1; border-radius: 8px; padding: 4px; }
+.type-option { text-align: center; padding: 10px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; color: #999; transition: all 0.2s; }
+.type-option.active-income { background: #fdf3e7; color: #8B6914; }
+.type-option.active-expense { background: #f0f0f5; color: #4A5568; }
+.type-option.active-transfer { background: #e8f4fd; color: #1a6fa8; }
+.type-option::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ddd; margin-right: 6px; vertical-align: middle; }
+.type-option.active-income::before { background: #D4A574; }
+.type-option.active-expense::before { background: #7C8BA1; }
+.type-option.active-transfer::before { background: #3498db; }
+
+/* 表单 */
+.form-group { margin-bottom: 16px; }
+.form-label { display: block; font-size: 13px; color: #666; margin-bottom: 6px; font-weight: 500; }
+.form-input, .form-select { width: 100%; padding: 10px 14px; border: 1px solid #e0dcd7; border-radius: 8px; font-size: 14px; background: #fff; }
+.form-input:focus, .form-select:focus { outline: none; border-color: #8B7355; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.btn-submit { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #e8a87c 0%, #d4956a 100%); color: #fff; }
+
+/* 账户选项分组 */
+.acct-group-label { font-size: 11px; color: #999; padding: 4px 14px; background: #f8f5f1; }
+
+.desc { color: #666; font-size: 13px; margin-bottom: 20px; padding: 12px; background: #f9f6f2; border-radius: 8px; line-height: 1.8; }
+
+.tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+.tag-new { background: #e8f4fd; color: #1a6fa8; }
+.tag-changed { background: #fff3e0; color: #e65100; }
+
+.toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #4a9; color: #fff; padding: 10px 24px; border-radius: 8px; font-size: 14px; display: none; z-index: 999; }
+.toast.show { display: block; animation: fadeIn 0.3s; }
+@keyframes fadeIn { from { opacity: 0; transform: translateX(-50%) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<div class="container">
+    <div class="title">
+        <h1>📝 月度收支 — 家庭视图改进 Demo</h1>
+        <p>演示转账跨成员账户、家庭视图账户选择、分类共享</p>
+    </div>
+
+    <!-- 改动说明 -->
+    <div class="card">
+        <h3 class="card-title">改动说明</h3>
+        <div class="desc">
+            <strong>改动 1：转账支持跨成员</strong> <span class="tag tag-new">新增</span><br>
+            转账的"从/到"下拉按家庭成员分组，可以从自己账户转到家人账户<br><br>
+            <strong>改动 2：家庭视图账户范围</strong> <span class="tag tag-changed">改进</span><br>
+            "家庭"视图下，收入/支出的"账户"下拉也显示全家人的账户
+        </div>
+    </div>
+
+    <!-- 视图切换 -->
+    <div class="view-tabs">
+        <div class="view-tab" onclick="switchView('personal')">我的</div>
+        <div class="view-tab active" onclick="switchView('family')">家庭</div>
+    </div>
+
+    <!-- 添加交易表单 -->
+    <div class="card">
+        <h3 class="card-title">添加交易</h3>
+
+        <!-- 类型选择 -->
+        <div class="type-selector">
+            <div class="type-option" onclick="switchType('income', this)">💰 收入</div>
+            <div class="type-option" onclick="switchType('expense', this)">📤 支出</div>
+            <div class="type-option active-transfer" onclick="switchType('transfer', this)">🔄 转账</div>
+        </div>
+
+        <!-- 转账表单（当前展示） -->
+        <div id="transfer-form">
+            <div class="form-group">
+                <label class="form-label">金额</label>
+                <input type="number" class="form-input" placeholder="0.00" value="50000">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">从（转出账户）</label>
+                    <select class="form-select">
+                        <option value="">选择转出账户</option>
+                        <optgroup label="── 小美的账户 ──">
+                            <option value="1" selected>招行储蓄</option>
+                            <option value="2">微众理财</option>
+                            <option value="3">招行基金</option>
+                        </optgroup>
+                        <optgroup label="── 小帅的账户 ──">
+                            <option value="4">招行储蓄</option>
+                            <option value="5">富途股票</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">到（转入账户）</label>
+                    <select class="form-select">
+                        <option value="">选择转入账户</option>
+                        <optgroup label="── 小美的账户 ──">
+                            <option value="1">招行储蓄</option>
+                            <option value="2">微众理财</option>
+                            <option value="3">招行基金</option>
+                        </optgroup>
+                        <optgroup label="── 小帅的账户 ──">
+                            <option value="4" selected>招行储蓄</option>
+                            <option value="5">富途股票</option>
+                        </optgroup>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">日期</label>
+                    <input type="date" class="form-input" value="2026-05-10">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">备注（选填）</label>
+                    <input type="text" class="form-input" placeholder="添加备注" value="给小帅转生活费">
+                </div>
+            </div>
+
+            <button class="btn-submit" onclick="showToast('✅ 转账已记录：小美招行储蓄 → 小帅招行储蓄 ¥50,000')">添加记录</button>
+        </div>
+
+        <!-- 收入/支出表单（切换时显示） -->
+        <div id="normal-form" style="display:none;">
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">金额</label>
+                    <input type="number" class="form-input" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">分类</label>
+                    <select class="form-select">
+                        <option value="">选择分类</option>
+                        <optgroup label="收入" id="income-cats">
+                            <option>工资</option>
+                            <option>奖金</option>
+                        </optgroup>
+                        <optgroup label="支出" id="expense-cats" style="display:none;">
+                            <option>农行信用卡</option>
+                            <option>民生信用卡</option>
+                            <option>广发信用卡</option>
+                        </optgroup>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">账户 <span class="tag tag-changed">全家</span></label>
+                <select class="form-select">
+                    <option value="">不关联账户</option>
+                    <optgroup label="── 小美的账户 ──">
+                        <option>招行储蓄</option>
+                        <option>微众理财</option>
+                        <option>招行基金</option>
+                    </optgroup>
+                    <optgroup label="── 小帅的账户 ──">
+                        <option>招行储蓄</option>
+                        <option>富途股票</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">日期</label>
+                    <input type="date" class="form-input" value="2026-05-10">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">备注（选填）</label>
+                    <input type="text" class="form-input" placeholder="添加备注">
+                </div>
+            </div>
+
+            <button class="btn-submit" onclick="showToast('✅ 交易已添加')">添加记录</button>
+        </div>
+    </div>
+
+    <!-- 对比表 -->
+    <div class="card">
+        <h3 class="card-title">前后对比</h3>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <tr style="background:#f8f5f1;">
+                <th style="padding:10px;text-align:left;">场景</th>
+                <th style="padding:10px;text-align:left;">改前</th>
+                <th style="padding:10px;text-align:left;">改后</th>
+            </tr>
+            <tr style="border-bottom:1px solid #f0ece7;">
+                <td style="padding:10px;">转账账户范围</td>
+                <td style="padding:10px;color:#999;">只有自己的账户</td>
+                <td style="padding:10px;color:#27ae60;">全家账户（按成员分组）</td>
+            </tr>
+            <tr style="border-bottom:1px solid #f0ece7;">
+                <td style="padding:10px;">家庭视图 - 收入/支出账户</td>
+                <td style="padding:10px;color:#999;">只有自己的账户</td>
+                <td style="padding:10px;color:#27ae60;">全家账户（按成员分组）</td>
+            </tr>
+            <tr style="border-bottom:1px solid #f0ece7;">
+                <td style="padding:10px;">我的视图 - 账户</td>
+                <td style="padding:10px;">只有自己的</td>
+                <td style="padding:10px;">不变（只有自己的）</td>
+            </tr>
+            <tr>
+                <td style="padding:10px;">分类可见范围</td>
+                <td style="padding:10px;">系统预设 + 自己创建</td>
+                <td style="padding:10px;">不变</td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<script>
+function showToast(msg) {
+    var toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(function() { toast.classList.remove('show'); }, 3000);
+}
+
+function switchType(type, el) {
+    // 清除所有激活状态
+    document.querySelectorAll('.type-option').forEach(function(opt) {
+        opt.className = 'type-option';
+    });
+
+    // 设置当前激活
+    if (type === 'income') el.className = 'type-option active-income';
+    else if (type === 'expense') el.className = 'type-option active-expense';
+    else el.className = 'type-option active-transfer';
+
+    // 切换表单
+    if (type === 'transfer') {
+        document.getElementById('transfer-form').style.display = '';
+        document.getElementById('normal-form').style.display = 'none';
+    } else {
+        document.getElementById('transfer-form').style.display = 'none';
+        document.getElementById('normal-form').style.display = '';
+    }
+}
+
+function switchView(view) {
+    document.querySelectorAll('.view-tab').forEach(function(tab) {
+        tab.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    if (view === 'personal') {
+        showToast('切换到"我的"视图：账户只显示自己的');
+    } else {
+        showToast('切换到"家庭"视图：账户显示全家人的');
+    }
+}
+</script>
+
+</body>
+</html>

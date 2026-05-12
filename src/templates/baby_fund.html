@@ -1,5 +1,21 @@
 {% extends "base.html" %}
 
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+    .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+    .chart-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .chart-title { font-size: 13px; font-weight: 600; color: var(--color-accent, #8B7355); margin-bottom: 12px; text-align: center; }
+    .chart-wrap { max-width: 220px; margin: 0 auto; }
+    .event-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+    .event-badge.yasui { background: #ffe5e5; color: #c0392b; }
+    .event-badge.zhousui { background: #fdf3e7; color: #8B6914; }
+    .event-badge.shengri { background: #e8f4fd; color: #1a6fa8; }
+    .event-badge.other { background: #f0f0f5; color: #5a6678; }
+    @media (max-width: 600px) { .charts-row { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
 {% block content %}
 
         <!-- 统计栏 -->
@@ -12,6 +28,10 @@
                 <div class="stat-label">记录数</div>
                 <div class="stat-value balance">{{ fund_count }} 条</div>
             </div>
+            <div class="stat-item">
+                <div class="stat-label">事件类型</div>
+                <div class="stat-value balance">{{ event_type_count }} 类</div>
+            </div>
         </div>
 
         <!-- 操作按钮栏 -->
@@ -20,49 +40,72 @@
         </div>
 
         {% if funds %}
-        <!-- 基金列表 -->
+        <!-- 饼状图 -->
+        <div class="charts-row">
+            <div class="chart-card">
+                <div class="chart-title">按人员分布</div>
+                <div class="chart-wrap">
+                    <canvas id="chart-person"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-title">按事件类型分布</div>
+                <div class="chart-wrap">
+                    <canvas id="chart-event"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 基金记录表格 -->
         <div class="card">
             <div class="card-header">
                 <h2 class="card-title">基金记录</h2>
                 <span class="account-count">{{ fund_count }} 条</span>
             </div>
-            <div class="account-list">
-                {% for f in funds %}
-                <div class="account-item savings">
-                    <div class="account-info">
-                        <span class="account-name">
-                            {% if f.event_type == '满月' %}🌙
-                            {% elif f.event_type == '生日' %}🎂
-                            {% elif f.event_type == '红包' %}🧧
-                            {% else %}🎁
-                            {% endif %}
-                            {{ f.giver_name }}
-                        </span>
-                        {% if f.event_type %}
-                        <span class="category-badge default">{{ f.event_type }}</span>
-                        {% endif %}
-                        {% if f.account %}
-                        <span class="account-owner">{{ f.account.name }}</span>
-                        {% endif %}
-                    </div>
-                    <div class="account-balance">
-                        <span class="account-balance-value">¥{{ f.amount|float|currency }}</span>
-                        <span class="account-owner">{{ f.event_date.strftime('%Y-%m-%d') }}</span>
-                    </div>
-                    <div class="fund-actions" style="display:flex;gap:4px;align-items:center;">
-                        <button class="btn-delete-cat" onclick="openEditDrawer({{ f.id }}, '{{ f.giver_name }}', '{{ f.amount|float }}', '{{ f.event_date.strftime('%Y-%m-%d') }}', '{{ f.event_type or '' }}', '{{ f.notes or '' }}')">编辑</button>
-                        <form action="{{ url_for('baby_fund.delete_fund', fund_id=f.id) }}" method="POST" class="delete-form">
-                            <button type="submit" class="btn-delete-cat" data-confirm-delete data-confirm-message="确定删除此记录？">删除</button>
-                        </form>
-                    </div>
-                </div>
-                <div style="padding:0 16px 4px 40px;font-size:12px;color:var(--color-text-muted, #999);">
-                    {{ f.creator.nickname or f.creator.username if f.creator else '-' }} · {{ (f.created_at + timedelta(hours=8)).strftime('%Y-%m-%d %H:%M') if f.created_at else '' }}
-                </div>
-                {% if f.notes %}
-                <div style="padding:0 16px 8px 40px;color:#888;font-size:13px;">{{ f.notes }}</div>
-                {% endif %}
-                {% endfor %}
+            <div class="snapshot-table-wrap">
+                <table class="snapshot-table">
+                    <thead>
+                        <tr>
+                            <th>赠送日期</th>
+                            <th>赠送人</th>
+                            <th>事件类型</th>
+                            <th>金额</th>
+                            <th>备注</th>
+                            <th>记录时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for f in funds %}
+                        <tr>
+                            <td>{{ f.event_date.strftime('%m-%d') }}</td>
+                            <td style="font-weight:500;">{{ f.giver_name }}</td>
+                            <td>
+                                {% if f.event_type %}
+                                {% if '压岁' in f.event_type or '红包' in f.event_type %}
+                                <span class="event-badge yasui">🧧 {{ f.event_type }}</span>
+                                {% elif '周岁' in f.event_type or '生日' in f.event_type %}
+                                <span class="event-badge zhousui">🎂 {{ f.event_type }}</span>
+                                {% else %}
+                                <span class="event-badge other">🎁 {{ f.event_type }}</span>
+                                {% endif %}
+                                {% else %}
+                                <span class="event-badge other">—</span>
+                                {% endif %}
+                            </td>
+                            <td style="font-family:'Outfit',monospace;font-weight:500;">¥{{ f.amount|float|currency }}</td>
+                            <td style="color:#999;font-size:12px;">{{ f.notes or '' }}</td>
+                            <td style="color:#999;font-size:12px;">{{ (f.created_at|to_beijing('%m-%d %H:%M')) if f.created_at else '-' }}</td>
+                            <td>
+                                <button class="btn-delete-cat" onclick="openEditDrawer({{ f.id }}, '{{ f.giver_name }}', '{{ f.amount|float }}', '{{ f.event_date.strftime('%Y-%m-%d') }}', '{{ f.event_type or '' }}', '{{ f.notes or '' }}')">编辑</button>
+                                <form action="{{ url_for('baby_fund.delete_fund', fund_id=f.id) }}" method="POST" class="delete-form" style="display:inline;">
+                                    <button type="submit" class="btn-delete-cat" style="color:#c0392b;" data-confirm-delete data-confirm-message="确定删除此记录？">删除</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -203,5 +246,64 @@
         if (dateInput && !dateInput.value) {
             dateInput.value = new Date().toISOString().slice(0, 10);
         }
+
+        // ===== 饼状图 =====
+        var CHART_COLORS = ['#e8a87c', '#d4956a', '#f5cba7', '#aed6f1', '#a9dfbf', '#f9e79f', '#d2b4de', '#f5b7b1', '#d5d8dc', '#c39bd3', '#7fb3d3', '#f0b27a'];
+
+        {% if funds %}
+        // 按人员分布
+        new Chart(document.getElementById('chart-person'), {
+            type: 'doughnut',
+            data: {
+                labels: {{ person_chart|map(attribute=0)|list|tojson }},
+                datasets: [{
+                    data: {{ person_chart|map(attribute=1)|list|tojson }},
+                    backgroundColor: CHART_COLORS.slice(0, {{ person_chart|length }})
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12, padding: 8 } },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                var total = ctx.dataset.data.reduce(function(a, b) { return a + b; }, 0);
+                                var pct = (ctx.raw / total * 100).toFixed(1);
+                                return ctx.label + ': ¥' + ctx.raw.toLocaleString() + ' (' + pct + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 按事件类型分布
+        new Chart(document.getElementById('chart-event'), {
+            type: 'doughnut',
+            data: {
+                labels: {{ event_chart|map(attribute=0)|list|tojson }},
+                datasets: [{
+                    data: {{ event_chart|map(attribute=1)|list|tojson }},
+                    backgroundColor: ['#f5cba7', '#f5b7b1', '#aed6f1', '#a9dfbf', '#d5d8dc']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12, padding: 8 } },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                var total = ctx.dataset.data.reduce(function(a, b) { return a + b; }, 0);
+                                var pct = (ctx.raw / total * 100).toFixed(1);
+                                return ctx.label + ': ¥' + ctx.raw.toLocaleString() + ' (' + pct + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        {% endif %}
     </script>
 {% endblock %}
