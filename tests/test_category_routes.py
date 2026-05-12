@@ -16,9 +16,9 @@ class TestCategoryListPage:
         """分类页面展示系统预设分类"""
         resp = logged_in_client.get('/categories/')
         html = resp.data.decode('utf-8')
-        # 系统预设分类应该显示
+        # 系统预设分类应该显示（与 models.py DEFAULT_CATEGORIES 一致）
         assert '工资' in html
-        assert '餐饮' in html
+        assert '奖金' in html
 
     def test_category_page_unauth_redirect(self, client):
         """未登录访问分类页重定向到登录"""
