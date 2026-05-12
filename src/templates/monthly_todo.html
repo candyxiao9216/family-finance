@@ -208,12 +208,10 @@
         <div class="checklist-list">
             {% for todo in todos %}
             <div class="checklist-item {% if todo.status == 'completed' %}completed{% endif %}">
-                <!-- 打钩 -->
-                <form method="POST" action="{{ url_for('monthly_todo.toggle_todo', todo_id=todo.id) }}" style="margin:0;">
-                    <button type="submit" class="check-btn" title="{% if todo.status == 'completed' %}取消完成{% else %}标记完成{% endif %}">
-                        {% if todo.status == 'completed' %}☑{% else %}☐{% endif %}
-                    </button>
-                </form>
+                <!-- 状态图标（自动检测，不可手动点击） -->
+                <span class="check-btn" style="cursor:default;">
+                    {% if todo.status == 'completed' %}✅{% else %}⬜{% endif %}
+                </span>
 
                 <!-- 内容 -->
                 <div class="checklist-content">

@@ -1030,6 +1030,8 @@ body::before {
 
 .chart-container-pie {
     height: 280px;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .chart-row {
@@ -1041,6 +1043,42 @@ body::before {
 
 .chart-half {
     margin-bottom: 0;
+}
+
+.chart-row-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+    overflow: hidden;
+}
+
+.family-contrib-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.family-contrib-table th,
+.family-contrib-table td {
+    padding: 10px 12px;
+    text-align: right;
+    border-bottom: 1px solid var(--color-border, #eee);
+}
+
+.family-contrib-table th:first-child,
+.family-contrib-table td:first-child {
+    text-align: left;
+}
+
+.family-contrib-table th {
+    font-weight: 600;
+    color: var(--color-text-muted, #888);
+    font-size: 12px;
+}
+
+.family-contrib-table tr:last-child {
+    font-weight: 600;
 }
 
 .chart-detail-link {
@@ -1056,9 +1094,15 @@ body::before {
 }
 
 /* 响应式：移动端饼图堆叠 */
-@media (max-width: 640px) {
+@media (max-width: 768px) {
     .chart-row {
         grid-template-columns: 1fr;
+    }
+    .chart-row-3 {
+        grid-template-columns: 1fr;
+    }
+    .chart-container-pie {
+        height: 220px;
     }
 }
 

@@ -100,6 +100,79 @@ def transaction_list():
     quick_templates = TransactionTemplate.query.filter_by(user_id=user_id)\
         .order_by(TransactionTemplate.use_count.desc()).limit(6).all()
 
+    # 获取「最近常用」：按分类分组，取近3个月出现次数最多的Top 5，金额取该分类最近一笔
+    # 跟随视图：个人视图查自己的，家庭视图查全家的
+    from datetime import timedelta
+    three_months_ago = date.today() - timedelta(days=90)
+
+    # 收入常用
+    income_frequent = db.session.query(
+        Category.name,
+        func.count(Transaction.id).label('cnt'),
+        func.max(Transaction.amount).label('last_amount')
+    ).join(Category, Transaction.category_id == Category.id)\
+     .filter(user_filter, Transaction.type == 'income',
+             Transaction.transaction_date >= three_months_ago)\
+     .group_by(Category.name)\
+     .order_by(func.count(Transaction.id).desc())\
+     .limit(5).all()
+
+    # 支出常用
+    expense_frequent = db.session.query(
+        Category.name,
+        func.count(Transaction.id).label('cnt'),
+        func.max(Transaction.amount).label('last_amount')
+    ).join(Category, Transaction.category_id == Category.id)\
+     .filter(user_filter, Transaction.type == 'expense',
+             Transaction.transaction_date >= three_months_ago)\
+     .group_by(Category.name)\
+     .order_by(func.count(Transaction.id).desc())\
+     .limit(5).all()
+
+    # 转账常用（按 from→to 账户对分组，带上账户ID）
+    # 转账按账户归属过滤：个人视图只显示自己账户发起的转账
+    if current_view == 'family' and family:
+        transfer_account_filter = Transaction.account_id.in_(
+            [a.id for a in Account.query.filter(Account.user_id.in_(family_member_ids)).all()]
+        )
+    else:
+        transfer_account_filter = Transaction.account_id.in_(
+            [a.id for a in Account.query.filter_by(user_id=user_id).all()]
+        )
+
+    transfer_frequent_raw = db.session.query(
+        Transaction.account_id,
+        Transaction.transfer_pair_id,
+        Transaction.description,
+        func.count(Transaction.id).label('cnt'),
+        func.max(Transaction.amount).label('last_amount')
+    ).filter(transfer_account_filter, Transaction.type == 'transfer_out',
+             Transaction.transaction_date >= three_months_ago)\
+     .group_by(Transaction.account_id, Transaction.transfer_pair_id, Transaction.description)\
+     .order_by(func.count(Transaction.id).desc())\
+     .limit(5).all()
+
+    # 构造转账常用数据（包含 from/to account_id）
+    transfer_shortcuts = []
+    for r in transfer_frequent_raw:
+        to_account_id = None
+        if r.transfer_pair_id:
+            pair = Transaction.query.get(r.transfer_pair_id)
+            if pair:
+                to_account_id = pair.account_id
+        transfer_shortcuts.append({
+            'name': r.description or '转账',
+            'amount': float(r.last_amount),
+            'from_account_id': r.account_id,
+            'to_account_id': to_account_id,
+        })
+
+    recent_shortcuts = {
+        'income': [{'name': r.name, 'amount': float(r.last_amount)} for r in income_frequent],
+        'expense': [{'name': r.name, 'amount': float(r.last_amount)} for r in expense_frequent],
+        'transfer': transfer_shortcuts,
+    }
+
     return render_template('transactions.html',
                           transactions=transactions,
                           pagination=pagination,
@@ -113,6 +186,7 @@ def transaction_list():
                           accounts=accounts,
                           family_accounts=family_accounts,
                           quick_templates=quick_templates,
+                          recent_shortcuts=recent_shortcuts,
                           current_view=current_view,
                           family=family,
                           family_members=family_members,

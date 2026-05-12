@@ -2,6 +2,57 @@
 
 {% block extra_head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+    .recent-shortcuts {
+        margin: 0 0 16px;
+        padding: 0 16px;
+    }
+    .recent-shortcuts-header {
+        margin-bottom: 8px;
+    }
+    .recent-shortcuts-title {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--color-text-muted, #9A9A9A);
+    }
+    .recent-shortcuts-list {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+    }
+    .recent-chip {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 12px;
+        background: var(--color-income-light, #F5E6D3);
+        border: 1px solid var(--color-border-light, #F0EDE9);
+        border-radius: 20px;
+        font-size: 12px;
+        color: var(--color-text-primary, #2D2A2E);
+        white-space: nowrap;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: inherit;
+    }
+    .recent-chip:hover {
+        border-color: var(--color-income, #D4A574);
+        box-shadow: 0 2px 8px rgba(212, 165, 116, 0.2);
+    }
+    .recent-chip.active {
+        background: var(--color-income, #D4A574);
+        color: #fff;
+        border-color: var(--color-income, #D4A574);
+    }
+    .recent-chip-amount {
+        font-weight: 600;
+        font-family: 'Outfit', sans-serif;
+    }
+    .recent-chip-cat {
+        font-size: 12px;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -46,30 +97,6 @@
             </div>
         </div>
 
-        <!-- 快捷录入 -->
-        {% if quick_templates %}
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">快捷录入</h2>
-                <a href="{{ url_for('template.template_list') }}" class="chart-detail-link">管理模板</a>
-            </div>
-            <div style="display: flex; flex-wrap: wrap; gap: 8px; padding: 16px;">
-                {% for tpl in quick_templates %}
-                <button class="quick-tpl-btn" type="button"
-                        data-amount="{{ tpl.amount }}"
-                        data-type="{{ tpl.type }}"
-                        data-category="{{ tpl.category_id or '' }}"
-                        data-description="{{ tpl.description or '' }}"
-                        data-account="{{ tpl.account_id or '' }}"
-                        data-id="{{ tpl.id }}"
-                        onclick="applyTemplate(this)">
-                    {{ tpl.name }} <span style="opacity:0.6">¥{{ tpl.amount|currency(0) }}</span>
-                </button>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-
         <!-- 添加交易表单 -->
         <div class="card form-section" id="add-form">
             <div class="card-header">
@@ -90,6 +117,18 @@
                         <span class="type-label transfer">🔄 转账</span>
                     </label>
                 </div>
+
+                <!-- 最近常用快捷填充 -->
+                {% if recent_shortcuts.income or recent_shortcuts.expense or recent_shortcuts.transfer %}
+                <div class="recent-shortcuts" id="recent-shortcuts-section">
+                    <div class="recent-shortcuts-header">
+                        <span class="recent-shortcuts-title">⚡ 最近常用</span>
+                    </div>
+                    <div class="recent-shortcuts-list" id="recent-chips">
+                        {# JS 根据当前选中的 type 动态显示对应 chips #}
+                    </div>
+                </div>
+                {% endif %}
 
                 <!-- 收入/支出表单字段 -->
                 <div id="normal-fields">
@@ -407,6 +446,76 @@
         setCurrentDate();
         setDefaultDate();
         updateCategories('income');
+
+        // ===== 最近常用快捷填充 =====
+        var recentShortcuts = {{ recent_shortcuts | tojson }};
+        var chipsContainer = document.getElementById('recent-chips');
+
+        function renderChips(type) {
+            if (!chipsContainer) return;
+            var items = recentShortcuts[type] || [];
+            if (items.length === 0) {
+                document.getElementById('recent-shortcuts-section').style.display = 'none';
+                return;
+            }
+            document.getElementById('recent-shortcuts-section').style.display = '';
+            chipsContainer.innerHTML = '';
+            items.forEach(function(item) {
+                var chip = document.createElement('button');
+                chip.type = 'button';
+                chip.className = 'recent-chip';
+                chip.innerHTML = '<span class="recent-chip-cat">' + item.name + '</span><span class="recent-chip-amount">¥' + item.amount.toLocaleString('zh-CN', {maximumFractionDigits: 0}) + '</span>';
+                chip.addEventListener('click', function() {
+                    applyShortcut(type, item);
+                    chipsContainer.querySelectorAll('.recent-chip').forEach(function(c) { c.classList.remove('active'); });
+                    chip.classList.add('active');
+                });
+                chipsContainer.appendChild(chip);
+            });
+        }
+
+        function applyShortcut(type, item) {
+            if (type === 'transfer') {
+                // 转账：填金额 + 转出/转入账户 + 备注
+                var amtInput = document.querySelector('#transfer-fields input[name="amount"]');
+                if (amtInput) amtInput.value = item.amount;
+                var fromSelect = document.querySelector('#transfer-fields select[name="from_account_id"]');
+                if (fromSelect && item.from_account_id) fromSelect.value = item.from_account_id;
+                var toSelect = document.querySelector('#transfer-fields select[name="to_account_id"]');
+                if (toSelect && item.to_account_id) toSelect.value = item.to_account_id;
+                var descInput = document.querySelector('#transfer-fields input[name="description"]');
+                if (descInput) descInput.value = item.name;
+            } else {
+                // 收入/支出：填金额+分类
+                var amtInput = document.querySelector('#normal-fields input[name="amount"]');
+                if (amtInput) amtInput.value = item.amount;
+                // 通过分类名匹配 category_id
+                var catSelect = document.getElementById('category-select');
+                var matched = false;
+                for (var i = 0; i < catSelect.options.length; i++) {
+                    if (catSelect.options[i].text === item.name) {
+                        catSelect.value = catSelect.options[i].value;
+                        matched = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 监听 type 切换时刷新 chips
+        typeInputs.forEach(function(input) {
+            input.addEventListener('change', function(e) {
+                var t = e.target.value;
+                if (t === 'transfer') {
+                    renderChips('transfer');
+                } else {
+                    renderChips(t);
+                }
+            });
+        });
+
+        // 初始渲染（默认 income）
+        renderChips('income');
 
         // 快捷模板应用
         function applyTemplate(btn) {

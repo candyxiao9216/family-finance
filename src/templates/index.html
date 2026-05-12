@@ -71,9 +71,6 @@
     .dash-stat-value.income { color: #D4A574; }
     .dash-stat-value.expense { color: #7C8BA1; }
     .dash-stat-value.balance { color: #2c3e50; }
-    .dash-stat-value.savings { color: #6B9EB5; }
-    .dash-stat-value.investment { color: #9B8EC4; }
-    .dash-stat-value.total { color: #D4A574; }
 
     /* 迷你图 */
     .dash-mini-chart {
@@ -151,18 +148,65 @@
         .dash-stat-label {
             font-size: 11px;
         }
+        .quick-actions-grid {
+            gap: 8px;
+        }
+        .quick-action-btn {
+            padding: 12px 4px;
+        }
+        .quick-action-label {
+            font-size: 11px;
+        }
+    }
+
+    /* 快捷操作 */
+    .quick-actions-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+    }
+    .quick-action-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        padding: 14px 8px;
+        background: #fafafa;
+        border-radius: 10px;
+        text-decoration: none;
+        color: var(--color-text-secondary, #6B6B6B);
+        font-size: 12px;
+        font-weight: 500;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+    }
+    .quick-action-btn:hover {
+        background: #fff;
+        border-color: var(--color-border, #E8E4E0);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .quick-action-icon {
+        font-size: 22px;
+    }
+    .quick-action-label {
+        font-size: 12px;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-    <!-- 视图切换 -->
-    {% if family %}
-    <div class="view-switcher">
-        <a href="/?view=personal" class="view-btn {{ 'active' if current_view == 'personal' }}">我的</a>
-        <a href="/?view=family" class="view-btn {{ 'active' if current_view == 'family' }}">家庭</a>
+    <!-- 顶部操作栏：视图切换 + 月度总结 -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        {% if family %}
+        <div class="view-switcher">
+            <a href="/?view=personal" class="view-btn {{ 'active' if current_view == 'personal' }}">我的</a>
+            <a href="/?view=family" class="view-btn {{ 'active' if current_view == 'family' }}">家庭</a>
+        </div>
+        {% else %}
+        <div></div>
+        {% endif %}
+        <a href="{{ url_for('reports.monthly_summary', view=current_view) }}" style="display:inline-block;padding:8px 16px;background:linear-gradient(135deg,#e8a87c,#d4956a);color:#fff;border-radius:8px;font-size:13px;font-weight:500;text-decoration:none;">📋 查看本月总结</a>
     </div>
-    {% endif %}
 
     <!-- 模块 1：月度收支概览 -->
     <div class="dashboard-card">
@@ -199,20 +243,6 @@
             <h2>资产总览</h2>
         </div>
         <div class="dashboard-card-body">
-            <div class="dash-stats">
-                <div class="dash-stat">
-                    <div class="dash-stat-label">储蓄账户</div>
-                    <div class="dash-stat-value savings" id="dash-savings">¥0</div>
-                </div>
-                <div class="dash-stat">
-                    <div class="dash-stat-label">基金理财</div>
-                    <div class="dash-stat-value" style="color:#3498DB;" id="dash-fund">¥0</div>
-                </div>
-                <div class="dash-stat">
-                    <div class="dash-stat-label">股票账户</div>
-                    <div class="dash-stat-value investment" id="dash-stock">¥0</div>
-                </div>
-            </div>
             <div class="asset-summary">
                 <div class="asset-row">
                     <span class="asset-row-label">储蓄账户</span>
@@ -234,6 +264,33 @@
         </div>
         <div class="dashboard-card-footer">
             <a href="{{ url_for('account.account_list') }}">查看详情 →</a>
+        </div>
+    </div>
+
+    <!-- 模块 2.5：快捷操作 -->
+    <div class="dashboard-card">
+        <div class="dashboard-card-header">
+            <h2>快捷操作</h2>
+        </div>
+        <div class="dashboard-card-body">
+            <div class="quick-actions-grid">
+                <a href="{{ url_for('transaction.transaction_list') }}?action=add&type=expense" class="quick-action-btn">
+                    <span class="quick-action-icon">💵</span>
+                    <span class="quick-action-label">记账</span>
+                </a>
+                <a href="{{ url_for('account.account_list') }}?action=snapshot" class="quick-action-btn">
+                    <span class="quick-action-icon">📸</span>
+                    <span class="quick-action-label">录快照</span>
+                </a>
+                <a href="{{ url_for('transaction.transaction_list') }}?action=add&type=transfer" class="quick-action-btn">
+                    <span class="quick-action-icon">🔄</span>
+                    <span class="quick-action-label">转账</span>
+                </a>
+                <a href="{{ url_for('baby_fund.baby_fund_list') }}" class="quick-action-btn">
+                    <span class="quick-action-icon">👶</span>
+                    <span class="quick-action-label">宝宝基金</span>
+                </a>
+            </div>
         </div>
     </div>
 
@@ -285,13 +342,11 @@
             <!-- Checklist 列表 -->
             <div style="display:flex;flex-direction:column;gap:10px;">
                 {% for todo in checklist %}
-                <div id="checklist-item-{{ loop.index0 }}" data-guide-step="{{ loop.index0 }}" data-status="{{ todo.status }}" data-detect-key="{{ todo.detect_key }}" style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:{% if todo.status == 'completed' %}#f9faf9{% else %}#fff{% endif %};border-radius:8px;border:1px solid {% if todo.status == 'completed' %}#e0e8e0{% else %}#eee{% endif %};position:relative;">
-                    <!-- 打钩按钮 -->
-                    <form method="POST" action="{{ url_for('monthly_todo.toggle_todo', todo_id=todo.id) }}" style="margin:0;">
-                        <button type="submit" style="background:none;border:none;cursor:pointer;font-size:20px;padding:0;line-height:1;">
-                            {% if todo.status == 'completed' %}☑{% else %}☐{% endif %}
-                        </button>
-                    </form>
+                <div id="checklist-item-{{ loop.index0 }}" data-status="{{ todo.status }}" data-detect-key="{{ todo.detect_key }}" style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:{% if todo.status == 'completed' %}#f9faf9{% else %}#fff{% endif %};border-radius:8px;border:1px solid {% if todo.status == 'completed' %}#e0e8e0{% else %}#eee{% endif %};">
+                    <!-- 状态图标 -->
+                    <span style="font-size:20px;line-height:1;">
+                        {% if todo.status == 'completed' %}✅{% else %}⬜{% endif %}
+                    </span>
 
                     <!-- 标题 + 标签 -->
                     <div style="flex:1;min-width:0;">
@@ -320,32 +375,6 @@
         </div>
     </div>
 
-    <!-- 聚焦遮罩 + 气泡引导 -->
-    {% if show_todo_popup %}
-    <div id="guide-overlay" style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:9990;pointer-events:none;display:none;">
-        <!-- 四块遮罩拼出聚焦窗口 -->
-        <div id="guide-mask-top" style="position:absolute;background:rgba(0,0,0,.55);"></div>
-        <div id="guide-mask-bottom" style="position:absolute;background:rgba(0,0,0,.55);"></div>
-        <div id="guide-mask-left" style="position:absolute;background:rgba(0,0,0,.55);"></div>
-        <div id="guide-mask-right" style="position:absolute;background:rgba(0,0,0,.55);"></div>
-    </div>
-    <!-- 气泡 -->
-    <div id="guide-bubble" style="display:none;position:fixed;z-index:9991;background:#fff;border-radius:10px;padding:16px;box-shadow:0 6px 24px rgba(0,0,0,.2);max-width:280px;width:280px;">
-        <!-- 小三角 -->
-        <div id="guide-arrow" style="position:absolute;top:-8px;left:24px;width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:8px solid #fff;"></div>
-        <div id="guide-step-label" style="font-size:11px;color:#D4A574;font-weight:600;margin-bottom:4px;"></div>
-        <div id="guide-title" style="font-size:15px;font-weight:600;color:#2c3e50;margin-bottom:6px;"></div>
-        <div id="guide-desc" style="font-size:13px;color:#666;margin-bottom:12px;"></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-            <!-- 步骤指示器 -->
-            <div id="guide-dots" style="display:flex;gap:5px;"></div>
-            <div style="display:flex;gap:6px;">
-                <button id="guide-skip" onclick="closeGuide()" style="padding:6px 12px;border:1px solid #ddd;border-radius:5px;background:#fff;color:#999;cursor:pointer;font-size:12px;">跳过</button>
-                <button id="guide-action" style="padding:6px 12px;border:none;border-radius:5px;background:#D4A574;color:#fff;cursor:pointer;font-size:12px;font-weight:600;"></button>
-            </div>
-        </div>
-    </div>
-    {% endif %}
 {% endblock %}
 
 {% block scripts %}
@@ -371,9 +400,6 @@
     var fundTotal = {{ fund_total }};
     var stockTotal = {{ stock_total }};
     var totalAssets = {{ total_assets }};
-    document.getElementById('dash-savings').textContent = fmt(savingsTotal);
-    document.getElementById('dash-fund').textContent = fmt(fundTotal);
-    document.getElementById('dash-stock').textContent = fmt(stockTotal);
     document.getElementById('asset-savings').textContent = fmt2(savingsTotal);
     document.getElementById('asset-fund').textContent = fmt2(fundTotal);
     document.getElementById('asset-stock').textContent = fmt2(stockTotal);
@@ -452,148 +478,5 @@
     // JS 动态赋值完成后，重新应用小眼睛隐藏
     if (window.ffReapplyHide) window.ffReapplyHide();
 
-    // ── 聚焦遮罩 + 气泡引导 ──────────────────────────
-    {% if show_todo_popup %}
-    (function() {
-        // 引导步骤数据（从 Jinja 渲染）
-        var guideSteps = [
-            {% for todo in checklist %}
-            {
-                index: {{ loop.index0 }},
-                title: '{{ todo.title }}',
-                desc: '{{ todo.description or todo.tips or "" }}',
-                status: '{{ todo.status }}',
-                detectKey: '{{ todo.detect_key }}',
-                {% set item_def = checklist_items | selectattr('detect_key', 'equalto', todo.detect_key) | first %}
-                actionLabel: '{{ item_def.action_label if item_def else "查看" }}',
-                actionUrl: '{{ url_for(item_def.action_url_endpoint) if item_def else "#" }}'
-            }{% if not loop.last %},{% endif %}
-            {% endfor %}
-        ];
-
-        // 只保留未完成的步骤
-        var pendingSteps = guideSteps.filter(function(s) { return s.status !== 'completed'; });
-        if (pendingSteps.length === 0) return;
-
-        var currentGuideIdx = 0;
-        var overlay = document.getElementById('guide-overlay');
-        var bubble = document.getElementById('guide-bubble');
-        var maskTop = document.getElementById('guide-mask-top');
-        var maskBottom = document.getElementById('guide-mask-bottom');
-        var maskLeft = document.getElementById('guide-mask-left');
-        var maskRight = document.getElementById('guide-mask-right');
-
-        function positionMask(rect) {
-            var pad = 6; // 高亮区域 padding
-            var vw = window.innerWidth, vh = window.innerHeight;
-            var t = rect.top - pad, l = rect.left - pad;
-            var w = rect.width + pad * 2, h = rect.height + pad * 2;
-
-            // 上
-            maskTop.style.cssText = 'position:absolute;background:rgba(0,0,0,.55);top:0;left:0;width:' + vw + 'px;height:' + Math.max(0, t) + 'px;';
-            // 下
-            maskBottom.style.cssText = 'position:absolute;background:rgba(0,0,0,.55);top:' + (t + h) + 'px;left:0;width:' + vw + 'px;height:' + Math.max(0, vh - t - h) + 'px;';
-            // 左
-            maskLeft.style.cssText = 'position:absolute;background:rgba(0,0,0,.55);top:' + t + 'px;left:0;width:' + Math.max(0, l) + 'px;height:' + h + 'px;';
-            // 右
-            maskRight.style.cssText = 'position:absolute;background:rgba(0,0,0,.55);top:' + t + 'px;left:' + (l + w) + 'px;width:' + Math.max(0, vw - l - w) + 'px;height:' + h + 'px;';
-        }
-
-        function positionBubble(rect) {
-            var bw = 280;
-            // 气泡放在高亮元素下方
-            var top = rect.bottom + 12;
-            var left = rect.left;
-            // 防止右侧溢出
-            if (left + bw > window.innerWidth - 16) left = window.innerWidth - bw - 16;
-            if (left < 16) left = 16;
-            // 如果下方空间不够，放上方
-            var arrow = document.getElementById('guide-arrow');
-            if (top + 180 > window.innerHeight) {
-                top = rect.top - 180;
-                arrow.style.cssText = 'position:absolute;bottom:-8px;top:auto;left:24px;width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:8px solid #fff;';
-            } else {
-                arrow.style.cssText = 'position:absolute;top:-8px;left:24px;width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:8px solid #fff;';
-            }
-            bubble.style.left = left + 'px';
-            bubble.style.top = top + 'px';
-        }
-
-        function showStep(idx) {
-            if (idx >= pendingSteps.length) { closeGuide(); return; }
-            currentGuideIdx = idx;
-            var step = pendingSteps[idx];
-            var el = document.getElementById('checklist-item-' + step.index);
-            if (!el) { closeGuide(); return; }
-
-            // 滚动到可见
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-            setTimeout(function() {
-                var rect = el.getBoundingClientRect();
-
-                // 高亮元素
-                el.style.zIndex = '9992';
-                el.style.position = 'relative';
-                el.style.boxShadow = '0 0 0 3px #D4A574';
-                el.style.borderColor = '#D4A574';
-
-                // 遮罩
-                positionMask(rect);
-                overlay.style.display = 'block';
-                overlay.style.pointerEvents = 'auto';
-
-                // 气泡内容
-                var totalPending = pendingSteps.length;
-                document.getElementById('guide-step-label').textContent = '第 ' + (idx + 1) + ' 步（共 ' + totalPending + ' 步）';
-                document.getElementById('guide-title').textContent = step.title;
-                document.getElementById('guide-desc').textContent = step.desc;
-
-                // 步骤点
-                var dotsHtml = '';
-                for (var i = 0; i < totalPending; i++) {
-                    dotsHtml += '<span style="width:7px;height:7px;border-radius:50%;background:' + (i === idx ? '#D4A574' : '#ddd') + ';"></span>';
-                }
-                document.getElementById('guide-dots').innerHTML = dotsHtml;
-
-                // 按钮
-                var actionBtn = document.getElementById('guide-action');
-                if (idx < totalPending - 1) {
-                    actionBtn.textContent = '下一步 →';
-                    actionBtn.onclick = function() { clearHighlight(step.index); showStep(idx + 1); };
-                } else {
-                    actionBtn.textContent = '知道了';
-                    actionBtn.onclick = function() { closeGuide(); };
-                }
-
-                positionBubble(rect);
-                bubble.style.display = 'block';
-            }, 350);
-        }
-
-        function clearHighlight(stepIdx) {
-            var el = document.getElementById('checklist-item-' + stepIdx);
-            if (el) {
-                el.style.zIndex = '';
-                el.style.boxShadow = '';
-                el.style.borderColor = '';
-            }
-        }
-
-        window.closeGuide = function() {
-            overlay.style.display = 'none';
-            bubble.style.display = 'none';
-            pendingSteps.forEach(function(s) { clearHighlight(s.index); });
-        };
-
-        // 点击遮罩关闭
-        overlay.onclick = function(e) {
-            if (e.target === overlay || e.target.id.indexOf('guide-mask') === 0) closeGuide();
-        };
-
-        // 延迟启动引导（等页面渲染完）
-        setTimeout(function() { showStep(0); }, 600);
-    })();
-    {% endif %}
 </script>
 {% endblock %}

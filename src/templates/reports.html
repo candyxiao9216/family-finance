@@ -60,6 +60,39 @@
                 <canvas id="assetTrendChart"></canvas>
             </div>
         </div>
+
+        {% if current_view == 'family' %}
+        <!-- 家庭贡献 -->
+        <div class="card chart-section">
+            <div class="card-header">
+                <h2 class="card-title">👨‍👩‍👧 家庭贡献</h2>
+            </div>
+            <div class="chart-row-3" id="familyContribCharts">
+                <div class="chart-container chart-container-pie">
+                    <canvas id="contribIncomeChart"></canvas>
+                </div>
+                <div class="chart-container chart-container-pie">
+                    <canvas id="contribExpenseChart"></canvas>
+                </div>
+                <div class="chart-container chart-container-pie">
+                    <canvas id="contribAssetChart"></canvas>
+                </div>
+            </div>
+            <div style="padding: 0 var(--space-md) var(--space-md);">
+                <table class="family-contrib-table" id="familyContribTable">
+                    <thead>
+                        <tr>
+                            <th>成员</th>
+                            <th>收入</th>
+                            <th>支出</th>
+                            <th>资产</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
 {% endblock %}
 
 {% block scripts %}
@@ -87,6 +120,9 @@
         var expensePieInstance = null;
         var incomePieInstance = null;
         var assetTrendInstance = null;
+        var contribIncomeInstance = null;
+        var contribExpenseInstance = null;
+        var contribAssetInstance = null;
 
         // 工具函数：fetch JSON
         function fetchJSON(url) {
@@ -371,12 +407,110 @@
             });
         }
 
+        // 加载家庭贡献图表
+        function loadFamilyContribution() {
+            if (currentView !== 'family') return;
+            var chartsEl = document.getElementById('familyContribCharts');
+            if (!chartsEl) return;
+
+            var url = '/reports/api/family-contribution?months=' + currentMonths + '&view=family';
+            fetchJSON(url).then(function(data) {
+                if (!data.members || data.members.length === 0) return;
+
+                var memberColors = ['#e8a87c', '#aed6f1', '#a9dfbf', '#f5b7b1'];
+                var names = data.members.map(function(m) { return m.name; });
+                var colors = memberColors.slice(0, names.length);
+
+                // 通用 doughnut 配置
+                function createDoughnut(canvasId, chartData, title) {
+                    var canvas = document.getElementById(canvasId);
+                    var ctx = canvas.getContext('2d');
+                    return new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: names,
+                            datasets: [{
+                                data: chartData,
+                                backgroundColor: colors,
+                                borderColor: '#fff',
+                                borderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: title,
+                                    font: { size: 14 }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            var total = context.dataset.data.reduce(function(a, b) { return a + b; }, 0);
+                                            var value = context.parsed;
+                                            var pct = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                            return context.label + ': ¥' + value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' (' + pct + '%)';
+                                        }
+                                    }
+                                },
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        usePointStyle: true,
+                                        padding: 12,
+                                        font: { size: 12 }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // 销毁已有实例
+                if (contribIncomeInstance) contribIncomeInstance.destroy();
+                if (contribExpenseInstance) contribExpenseInstance.destroy();
+                if (contribAssetInstance) contribAssetInstance.destroy();
+
+                var incomes = data.members.map(function(m) { return m.income; });
+                var expenses = data.members.map(function(m) { return m.expense; });
+                var assets = data.members.map(function(m) { return m.assets; });
+
+                contribIncomeInstance = createDoughnut('contribIncomeChart', incomes, '收入贡献');
+                contribExpenseInstance = createDoughnut('contribExpenseChart', expenses, '支出分担');
+                contribAssetInstance = createDoughnut('contribAssetChart', assets, '资产占比');
+
+                // 渲染汇总表格
+                var tbody = document.querySelector('#familyContribTable tbody');
+                var html = '';
+                data.members.forEach(function(m) {
+                    html += '<tr>';
+                    html += '<td>' + m.name + '</td>';
+                    html += '<td>¥' + m.income.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</td>';
+                    html += '<td>¥' + m.expense.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</td>';
+                    html += '<td>¥' + m.assets.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</td>';
+                    html += '</tr>';
+                });
+                html += '<tr>';
+                html += '<td>合计</td>';
+                html += '<td>¥' + data.total_income.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</td>';
+                html += '<td>¥' + data.total_expense.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</td>';
+                html += '<td>¥' + data.total_assets.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</td>';
+                html += '</tr>';
+                tbody.innerHTML = html;
+            }).catch(function(err) {
+                console.error('加载家庭贡献数据失败:', err);
+            });
+        }
+
         // 加载所有图表
         function loadAllCharts() {
             loadTrendChart();
             loadPieChart('expensePieChart', 'expense', 'expense');
             loadPieChart('incomePieChart', 'income', 'income');
             loadAssetTrendChart();
+            loadFamilyContribution();
         }
 
         // 时间范围按钮组点击事件
