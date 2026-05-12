@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/版本-v2.0.16-blue" alt="version">
+  <img src="https://img.shields.io/badge/版本-v2.0.17-blue" alt="version">
   <img src="https://img.shields.io/badge/Python-3.8+-green" alt="python">
   <img src="https://img.shields.io/badge/Flask-3.0-lightgrey" alt="flask">
   <img src="https://img.shields.io/badge/测试覆盖率-81%25-brightgreen" alt="coverage">
@@ -156,6 +156,11 @@ FLASK_PORT=5001                      # 服务端口
 
 ## 📋 版本历史
 
+## v2.0.17 (2026-05-12)
+
+### 新增
+- 页面重做为表格+饼图，统计栏增强
+
 ## v2.0.16 (2026-05-11)
 
 ### 新增
@@ -163,6 +168,7 @@ FLASK_PORT=5001                      # 服务端口
 - 转账合并显示+家庭账户分组+时间UTC+8
 - 新增账号设置页面（昵称/展示图标/修改密码）
 - 事件类型改为自定义输入 + 导入19条数据
+
 
 ## v2.0.15 (2026-05-10)
 
@@ -182,16 +188,6 @@ FLASK_PORT=5001                      # 服务端口
 - 支出默认分类改为农行/民生/广发信用卡（删除餐饮/交通）
 - 复制邀请码改为静默复制完整文案（不弹窗）
 - 账户类型下拉框按拼音排序 + 部署自动 pip install
-
-
-## v2.0.12 (2026-05-09)
-
-### 修复
-- 月度收支添加交易默认选中"收入" tab
-- 账户列表按拼音排序（pypinyin 替代 Unicode 码点排序）
-
-### 文档
-- 强化红线第一条 — 绝对禁止在 main 上 commit（无例外）
 
 
 > 完整变更日志见 [CHANGELOG.md](./CHANGELOG.md)
