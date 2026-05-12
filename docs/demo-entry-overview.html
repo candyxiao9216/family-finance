@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>功能入口总览 - Demo</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #faf8f5; padding: 20px; }
+.container { max-width: 800px; margin: 0 auto; }
+.title { text-align: center; margin-bottom: 30px; }
+.title h1 { color: #8B7355; font-size: 22px; }
+.title p { color: #999; font-size: 13px; margin-top: 6px; }
+
+.page-mock { background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); position: relative; }
+.page-label { position: absolute; top: -12px; left: 20px; background: #8B7355; color: #fff; padding: 4px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.page-name { font-size: 16px; font-weight: 600; color: #333; margin-bottom: 4px; }
+.page-url { font-size: 12px; color: #999; margin-bottom: 16px; font-family: monospace; }
+
+.mock-section { padding: 12px; border: 1px dashed #e0dcd7; border-radius: 8px; margin-bottom: 12px; background: #fdfcfb; }
+.mock-section.existing { border-color: #e0dcd7; background: #fdfcfb; }
+.mock-section.new { border-color: #4CAF50; background: #f0faf0; }
+.mock-section-label { font-size: 11px; color: #999; margin-bottom: 6px; }
+.mock-section-label.new { color: #4CAF50; font-weight: 600; }
+
+.entry-highlight { background: linear-gradient(135deg, #e8a87c 0%, #d4956a 100%); color: #fff; padding: 10px 20px; border-radius: 8px; display: inline-block; font-size: 13px; font-weight: 500; cursor: pointer; }
+.entry-highlight.secondary { background: #f0ece7; color: #8B7355; }
+
+.arrow { text-align: center; font-size: 24px; color: #D4A574; margin: 8px 0; }
+.note { font-size: 12px; color: #666; padding: 8px 12px; background: #f9f6f2; border-radius: 6px; margin-top: 8px; }
+
+.section-divider { text-align: center; margin: 40px 0 20px; }
+.section-divider span { background: #faf8f5; padding: 0 16px; font-size: 14px; font-weight: 600; color: #8B7355; position: relative; }
+.section-divider::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: #e0dcd7; }
+.section-divider { position: relative; }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="title">
+        <h1>🗺️ 三个新功能入口总览</h1>
+        <p>展示每个功能在哪个页面、什么位置出现</p>
+    </div>
+
+    <!-- ==================== 页面 1：首页仪表盘 ==================== -->
+    <div class="page-mock">
+        <span class="page-label">页面 1</span>
+        <div class="page-name">🏠 首页仪表盘</div>
+        <div class="page-url">/</div>
+
+        <!-- 新增入口 -->
+        <div class="mock-section new">
+            <div class="mock-section-label new">✨ 新增入口</div>
+            <span class="entry-highlight">📋 查看本月总结</span>
+            <div class="note">点击后跳转到 /reports/monthly-summary 页面</div>
+        </div>
+
+        <!-- 现有内容 -->
+        <div class="mock-section existing">
+            <div class="mock-section-label">现有 — 统计栏（收入/支出/结余）</div>
+            <div style="display:flex;gap:12px;">
+                <div style="flex:1;text-align:center;padding:8px;background:#f8f5f1;border-radius:6px;font-size:12px;">收入 ¥68,338</div>
+                <div style="flex:1;text-align:center;padding:8px;background:#f8f5f1;border-radius:6px;font-size:12px;">支出 ¥9,569</div>
+                <div style="flex:1;text-align:center;padding:8px;background:#f8f5f1;border-radius:6px;font-size:12px;">结余 ¥58,770</div>
+            </div>
+        </div>
+
+        <div class="mock-section existing">
+            <div class="mock-section-label">现有 — 资产总览 / 储蓄计划 / 月度待办</div>
+            <div style="font-size:12px;color:#999;">...</div>
+        </div>
+    </div>
+
+    <!-- ==================== 页面 2：报表页 ==================== -->
+    <div class="page-mock">
+        <span class="page-label">页面 2</span>
+        <div class="page-name">📊 报表</div>
+        <div class="page-url">/reports</div>
+
+        <div class="mock-section existing">
+            <div class="mock-section-label">现有 — 收支趋势图</div>
+            <div style="height:40px;background:linear-gradient(90deg, #f5cba7 0%, #aed6f1 100%);border-radius:4px;opacity:0.3;"></div>
+        </div>
+
+        <div class="mock-section existing">
+            <div class="mock-section-label">现有 — 分类占比图</div>
+            <div style="height:40px;background:linear-gradient(90deg, #d4956a 0%, #f5b7b1 100%);border-radius:4px;opacity:0.3;"></div>
+        </div>
+
+        <!-- 新增区域 -->
+        <div class="mock-section new">
+            <div class="mock-section-label new">✨ 新增 — 家庭成员贡献（仅家庭视图显示）</div>
+            <div style="display:flex;gap:12px;justify-content:center;padding:8px;">
+                <div style="text-align:center;font-size:11px;">
+                    <div style="width:50px;height:50px;border-radius:50%;background:#f5cba7;margin:0 auto 4px;"></div>
+                    收入贡献
+                </div>
+                <div style="text-align:center;font-size:11px;">
+                    <div style="width:50px;height:50px;border-radius:50%;background:#aed6f1;margin:0 auto 4px;"></div>
+                    支出分担
+                </div>
+                <div style="text-align:center;font-size:11px;">
+                    <div style="width:50px;height:50px;border-radius:50%;background:#d2b4de;margin:0 auto 4px;"></div>
+                    资产占比
+                </div>
+            </div>
+            <div class="note">三个饼图 + 明细表格，仅"家庭"视图下显示</div>
+        </div>
+    </div>
+
+    <!-- ==================== 页面 3：账号设置 ==================== -->
+    <div class="page-mock">
+        <span class="page-label">页面 3</span>
+        <div class="page-name">⚙️ 账号设置</div>
+        <div class="page-url">/settings</div>
+
+        <div class="mock-section existing">
+            <div class="mock-section-label">现有 — 基本信息 / 展示图标 / 修改密码</div>
+            <div style="font-size:12px;color:#999;">...</div>
+        </div>
+
+        <div class="mock-section existing">
+            <div class="mock-section-label">现有 — 账号信息（用户名/注册时间/家庭/角色）</div>
+            <div style="font-size:12px;color:#999;">...</div>
+        </div>
+
+        <!-- 新增入口 -->
+        <div class="mock-section new">
+            <div class="mock-section-label new">✨ 新增 — 数据导出</div>
+            <div style="display:flex;gap:12px;align-items:center;">
+                <span class="entry-highlight" style="font-size:12px;">📊 导出我的数据</span>
+                <span class="entry-highlight secondary" style="font-size:12px;">👨‍👩‍👧 导出家庭数据</span>
+            </div>
+            <div class="note">导出为 Excel 文件（4个Sheet：交易/快照/宝宝基金/储蓄）</div>
+        </div>
+
+        <div class="mock-section existing">
+            <div class="mock-section-label">现有 — 危险操作（注销账号）</div>
+            <div style="font-size:12px;color:#999;">...</div>
+        </div>
+    </div>
+
+    <!-- ==================== 页面 4：月度总结（新页面） ==================== -->
+    <div class="page-mock">
+        <span class="page-label">新页面</span>
+        <div class="page-name">📋 月度总结报告</div>
+        <div class="page-url">/reports/monthly-summary</div>
+
+        <div class="mock-section new">
+            <div class="mock-section-label new">✨ 全新页面</div>
+            <div style="font-size:13px;color:#555;line-height:2;">
+                💰 收支概况（收入/支出/结余）<br>
+                📊 资产变化（月初→月末 + <span style="color:#7c3aed;font-weight:500;">🤖 AI总结增长来源</span>）<br>
+                🔄 转账记录（本月转账笔数和总额）<br>
+                👶 宝宝基金（本月新增 + 累计 + <span style="color:#7c3aed;font-weight:500;">🤖 AI总结</span>）<br>
+                🎯 储蓄目标（进度条）<br>
+                📋 月度待办（完成率）<br>
+                <br>
+                <span style="background:linear-gradient(135deg,#e8a87c,#d4956a);color:#fff;padding:6px 14px;border-radius:6px;font-size:12px;">📱 分享本月总结</span>
+            </div>
+        </div>
+        <div class="note">从首页「📋 查看本月总结」按钮进入，支持月份切换</div>
+    </div>
+</div>
+
+</body>
+</html>
