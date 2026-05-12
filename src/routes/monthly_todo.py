@@ -23,7 +23,7 @@ CHECKLIST_ITEMS = [
         'category': 'transaction',
         'title': '录入本月交易记录',
         'description': '记录本月的收入和支出',
-        'tips': '录完后打钩即可',
+        'tips': '有交易记录后自动完成',
         'is_required': True,
         'priority': 5,
         'action_url_endpoint': 'transaction.transaction_list',
@@ -56,7 +56,7 @@ CHECKLIST_ITEMS = [
         'category': 'baby_fund',
         'title': '录入宝宝基金',
         'description': '记录本月宝宝收到的礼金',
-        'tips': '本月没有可跳过',
+        'tips': '有宝宝基金记录后自动完成，没有可忽略',
         'is_required': False,
         'priority': 2,
         'action_url_endpoint': 'baby_fund.baby_fund_list',
@@ -113,12 +113,13 @@ def ensure_monthly_checklist(user_id, year, month):
 
 
 def auto_detect_completion(user_id, year, month, todos=None):
-    """对支持自动检测的项执行检测，按当前登录用户的数据判断。
+    """对所有项执行自动检测。
 
-    检测规则（只看 user_id 本人的数据）：
+    检测规则：
+    - transaction: 本月有 ≥1 条交易记录 → 完成
     - snapshot: 该用户名下所有账户都有本月快照 → 完成
     - savings: 该用户本月有至少 1 条储蓄记录 → 完成
-    - transaction / baby_fund: 纯手动打钩，不自动检测
+    - baby_fund: 本月有 ≥1 条宝宝基金记录 → 完成
     """
     if todos is None:
         todos = MonthlyTodo.query.filter_by(
@@ -135,7 +136,16 @@ def auto_detect_completion(user_id, year, month, todos=None):
 
         detected = False
 
-        if todo.detect_key == 'snapshot':
+        if todo.detect_key == 'transaction':
+            # 本月有 ≥1 条交易记录
+            count = Transaction.query.filter(
+                Transaction.user_id == user_id,
+                extract('year', Transaction.transaction_date) == year,
+                extract('month', Transaction.transaction_date) == month
+            ).count()
+            detected = (count > 0)
+
+        elif todo.detect_key == 'snapshot':
             # 该用户名下所有账户都有本月快照
             total_accounts = Account.query.filter(
                 Account.user_id == user_id
@@ -143,7 +153,8 @@ def auto_detect_completion(user_id, year, month, todos=None):
             if total_accounts > 0:
                 snapshot_count = AccountBalance.query.filter(
                     AccountBalance.account.has(Account.user_id == user_id),
-                    AccountBalance.record_month == month_start
+                    AccountBalance.record_month == month_start,
+                    db.or_(AccountBalance.source == 'snapshot', AccountBalance.source == None)
                 ).count()
                 detected = (snapshot_count >= total_accounts)
 
@@ -156,7 +167,14 @@ def auto_detect_completion(user_id, year, month, todos=None):
             ).count()
             detected = (count > 0)
 
-        # transaction 和 baby_fund 不自动检测
+        elif todo.detect_key == 'baby_fund':
+            # 本月有 ≥1 条宝宝基金记录
+            count = BabyFund.query.filter(
+                BabyFund.created_by == user_id,
+                extract('year', BabyFund.event_date) == year,
+                extract('month', BabyFund.event_date) == month
+            ).count()
+            detected = (count > 0)
 
         if detected:
             todo.status = 'completed'
@@ -219,41 +237,6 @@ def monthly_todo_list():
                          checklist_items=CHECKLIST_ITEMS,
                          username=session.get('nickname', session.get('username', '用户')),
                          page_title='月度待办')
-
-
-@monthly_todo_bp.route('/<int:todo_id>/toggle', methods=['POST'])
-def toggle_todo(todo_id):
-    """手动打钩 / 取消打钩（AJAX + 表单双支持）"""
-    todo = MonthlyTodo.query.get_or_404(todo_id)
-
-    if todo.user_id != session.get('user_id'):
-        if request.is_json:
-            return jsonify({'error': '无权操作'}), 403
-        flash('无权操作', 'error')
-        return redirect(url_for('monthly_todo.monthly_todo_list'))
-
-    if todo.status == 'completed':
-        # 取消打钩
-        todo.status = 'pending'
-        todo.completed_at = None
-        todo.auto_detected = False
-    else:
-        # 手动打钩完成
-        todo.status = 'completed'
-        todo.completed_at = datetime.utcnow()
-        todo.auto_detected = False
-
-    db.session.commit()
-
-    if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return jsonify({
-            'success': True,
-            'status': todo.status,
-            'completed_at': todo.completed_at.isoformat() if todo.completed_at else None
-        })
-
-    flash('待办状态已更新', 'success')
-    return redirect(url_for('monthly_todo.monthly_todo_list', year=todo.year, month=todo.month))
 
 
 @monthly_todo_bp.route('/api/summary', methods=['GET'])

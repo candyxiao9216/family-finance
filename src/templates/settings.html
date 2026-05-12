@@ -108,6 +108,18 @@
             </div>
         </div>
 
+        <!-- 数据导出 -->
+        <div class="card">
+            <h3 style="font-size:15px;font-weight:600;color:#8B7355;margin-bottom:16px;">数据导出</h3>
+            <p style="font-size:13px;color:#999;margin-bottom:16px;">导出所有数据为 Excel 文件，方便留档或迁移</p>
+            <div style="display:flex;gap:12px;">
+                <a href="{{ url_for('settings.export_data', scope='personal') }}" style="padding:10px 20px;background:linear-gradient(135deg,#e8a87c,#d4956a);color:#fff;border-radius:8px;font-size:13px;font-weight:500;text-decoration:none;">📊 导出我的数据</a>
+                {% if family %}
+                <a href="{{ url_for('settings.export_data', scope='family') }}" style="padding:10px 20px;background:#f0ece7;color:#8B7355;border-radius:8px;font-size:13px;font-weight:500;text-decoration:none;">👨‍👩‍👧 导出家庭数据</a>
+                {% endif %}
+            </div>
+        </div>
+
         <!-- 危险操作 -->
         <div class="card" style="border:1px solid #f5c6cb;">
             <h3 style="font-size:15px;font-weight:600;color:#c0392b;margin-bottom:16px;">危险操作</h3>

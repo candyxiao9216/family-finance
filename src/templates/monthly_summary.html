@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<style>
+    .summary-nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 12px 16px;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .summary-nav a {
+        color: #D4A574;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+    }
+    .summary-nav a:hover {
+        color: #c08f5a;
+    }
+    .summary-nav .current-month {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    .summary-section {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        margin-bottom: 16px;
+        padding: 20px;
+    }
+    .summary-section h3 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin: 0 0 16px 0;
+    }
+
+    .summary-stats {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+    .summary-stat {
+        flex: 1;
+        text-align: center;
+        background: #fafafa;
+        border-radius: 8px;
+        padding: 12px 8px;
+    }
+    .summary-stat-label {
+        font-size: 12px;
+        color: #8e99a4;
+        margin-bottom: 4px;
+    }
+    .summary-stat-value {
+        font-size: 17px;
+        font-weight: 700;
+        font-family: 'Outfit', sans-serif;
+    }
+    .summary-stat-value.income { color: #D4A574; }
+    .summary-stat-value.expense { color: #7C8BA1; }
+    .summary-stat-value.positive { color: #27AE60; }
+    .summary-stat-value.negative { color: #E74C3C; }
+    .summary-stat-value.neutral { color: #2c3e50; }
+
+    .ai-summary {
+        background: #f8f6f3;
+        border-left: 3px solid #D4A574;
+        padding: 12px 16px;
+        border-radius: 0 8px 8px 0;
+        font-size: 13px;
+        color: #555;
+        line-height: 1.6;
+        margin-top: 12px;
+    }
+    .ai-summary::before {
+        content: "🤖 ";
+    }
+
+    .transfer-list, .baby-fund-list {
+        margin-top: 12px;
+    }
+    .transfer-item, .baby-fund-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #f5f5f5;
+        font-size: 14px;
+    }
+    .transfer-item:last-child, .baby-fund-item:last-child {
+        border-bottom: none;
+    }
+    .transfer-item-desc, .baby-fund-item-desc {
+        color: #555;
+        flex: 1;
+    }
+    .transfer-item-date, .baby-fund-item-date {
+        color: #aaa;
+        font-size: 12px;
+        margin-right: 12px;
+    }
+    .transfer-item-amount, .baby-fund-item-amount {
+        font-weight: 600;
+        font-family: 'Outfit', sans-serif;
+        color: #2c3e50;
+    }
+
+    .progress-bar-container {
+        width: 100%;
+        height: 20px;
+        background: #f0f0f0;
+        border-radius: 10px;
+        overflow: hidden;
+        margin: 12px 0 8px;
+    }
+    .progress-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #D4A574, #c08f5a);
+        border-radius: 10px;
+        transition: width 0.6s ease;
+        min-width: 2px;
+    }
+    .progress-text {
+        text-align: center;
+        font-size: 14px;
+        font-weight: 600;
+        color: #D4A574;
+    }
+    .progress-detail {
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+        color: #8e99a4;
+        margin-top: 4px;
+    }
+
+    .todo-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 0;
+        border-bottom: 1px solid #f5f5f5;
+        font-size: 14px;
+    }
+    .todo-item:last-child {
+        border-bottom: none;
+    }
+    .todo-icon {
+        font-size: 18px;
+    }
+    .todo-title {
+        flex: 1;
+        color: #2c3e50;
+    }
+    .todo-title.completed {
+        text-decoration: line-through;
+        color: #aaa;
+    }
+    .todo-badge {
+        font-size: 11px;
+        background: #f0f0f0;
+        color: #999;
+        padding: 1px 6px;
+        border-radius: 3px;
+    }
+
+    .share-btn {
+        display: block;
+        width: 100%;
+        padding: 14px;
+        background: linear-gradient(135deg, #e8a87c, #d4956a);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        text-align: center;
+        margin-top: 8px;
+    }
+    .share-btn:hover {
+        opacity: 0.9;
+    }
+
+    @media (max-width: 768px) {
+        .summary-stat-value {
+            font-size: 14px;
+        }
+        .summary-stats {
+            gap: 8px;
+        }
+        .summary-stat {
+            padding: 10px 4px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- 月份导航 -->
+<div class="summary-nav">
+    <a href="{{ url_for('reports.monthly_summary', year=prev_year, month=prev_month_num, view=current_view) }}">← {{ prev_month_num }}月</a>
+    <span class="current-month">{{ year }}年{{ month }}月</span>
+    <a href="{{ url_for('reports.monthly_summary', year=next_year, month=next_month_num, view=current_view) }}">{{ next_month_num }}月 →</a>
+</div>
+
+<!-- 1. 收支概况 -->
+<div class="summary-section">
+    <h3>💰 收支概况</h3>
+    <div class="summary-stats">
+        <div class="summary-stat">
+            <div class="summary-stat-label">收入</div>
+            <div class="summary-stat-value income">{{ income_total | currency }}</div>
+        </div>
+        <div class="summary-stat">
+            <div class="summary-stat-label">支出</div>
+            <div class="summary-stat-value expense">{{ expense_total | currency }}</div>
+        </div>
+        <div class="summary-stat">
+            <div class="summary-stat-label">结余</div>
+            <div class="summary-stat-value {% if balance >= 0 %}positive{% else %}negative{% endif %}">{{ balance | currency }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- 2. 资产变化 -->
+<div class="summary-section">
+    <h3>📊 资产变化</h3>
+    <div class="summary-stats">
+        <div class="summary-stat">
+            <div class="summary-stat-label">月初资产</div>
+            <div class="summary-stat-value neutral">{{ asset_start | currency }}</div>
+        </div>
+        <div class="summary-stat">
+            <div class="summary-stat-label">月末资产</div>
+            <div class="summary-stat-value neutral">{{ asset_end | currency }}</div>
+        </div>
+    </div>
+    <div class="summary-stats">
+        <div class="summary-stat">
+            <div class="summary-stat-label">增长金额</div>
+            <div class="summary-stat-value {% if asset_growth >= 0 %}positive{% else %}negative{% endif %}">
+                {% if asset_growth >= 0 %}+{% endif %}{{ asset_growth | currency }}
+            </div>
+        </div>
+        <div class="summary-stat">
+            <div class="summary-stat-label">增长率</div>
+            <div class="summary-stat-value {% if asset_growth_pct >= 0 %}positive{% else %}negative{% endif %}">
+                {% if asset_growth_pct >= 0 %}+{% endif %}{{ "%.1f" | format(asset_growth_pct) }}%
+            </div>
+        </div>
+    </div>
+    <div class="ai-summary">{{ asset_ai_summary }}</div>
+</div>
+
+<!-- 3. 转账记录 -->
+<div class="summary-section">
+    <h3>🔄 转账记录</h3>
+    <div class="summary-stats">
+        <div class="summary-stat">
+            <div class="summary-stat-label">转账笔数</div>
+            <div class="summary-stat-value neutral">{{ transfer_count }}</div>
+        </div>
+        <div class="summary-stat">
+            <div class="summary-stat-label">转账总额</div>
+            <div class="summary-stat-value neutral">{{ transfer_total | currency }}</div>
+        </div>
+    </div>
+    {% if transfers %}
+    <div class="transfer-list">
+        {% for t in transfers %}
+        <div class="transfer-item">
+            <span class="transfer-item-date">{{ t.transaction_date.strftime('%m-%d') }}</span>
+            <span class="transfer-item-desc">{{ t.description or '转账' }}</span>
+            <span class="transfer-item-amount">{{ t.amount | currency }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:#aaa;font-size:13px;text-align:center;margin-top:12px;">本月暂无转账记录</p>
+    {% endif %}
+</div>
+
+<!-- 4. 宝宝基金 -->
+<div class="summary-section">
+    <h3>👶 宝宝基金</h3>
+    <div class="summary-stats">
+        <div class="summary-stat">
+            <div class="summary-stat-label">本月新增</div>
+            <div class="summary-stat-value neutral">{{ baby_month_count }}笔 / {{ baby_month_amount | currency }}</div>
+        </div>
+        <div class="summary-stat">
+            <div class="summary-stat-label">累计总额</div>
+            <div class="summary-stat-value income">{{ baby_cumulative_total | currency }}</div>
+        </div>
+    </div>
+    {% if baby_funds %}
+    <div class="baby-fund-list">
+        {% for bf in baby_funds %}
+        <div class="baby-fund-item">
+            <span class="baby-fund-item-date">{{ bf.event_date.strftime('%m-%d') }}</span>
+            <span class="baby-fund-item-desc">{{ bf.giver_name }}{% if bf.event_type %} ({{ bf.event_type }}){% endif %}</span>
+            <span class="baby-fund-item-amount">{{ bf.amount | currency }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <div class="ai-summary">{{ baby_ai_summary }}</div>
+</div>
+
+<!-- 5. 储蓄目标 -->
+<div class="summary-section">
+    <h3>🎯 储蓄目标</h3>
+    <div class="summary-stats">
+        <div class="summary-stat">
+            <div class="summary-stat-label">本月储蓄</div>
+            <div class="summary-stat-value income">{{ monthly_saved | currency }}</div>
+        </div>
+        <div class="summary-stat">
+            <div class="summary-stat-label">月度目标</div>
+            <div class="summary-stat-value neutral">{{ monthly_target | currency }}</div>
+        </div>
+    </div>
+    <div class="progress-bar-container">
+        <div class="progress-bar-fill" style="width: {{ [annual_progress, 100] | min }}%"></div>
+    </div>
+    <div class="progress-text">年度进度 {{ "%.1f" | format(annual_progress) }}%</div>
+    <div class="progress-detail">
+        <span>已储蓄 {{ annual_saved | currency }}</span>
+        <span>年度目标 {{ annual_target | currency }}</span>
+    </div>
+</div>
+
+<!-- 6. 月度待办 -->
+<div class="summary-section">
+    <h3>📋 月度待办</h3>
+    <div class="summary-stats">
+        <div class="summary-stat">
+            <div class="summary-stat-label">总项目</div>
+            <div class="summary-stat-value neutral">{{ todos_total }}</div>
+        </div>
+        <div class="summary-stat">
+            <div class="summary-stat-label">已完成</div>
+            <div class="summary-stat-value positive">{{ todos_completed }}</div>
+        </div>
+        <div class="summary-stat">
+            <div class="summary-stat-label">必选完成</div>
+            <div class="summary-stat-value {% if todos_required_completed == todos_required %}positive{% else %}neutral{% endif %}">{{ todos_required_completed }}/{{ todos_required }}</div>
+        </div>
+    </div>
+    {% if todos %}
+    <div style="margin-top:12px;">
+        {% for todo in todos %}
+        <div class="todo-item">
+            <span class="todo-icon">{% if todo.status == 'completed' %}✅{% else %}⬜{% endif %}</span>
+            <span class="todo-title {% if todo.status == 'completed' %}completed{% endif %}">{{ todo.title }}</span>
+            {% if not todo.is_required %}
+            <span class="todo-badge">可选</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:#aaa;font-size:13px;text-align:center;margin-top:12px;">本月暂无待办事项</p>
+    {% endif %}
+</div>
+
+<!-- 分享按钮 -->
+<div class="summary-section" style="padding:16px 20px;">
+    <button class="share-btn" onclick="alert('分享功能即将上线，敬请期待！')">📱 分享本月总结</button>
+</div>
+
+{% endblock %}

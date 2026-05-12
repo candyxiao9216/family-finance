@@ -149,13 +149,6 @@ def index():
     total_required = len(required_todos)
     checklist_rate = (required_completed / total_required * 100) if total_required > 0 else 0
 
-    # 弹窗逻辑：当月有未完成必选项 + 本次登录还没弹过
-    popup_key = f'todo_popup_{current_year}_{current_month}'
-    pending_required = [t for t in required_todos if t.status != 'completed']
-    show_todo_popup = len(pending_required) > 0 and not session.get(popup_key)
-    if show_todo_popup:
-        session[popup_key] = True
-
     return render_template('index.html',
                           monthly_income=monthly_income,
                           monthly_expense=monthly_expense,
@@ -174,8 +167,6 @@ def index():
                           required_completed=required_completed,
                           total_required=total_required,
                           checklist_rate=checklist_rate,
-                          show_todo_popup=show_todo_popup,
-                          pending_required=pending_required,
                           current_view=current_view,
                           family=family,
                           username=session.get('nickname', session.get('username', '用户')))
