@@ -52,6 +52,42 @@
     .recent-chip-cat {
         font-size: 12px;
     }
+
+    /* 交易表格类型标签 */
+    .txn-type-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: 10px;
+        font-size: 11px;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+    .txn-type-income { background: var(--color-income-light, #F5E6D3); color: #8B6914; }
+    .txn-type-expense { background: var(--color-expense-light, #E8ECF1); color: #4a5568; }
+    .txn-type-transfer { background: #e8f4fd; color: #1a6fa8; }
+
+    /* 转账路径竖向显示 */
+    .txn-transfer-path {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+        font-size: 12px;
+        line-height: 1.4;
+    }
+    .txn-transfer-path .path-from,
+    .txn-transfer-path .path-to {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .txn-transfer-path .path-arrow {
+        color: var(--color-text-muted, #9A9A9A);
+        font-size: 10px;
+        padding-left: 2px;
+    }
 </style>
 {% endblock %}
 
@@ -246,76 +282,143 @@
             </form>
         </div>
 
-        <!-- 交易列表 -->
-        <div class="card transactions-section">
+        <!-- 交易列表（表格形式） -->
+        <div class="card">
             <div class="card-header">
                 <h2 class="card-title">近期交易</h2>
+                <span class="account-count" id="txn-count">{{ transactions|length }} 条</span>
             </div>
 
-            <div class="transactions-list" id="transactions-list">
-                {% if transactions %}
-                    {% for t in transactions %}
-                    <div id="txn-{{ t.id }}" class="transaction-item {{ 'income' if t.type == 'income' else ('expense' if t.type == 'expense' else '') }}" {% if t.type == 'transfer_out' %}style="border-left-color:#3498db;"{% endif %}>
-                        <div class="t-icon">
-                            {{ '💰' if t.type == 'income' else ('📤' if t.type == 'expense' else '🔄') }}
-                        </div>
-                        <div class="t-info">
-                            {% if t.type == 'transfer_out' %}
-                                {% set pair = t.__class__.query.get(t.transfer_pair_id) if t.transfer_pair_id else None %}
-                                <span class="t-description">
-                                    {{ (t.account.owner.nickname or t.account.owner.username) if t.account else '?' }}·{{ t.account.name if t.account else '?' }}
-                                    →
-                                    {{ (pair.account.owner.nickname or pair.account.owner.username) if pair and pair.account else '?' }}·{{ pair.account.name if pair and pair.account else '?' }}
-                                </span>
-                            {% else %}
-                                <span class="t-description">{{ t.description or (t.category_name if t.category_name else '未分类') }}</span>
-                            {% endif %}
-                            <span class="t-meta">
-                                <span class="t-creator">{{ t.user.nickname or t.user.username }}</span>
-                                <span>·</span>
-                                {% if t.type == 'transfer_out' %}
-                                <span>转账</span>
-                                {% else %}
-                                <span>{{ t.category_name or '-' }}</span>
-                                {% endif %}
-                                <span>·</span>
-                                <span>{{ t.transaction_date }} {{ t.created_at|to_beijing }}</span>
-                                {% if t.modification_count %}
-                                <span class="t-modified" title="已修改 {{ t.modification_count }} 次">已修改</span>
-                                {% endif %}
-                            </span>
-                        </div>
-                        <div class="t-amount">
-                            {% if t.type == 'transfer_out' %}
-                            <span style="color:#3498db;">¥{{ t.amount|currency }}</span>
-                            {% else %}
-                            {{ '+' if t.type == 'income' else '-' }}¥{{ t.amount|currency }}
-                            {% endif %}
-                        </div>
-                        <div class="t-actions">
-                            <a href="/edit/{{ t.id }}" class="btn-edit" title="编辑">
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M11.5 2.5l2 2M2 14l1-4L11.5 1.5l2 2L5 12l-4 1z"/>
-                                </svg>
-                            </a>
-                            <form action="/delete/{{ t.id }}" method="POST" class="delete-form">
-                                <button type="submit" class="btn-delete" title="删除" data-confirm-delete data-confirm-message="确定删除这条交易记录？">
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M3 6h10M5 6v10a1 1 0 001 1h4a1 1 0 001-1V6M8 6V4M6 6v1M10 6v1"/>
-                                    </svg>
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📝</div>
-                        <p class="empty-state-text">还没有交易记录，开始记一笔吧</p>
-                        <a href="#" class="empty-state-btn" onclick="document.getElementById('add-form').scrollIntoView()">+ 添加交易</a>
-                    </div>
-                {% endif %}
+            {% if transactions %}
+            <!-- 筛选栏 -->
+            <div class="snapshot-filters" style="padding:12px 20px;border-bottom:1px solid var(--color-border-light);margin-bottom:0;">
+                <div class="filter-group">
+                    <label class="filter-label">类型</label>
+                    <select id="txn-filter-type" class="form-select filter-select">
+                        <option value="">全部</option>
+                        <option value="income">收入</option>
+                        <option value="expense">支出</option>
+                        <option value="transfer">转账</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">月份</label>
+                    <input type="month" id="txn-filter-month" class="form-input filter-select">
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">操作人</label>
+                    <select id="txn-filter-user" class="form-select filter-select">
+                        <option value="">全部</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <button id="txn-filter-reset" class="btn-delete-cat">重置</button>
+                </div>
             </div>
+
+            <!-- 表格 -->
+            <div class="snapshot-table-wrap">
+                <table class="snapshot-table" id="txn-table">
+                    <thead>
+                        <tr>
+                            <th>日期</th>
+                            <th>类型</th>
+                            <th>分类</th>
+                            <th>金额</th>
+                            <th>账户</th>
+                            <th>操作人</th>
+                            <th>备注</th>
+                            <th>操作时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in transactions %}
+                        {% if t.type == 'transfer_out' %}
+                        {% set pair = t.__class__.query.get(t.transfer_pair_id) if t.transfer_pair_id else None %}
+                        {% endif %}
+                        <tr data-type="{{ 'transfer' if t.type == 'transfer_out' else t.type }}"
+                            data-month="{{ t.transaction_date.strftime('%Y-%m') }}"
+                            data-user="{{ t.user.nickname or t.user.username }}"
+                            {% if t.type == 'transfer_out' %}style="background:#f8fcff;"{% endif %}>
+                            <!-- 日期 -->
+                            <td>{{ t.transaction_date }}</td>
+                            <!-- 类型 -->
+                            <td>
+                                {% if t.type == 'income' %}
+                                <span class="txn-type-badge txn-type-income">💰 收入</span>
+                                {% elif t.type == 'expense' %}
+                                <span class="txn-type-badge txn-type-expense">📤 支出</span>
+                                {% else %}
+                                <span class="txn-type-badge txn-type-transfer">🔄 转账</span>
+                                {% endif %}
+                            </td>
+                            <!-- 分类 -->
+                            <td>
+                                {% if t.type == 'transfer_out' %}
+                                <div class="txn-transfer-path">
+                                    <span class="path-from"><span class="acct-owner-icon {% if t.account and t.account.owner and t.account.owner.username == 'charlley88' %}icon-blue{% else %}icon-purple{% endif %}">{{ (t.account.owner.nickname or t.account.owner.username)[-1:] if t.account and t.account.owner else '?' }}</span>{{ t.account.name if t.account else '?' }}</span>
+                                    <span class="path-arrow">↓</span>
+                                    <span class="path-to"><span class="acct-owner-icon {% if pair and pair.account and pair.account.owner and pair.account.owner.username == 'charlley88' %}icon-blue{% else %}icon-purple{% endif %}">{{ (pair.account.owner.nickname or pair.account.owner.username)[-1:] if pair and pair.account and pair.account.owner else '?' }}</span>{{ pair.account.name if pair and pair.account else '?' }}</span>
+                                </div>
+                                {% else %}
+                                {{ t.category_name or '-' }}
+                                {% endif %}
+                            </td>
+                            <!-- 金额 -->
+                            <td class="td-amount" style="color:{% if t.type == 'income' %}var(--color-income){% elif t.type == 'expense' %}var(--color-expense){% else %}#3498db{% endif %};">
+                                {% if t.type == 'income' %}+{% elif t.type == 'expense' %}-{% endif %}¥{{ t.amount|currency }}
+                            </td>
+                            <!-- 账户 -->
+                            <td>
+                                {% if t.type == 'transfer_out' %}
+                                <div class="txn-transfer-path">
+                                    <span class="path-from"><span class="acct-owner-icon {% if t.account and t.account.owner and t.account.owner.username == 'charlley88' %}icon-blue{% else %}icon-purple{% endif %}">{{ (t.account.owner.nickname or t.account.owner.username)[-1:] if t.account and t.account.owner else '?' }}</span>{{ t.account.name if t.account else '?' }}</span>
+                                    <span class="path-arrow">↓</span>
+                                    <span class="path-to"><span class="acct-owner-icon {% if pair and pair.account and pair.account.owner and pair.account.owner.username == 'charlley88' %}icon-blue{% else %}icon-purple{% endif %}">{{ (pair.account.owner.nickname or pair.account.owner.username)[-1:] if pair and pair.account and pair.account.owner else '?' }}</span>{{ pair.account.name if pair and pair.account else '?' }}</span>
+                                </div>
+                                {% elif t.account %}
+                                <span style="display:inline-flex;align-items:center;gap:4px;font-size:12px;">
+                                    <span class="acct-owner-icon {% if t.account.owner and t.account.owner.username == 'charlley88' %}icon-blue{% else %}icon-purple{% endif %}">{{ (t.account.owner.nickname or t.account.owner.username)[-1:] if t.account and t.account.owner else '?' }}</span>{{ t.account.name }}
+                                </span>
+                                {% else %}
+                                —
+                                {% endif %}
+                            </td>
+                            <!-- 操作人 -->
+                            <td>{{ t.user.nickname or t.user.username }}</td>
+                            <!-- 备注 -->
+                            <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--color-text-secondary);">{{ t.description or '' }}</td>
+                            <!-- 操作时间 -->
+                            <td class="td-meta">
+                                {{ t.created_at|to_beijing('%m-%d %H:%M') }}
+                                {% if t.modification_count %}<br><span style="font-size:10px;background:#fff3e0;color:#e65100;padding:1px 5px;border-radius:3px;display:inline-block;margin-top:2px;">已修改</span>{% endif %}
+                            </td>
+                            <!-- 操作 -->
+                            <td>
+                                <div style="display:flex;gap:4px;align-items:center;">
+                                    <a href="/edit/{{ t.id }}" class="btn-edit" style="opacity:1;" title="编辑">
+                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2M2 14l1-4L11.5 1.5l2 2L5 12l-4 1z"/></svg>
+                                    </a>
+                                    <form action="/delete/{{ t.id }}" method="POST" style="display:inline;">
+                                        <button type="submit" class="btn-delete" style="opacity:1;" title="删除" data-confirm-delete data-confirm-message="确定删除这条交易记录？">
+                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h10M5 6v8a1 1 0 001 1h4a1 1 0 001-1V6M8 6V4M6 6v1M10 6v1"/></svg>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon">📝</div>
+                <p class="empty-state-text">还没有交易记录，开始记一笔吧</p>
+                <a href="#" class="empty-state-btn" onclick="document.getElementById('add-form').scrollIntoView()">+ 添加交易</a>
+            </div>
+            {% endif %}
 
             <!-- 分页 -->
             {% if pagination and pagination.pages > 1 %}
@@ -581,5 +684,61 @@
 
         // JS 动态赋值完成后，重新应用小眼睛隐藏
         if (window.ffReapplyHide) window.ffReapplyHide();
+
+        // ===== 交易表格筛选 =====
+        (function() {
+            var txnTable = document.getElementById('txn-table');
+            if (!txnTable) return;
+
+            var filterType = document.getElementById('txn-filter-type');
+            var filterMonth = document.getElementById('txn-filter-month');
+            var filterUser = document.getElementById('txn-filter-user');
+            var filterReset = document.getElementById('txn-filter-reset');
+            var txnCount = document.getElementById('txn-count');
+
+            // 动态填充操作人选项
+            var users = new Set();
+            txnTable.querySelectorAll('tbody tr').forEach(function(row) {
+                var u = row.getAttribute('data-user');
+                if (u) users.add(u);
+            });
+            users.forEach(function(name) {
+                var opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                filterUser.appendChild(opt);
+            });
+
+            function applyTxnFilters() {
+                var typeVal = filterType.value;
+                var monthVal = filterMonth.value;
+                var userVal = filterUser.value;
+                var visible = 0;
+
+                txnTable.querySelectorAll('tbody tr').forEach(function(row) {
+                    var matchType = !typeVal || row.getAttribute('data-type') === typeVal;
+                    var matchMonth = !monthVal || row.getAttribute('data-month') === monthVal;
+                    var matchUser = !userVal || row.getAttribute('data-user') === userVal;
+
+                    if (matchType && matchMonth && matchUser) {
+                        row.style.display = '';
+                        visible++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                txnCount.textContent = visible + ' 条';
+            }
+
+            filterType.addEventListener('change', applyTxnFilters);
+            filterMonth.addEventListener('change', applyTxnFilters);
+            filterUser.addEventListener('change', applyTxnFilters);
+            filterReset.addEventListener('click', function() {
+                filterType.value = '';
+                filterMonth.value = '';
+                filterUser.value = '';
+                applyTxnFilters();
+            });
+        })();
     </script>
 {% endblock %}
