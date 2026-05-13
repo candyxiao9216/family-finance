@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>月度收支交易表格 - Demo v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+    --color-bg: #F9F7F4;
+    --color-bg-card: #FFFFFF;
+    --color-text-primary: #2D2A2E;
+    --color-text-secondary: #6B6B6B;
+    --color-text-muted: #9A9A9A;
+    --color-income: #D4A574;
+    --color-income-light: #F5E6D3;
+    --color-income-bg: rgba(212, 165, 116, 0.15);
+    --color-expense: #7C8BA1;
+    --color-expense-light: #E8ECF1;
+    --color-accent: #E8998D;
+    --color-border: #E8E4E0;
+    --color-border-light: #F0EDE9;
+    --shadow-card: 0 2px 12px rgba(45, 42, 46, 0.06);
+    --radius-md: 12px;
+    --radius-sm: 8px;
+    --transition-fast: 0.15s ease;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Outfit', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--color-bg);
+    color: var(--color-text-primary);
+    line-height: 1.6;
+    padding: 20px;
+}
+.container { max-width: 960px; margin: 0 auto; }
+
+.demo-label { text-align: center; margin-bottom: 20px; padding: 12px; background: #f0ece7; border-radius: 8px; font-size: 13px; color: #8B7355; }
+.demo-label strong { display: block; font-size: 15px; margin-bottom: 4px; }
+
+.card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(45, 42, 46, 0.06);
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--color-border-light);
+}
+.card-title { font-size: 16px; font-weight: 600; color: #2c3e50; }
+.record-count { font-size: 13px; color: var(--color-text-muted); background: #f5f5f5; padding: 2px 10px; border-radius: 10px; }
+
+/* 筛选栏 */
+.filters {
+    display: flex;
+    gap: 12px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--color-border-light);
+    flex-wrap: wrap;
+    align-items: center;
+}
+.filter-group { display: flex; align-items: center; gap: 6px; }
+.filter-label { font-size: 12px; color: var(--color-text-muted); white-space: nowrap; }
+.filter-select {
+    padding: 5px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    font-size: 13px;
+    background: #fff;
+    color: var(--color-text-primary);
+    outline: none;
+}
+.filter-select:focus { border-color: var(--color-income); }
+.btn-reset {
+    padding: 5px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    font-size: 12px;
+    background: #fff;
+    color: var(--color-text-muted);
+    cursor: pointer;
+}
+.btn-reset:hover { background: #f9f6f2; }
+
+/* 表格 */
+.table-wrap { overflow-x: auto; }
+.txn-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.txn-table thead th {
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    font-size: 12px;
+    background: #fafafa;
+    border-bottom: 1px solid var(--color-border-light);
+    white-space: nowrap;
+}
+.txn-table tbody tr {
+    border-bottom: 1px solid var(--color-border-light);
+    transition: background 0.15s;
+}
+.txn-table tbody tr:hover { background: #fdfcfb; }
+.txn-table tbody tr:last-child { border-bottom: none; }
+.txn-table td { padding: 10px 12px; vertical-align: middle; }
+
+/* 类型标签 */
+.type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+.type-badge.income { background: var(--color-income-light); color: #8B6914; }
+.type-badge.expense { background: var(--color-expense-light); color: #4a5568; }
+.type-badge.transfer { background: #e8f4fd; color: #1a6fa8; }
+
+/* 金额 */
+.td-amount { font-family: 'Outfit', sans-serif; font-weight: 600; white-space: nowrap; }
+.td-amount.income { color: var(--color-income); }
+.td-amount.expense { color: var(--color-expense); }
+.td-amount.transfer { color: #3498db; }
+
+/* 日期列 */
+.td-date { color: var(--color-text-primary); font-size: 13px; white-space: nowrap; }
+
+/* 操作时间列 */
+.td-time { color: var(--color-text-muted); font-size: 12px; white-space: nowrap; }
+
+/* 备注 */
+.td-note { color: var(--color-text-secondary); max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+
+/* 已修改标记 */
+.modified-badge {
+    display: inline-block;
+    font-size: 10px;
+    background: #fff3e0;
+    color: #e65100;
+    padding: 1px 5px;
+    border-radius: 3px;
+    margin-top: 2px;
+}
+
+/* 人名标签（圆形小图标） */
+.owner-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+.owner-icon.icon-purple { background: #9B8EC4; }
+.owner-icon.icon-blue { background: #6B9EB5; }
+
+/* 账户列带人名 */
+.td-account {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+}
+
+/* 转账分类/账户换行显示 */
+.td-transfer-path {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    font-size: 12px;
+    line-height: 1.4;
+}
+.path-from, .path-to {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.path-arrow {
+    color: var(--color-text-muted);
+    font-size: 10px;
+    padding-left: 2px;
+}
+
+/* 操作按钮 — 和项目统一风格 */
+.td-actions { display: flex; gap: 4px; align-items: center; }
+.btn-edit, .btn-del {
+    padding: 6px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--color-text-muted);
+    border-radius: var(--radius-sm);
+    transition: var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+.btn-edit:hover {
+    background: var(--color-income-bg);
+    color: var(--color-income);
+}
+.btn-del:hover {
+    background: #FFEBE5;
+    color: var(--color-accent);
+}
+
+/* 分页 */
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--color-border-light);
+}
+.page-link {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    text-decoration: none;
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border-light);
+}
+.page-link.active {
+    background: var(--color-income);
+    color: #fff;
+    border-color: var(--color-income);
+}
+
+@media (max-width: 768px) {
+    .filters { gap: 8px; padding: 10px 12px; }
+    .txn-table { font-size: 12px; }
+    .txn-table thead th, .txn-table td { padding: 8px 6px; }
+    .td-note { max-width: 60px; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="demo-label">
+        <strong>月度收支 — 交易表格 Demo v2</strong>
+        列顺序：日期 | 类型 | 分类 | 金额 | 账户 | 操作人 | 备注 | 操作时间 | 操作
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">近期交易</h2>
+            <span class="record-count">12 条</span>
+        </div>
+
+        <!-- 筛选栏 -->
+        <div class="filters">
+            <div class="filter-group">
+                <label class="filter-label">类型</label>
+                <select class="filter-select">
+                    <option value="">全部</option>
+                    <option value="income">收入</option>
+                    <option value="expense">支出</option>
+                    <option value="transfer">转账</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">月份</label>
+                <input type="month" class="filter-select" value="2026-05">
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">操作人</label>
+                <select class="filter-select">
+                    <option value="">全部</option>
+                    <option value="小美">小美</option>
+                    <option value="小帅">小帅</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <button class="btn-reset">重置</button>
+            </div>
+        </div>
+
+        <!-- 表格 -->
+        <div class="table-wrap">
+            <table class="txn-table">
+                <thead>
+                    <tr>
+                        <th>日期</th>
+                        <th>类型</th>
+                        <th>分类</th>
+                        <th>金额</th>
+                        <th>账户</th>
+                        <th>操作人</th>
+                        <th>备注</th>
+                        <th>操作时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="td-date">2026-05-10</td>
+                        <td><span class="type-badge income">💰 收入</span></td>
+                        <td>公积金</td>
+                        <td class="td-amount income">+¥10,700.00</td>
+                        <td><span class="td-account"><span class="owner-icon icon-purple">美</span>招行</span></td>
+                        <td>小美</td>
+                        <td class="td-note"></td>
+                        <td class="td-time">05-10 14:32</td>
+                        <td><div class="td-actions">
+                            <a href="#" class="btn-edit" title="编辑"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2M2 14l1-4L11.5 1.5l2 2L5 12l-4 1z"/></svg></a>
+                            <button class="btn-del" title="删除"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h10M5 6v8a1 1 0 001 1h4a1 1 0 001-1V6M8 6V4M6 6v1M10 6v1"/></svg></button>
+                        </div></td>
+                    </tr>
+                    <tr>
+                        <td class="td-date">2026-05-10</td>
+                        <td><span class="type-badge income">💰 收入</span></td>
+                        <td>房租</td>
+                        <td class="td-amount income">+¥4,200.00</td>
+                        <td><span class="td-account"><span class="owner-icon icon-purple">美</span>招行</span></td>
+                        <td>小美</td>
+                        <td class="td-note"></td>
+                        <td class="td-time">05-10 14:30</td>
+                        <td><div class="td-actions">
+                            <a href="#" class="btn-edit" title="编辑"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2M2 14l1-4L11.5 1.5l2 2L5 12l-4 1z"/></svg></a>
+                            <button class="btn-del" title="删除"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h10M5 6v8a1 1 0 001 1h4a1 1 0 001-1V6M8 6V4M6 6v1M10 6v1"/></svg></button>
+                        </div></td>
+                    </tr>
+                    <tr>
+                        <td class="td-date">2026-05-08</td>
+                        <td><span class="type-badge income">💰 收入</span></td>
+                        <td>工资</td>
+                        <td class="td-amount income">+¥61,671.88</td>
+                        <td><span class="td-account"><span class="owner-icon icon-purple">美</span>招行</span></td>
+                        <td>小美</td>
+                        <td class="td-note">4 月工资</td>
+                        <td class="td-time">05-08 21:15</td>
+                        <td><div class="td-actions">
+                            <a href="#" class="btn-edit" title="编辑"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2M2 14l1-4L11.5 1.5l2 2L5 12l-4 1z"/></svg></a>
+                            <button class="btn-del" title="删除"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h10M5 6v8a1 1 0 001 1h4a1 1 0 001-1V6M8 6V4M6 6v1M10 6v1"/></svg></button>
+                        </div></td>
+                    </tr>
+                    <tr>
+                        <td class="td-date">2026-05-08</td>
+                        <td><span class="type-badge income">💰 收入</span></td>
+                        <td>奖金</td>
+                        <td class="td-amount income">+¥6,666.00</td>
+                        <td><span class="td-account"><span class="owner-icon icon-purple">美</span>招行</span></td>
+                        <td>小美</td>
+                        <td class="td-note">km 知识奖奖金</td>
+                        <td class="td-time">05-08 21:10<br><span class="modified-badge">已修改</span></td>
+                        <td><div class="td-actions">
+                            <a href="#" class="btn-edit" title="编辑"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2M2 14l1-4L11.5 1.5l2 2L5 12l-4 1z"/></svg></a>
+                            <button class="btn-del" title="删除"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h10M5 6v8a1 1 0 001 1h4a1 1 0 001-1V6M8 6V4M6 6v1M10 6v1"/></svg></button>
+                        </div></td>
+                    </tr>
+                    <tr>
+                        <td class="td-date">2026-05-05</td>
+                        <td><span class="type-badge expense">📤 支出</span></td>
+                        <td>农行信用卡</td>
+                        <td class="td-amount expense">-¥6,988.77</td>
+                        <td><span class="td-account"><span class="owner-icon icon-purple">美</span>招行</span></td>
+                        <td>小美</td>
+                        <td class="td-note"></td>
+                        <td class="td-time">05-05 09:00</td>
+                        <td><div class="td-actions">
+                            <a href="#" class="btn-edit" title="编辑"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2M2 14l1-4L11.5 1.5l2 2L5 12l-4 1z"/></svg></a>
+                            <button class="btn-del" title="删除"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h10M5 6v8a1 1 0 001 1h4a1 1 0 001-1V6M8 6V4M6 6v1M10 6v1"/></svg></button>
+                        </div></td>
+                    </tr>
+                    <tr>
+                        <td class="td-date">2026-05-05</td>
+                        <td><span class="type-badge expense">📤 支出</span></td>
+                        <td>公积金</td>
+                        <td class="td-amount expense">-¥2,700.00</td>
+                        <td><span class="td-account"><span class="owner-icon icon-purple">美</span>招行</span></td>
+                        <td>小美</td>
+                        <td class="td-note"></td>
+                        <td class="td-time">05-05 08:50</td>
+                        <td><div class="td-actions">
+                            <a href="#" class="btn-edit" title="编辑"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2M2 14l1-4L11.5 1.5l2 2L5 12l-4 1z"/></svg></a>
+                            <button class="btn-del" title="删除"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h10M5 6v8a1 1 0 001 1h4a1 1 0 001-1V6M8 6V4M6 6v1M10 6v1"/></svg></button>
+                        </div></td>
+                    </tr>
+                    <tr>
+                        <td class="td-date">2026-05-05</td>
+                        <td><span class="type-badge expense">📤 支出</span></td>
+                        <td>民生信用卡</td>
+                        <td class="td-amount expense">-¥2,570.92</td>
+                        <td><span class="td-account"><span class="owner-icon icon-purple">美</span>招行</span></td>
+                        <td>小美</td>
+                        <td class="td-note"></td>
+                        <td class="td-time">05-05 08:45</td>
+                        <td><div class="td-actions">
+                            <a href="#" class="btn-edit" title="编辑"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2M2 14l1-4L11.5 1.5l2 2L5 12l-4 1z"/></svg></a>
+                            <button class="btn-del" title="删除"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h10M5 6v8a1 1 0 001 1h4a1 1 0 001-1V6M8 6V4M6 6v1M10 6v1"/></svg></button>
+                        </div></td>
+                    </tr>
+                    <tr style="background:#f8fcff;">
+                        <td class="td-date">2026-05-03</td>
+                        <td><span class="type-badge transfer">🔄 转账</span></td>
+                        <td>
+                            <div class="td-transfer-path">
+                                <span class="path-from"><span class="owner-icon icon-blue">帅</span>招行</span>
+                                <span class="path-arrow">↓</span>
+                                <span class="path-to"><span class="owner-icon icon-purple">美</span>招行储蓄</span>
+                            </div>
+                        </td>
+                        <td class="td-amount transfer">¥30,000.00</td>
+                        <td>
+                            <div class="td-transfer-path">
+                                <span class="path-from"><span class="owner-icon icon-blue">帅</span>招行</span>
+                                <span class="path-arrow">↓</span>
+                                <span class="path-to"><span class="owner-icon icon-purple">美</span>招行储蓄</span>
+                            </div>
+                        </td>
+                        <td>小美</td>
+                        <td class="td-note">5月储蓄计划-小帅</td>
+                        <td class="td-time">05-03 16:20</td>
+                        <td><div class="td-actions">
+                            <a href="#" class="btn-edit" title="编辑"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2M2 14l1-4L11.5 1.5l2 2L5 12l-4 1z"/></svg></a>
+                            <button class="btn-del" title="删除"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h10M5 6v8a1 1 0 001 1h4a1 1 0 001-1V6M8 6V4M6 6v1M10 6v1"/></svg></button>
+                        </div></td>
+                    </tr>
+                    <tr>
+                        <td class="td-date">2026-05-01</td>
+                        <td><span class="type-badge expense">📤 支出</span></td>
+                        <td>广发信用卡</td>
+                        <td class="td-amount expense">-¥8.60</td>
+                        <td><span class="td-account"><span class="owner-icon icon-purple">美</span>招行</span></td>
+                        <td>小美</td>
+                        <td class="td-note"></td>
+                        <td class="td-time">05-01 10:00</td>
+                        <td><div class="td-actions">
+                            <a href="#" class="btn-edit" title="编辑"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2M2 14l1-4L11.5 1.5l2 2L5 12l-4 1z"/></svg></a>
+                            <button class="btn-del" title="删除"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h10M5 6v8a1 1 0 001 1h4a1 1 0 001-1V6M8 6V4M6 6v1M10 6v1"/></svg></button>
+                        </div></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 分页 -->
+        <div class="pagination">
+            <a href="#" class="page-link active">1</a>
+            <a href="#" class="page-link">2</a>
+        </div>
+    </div>
+
+    <!-- 方案说明 -->
+    <div class="card" style="padding:20px;">
+        <h3 style="font-size:14px;color:#8B7355;margin-bottom:12px;">编辑后的显示方案</h3>
+        <div style="font-size:13px;color:#555;line-height:2;">
+            <strong>只保留 1 条记录（最新状态）</strong>，编辑后在"操作时间"列旁边显示一个 <span class="modified-badge">已修改</span> 小标签。<br>
+            • 用户只关心最终正确的数据，不需要看到修改前的旧值<br>
+            • 系统内部 <code>modification_count</code> 字段记录了修改次数<br>
+            • 点编辑按钮进入编辑页，可以看到上次修改时间
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
