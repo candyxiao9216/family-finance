@@ -49,3 +49,6 @@ test-*.png
 # 数据库备份（本地保留，不入库）
 backups/
 .DS_Store
+
+# Demo HTML 文件（本地保留供参考，不入库）
+docs/demo-*.html
