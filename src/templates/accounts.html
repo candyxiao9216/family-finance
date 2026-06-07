@@ -336,7 +336,7 @@
     <!-- ===== 模态框：批量录入快照 ===== -->
     <div class="batch-modal-overlay" id="batch-modal" style="display:none;">
         <div class="batch-modal">
-            <form action="{{ url_for('account.batch_snapshot') }}" method="POST">
+            <form id="batch-form" action="{{ url_for('account.batch_snapshot') }}" method="POST">
                 <input type="hidden" name="view" value="{{ current_view }}">
                 <!-- 头部 -->
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -345,6 +345,7 @@
                         <input type="month" name="month" id="batch-month" class="form-input" style="width:auto;padding:6px 10px;font-size:13px;" required>
                     </div>
                     <div style="display:flex;gap:8px;">
+                        <button type="button" onclick="clearSnapshotDraft()" style="padding:8px 14px;background:none;border:1px solid #e0dcd7;border-radius:20px;font-size:13px;cursor:pointer;color:#999;" title="清空所有已填数据">🗑️ 清空重置</button>
                         <button type="submit" style="padding:8px 20px;background:#D4A574;color:white;border:none;border-radius:20px;font-size:13px;cursor:pointer;font-weight:500;">全部提交</button>
                         <button type="button" onclick="closeBatchModal()" style="padding:8px 14px;background:none;border:1px solid #e0dcd7;border-radius:20px;font-size:13px;cursor:pointer;color:#666;">关闭</button>
                     </div>
@@ -509,6 +510,89 @@
                 closeBatchModal();
             }
         });
+
+        // ===== 快照草稿：localStorage 保存/恢复 =====
+        var SNAPSHOT_DRAFT_KEY = 'ff_snapshot_draft';
+
+        function saveSnapshotDraft() {
+            var data = {};
+            var form = document.getElementById('batch-form');
+            if (!form) return;
+            form.querySelectorAll('input[name^="balance_"]').forEach(function(input) {
+                if (input.value) data[input.name] = input.value;
+            });
+            form.querySelectorAll('input[name^="note_"]').forEach(function(input) {
+                if (input.value) data[input.name] = input.value;
+            });
+            var monthInput = document.getElementById('batch-month');
+            if (monthInput && monthInput.value) data['_month'] = monthInput.value;
+            localStorage.setItem(SNAPSHOT_DRAFT_KEY, JSON.stringify(data));
+        }
+
+        function restoreSnapshotDraft() {
+            var raw = localStorage.getItem(SNAPSHOT_DRAFT_KEY);
+            if (!raw) return;
+            try {
+                var data = JSON.parse(raw);
+                var form = document.getElementById('batch-form');
+                if (!form) return;
+                // 恢复月份
+                if (data['_month']) {
+                    var monthInput = document.getElementById('batch-month');
+                    if (monthInput) monthInput.value = data['_month'];
+                }
+                // 恢复余额和备注
+                Object.keys(data).forEach(function(key) {
+                    if (key === '_month') return;
+                    var input = form.querySelector('input[name="' + key + '"]');
+                    if (input) {
+                        input.value = data[key];
+                        // 触发差额计算
+                        if (key.startsWith('balance_') && input.oninput) {
+                            calcDiff(input);
+                        }
+                    }
+                });
+            } catch(e) {}
+        }
+
+        function clearSnapshotDraft() {
+            localStorage.removeItem(SNAPSHOT_DRAFT_KEY);
+            var form = document.getElementById('batch-form');
+            if (!form) return;
+            form.querySelectorAll('input[name^="balance_"]').forEach(function(input) {
+                input.value = '';
+            });
+            form.querySelectorAll('input[name^="note_"]').forEach(function(input) {
+                input.value = '';
+            });
+            // 重置差额显示
+            form.querySelectorAll('[id^="diff_"]').forEach(function(el) {
+                el.innerHTML = '—';
+            });
+            // 重置月份为当月
+            var monthInput = document.getElementById('batch-month');
+            if (monthInput) {
+                var now = new Date();
+                monthInput.value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+            }
+            updateSummary();
+        }
+
+        // 监听所有输入框变化，自动保存草稿
+        (function() {
+            var form = document.getElementById('batch-form');
+            if (!form) return;
+            form.addEventListener('input', function() {
+                saveSnapshotDraft();
+            });
+            // 打开弹窗时恢复草稿
+            restoreSnapshotDraft();
+            // 提交成功后清除草稿（表单 submit 后页面会刷新）
+            form.addEventListener('submit', function() {
+                localStorage.removeItem(SNAPSHOT_DRAFT_KEY);
+            });
+        })();
 
         // ===== 对账助手：差额实时计算 =====
         var RATES = {{ exchange_rates | tojson }};
