@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/版本-v2.1.3-blue" alt="version">
+  <img src="https://img.shields.io/badge/版本-v2.1.4-blue" alt="version">
   <img src="https://img.shields.io/badge/Python-3.8+-green" alt="python">
   <img src="https://img.shields.io/badge/Flask-3.0-lightgrey" alt="flask">
   <img src="https://img.shields.io/badge/测试覆盖率-81%25-brightgreen" alt="coverage">
@@ -156,10 +156,16 @@ FLASK_PORT=5001                      # 服务端口
 
 ## 📋 版本历史
 
+## v2.1.4 (2026-06-07)
+
+### 修复
+- 转账记录支持完整编辑 + 快照录入草稿保留
+
 ## v2.1.3 (2026-05-13)
 
 ### 优化
 - 从仓库移除 12 个 demo HTML 文件，加入 gitignore
+
 
 ## v2.1.2 (2026-05-13)
 
@@ -183,12 +189,6 @@ FLASK_PORT=5001                      # 服务端口
 
 ### 优化
 - 补充 v2 新功能测试 — 待办自动检测/最近常用/AI缓存/仪表盘优化
-
-
-## v2.0.17 (2026-05-12)
-
-### 新增
-- 页面重做为表格+饼图，统计栏增强
 
 
 > 完整变更日志见 [CHANGELOG.md](./CHANGELOG.md)
