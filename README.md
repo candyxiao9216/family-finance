@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/版本-v2.1.5-blue" alt="version">
+  <img src="https://img.shields.io/badge/版本-v2.1.6-blue" alt="version">
   <img src="https://img.shields.io/badge/Python-3.8+-green" alt="python">
   <img src="https://img.shields.io/badge/Flask-3.0-lightgrey" alt="flask">
   <img src="https://img.shields.io/badge/测试覆盖率-81%25-brightgreen" alt="coverage">
@@ -156,10 +156,19 @@ FLASK_PORT=5001                      # 服务端口
 
 ## 📋 版本历史
 
+## v2.1.6 (2026-06-08)
+
+### 新增
+- 新增备忘录功能
+
+### 优化
+- test+docs: 补充备忘录测试 + 更新操作指南
+
 ## v2.1.5 (2026-06-07)
 
 ### 优化
 - 补充转账编辑页面渲染测试
+
 
 ## v2.1.4 (2026-06-07)
 
@@ -177,12 +186,6 @@ FLASK_PORT=5001                      # 服务端口
 
 ### 新增
 - 交易列表改为表格形式 + 筛选 + 月度操作指南
-
-
-## v2.1.1 (2026-05-12)
-
-### 修复
-- 修复分类页测试断言与实际预设分类不匹配
 
 
 > 完整变更日志见 [CHANGELOG.md](./CHANGELOG.md)
