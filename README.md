@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/版本-v2.1.4-blue" alt="version">
+  <img src="https://img.shields.io/badge/版本-v2.1.5-blue" alt="version">
   <img src="https://img.shields.io/badge/Python-3.8+-green" alt="python">
   <img src="https://img.shields.io/badge/Flask-3.0-lightgrey" alt="flask">
   <img src="https://img.shields.io/badge/测试覆盖率-81%25-brightgreen" alt="coverage">
@@ -156,10 +156,16 @@ FLASK_PORT=5001                      # 服务端口
 
 ## 📋 版本历史
 
+## v2.1.5 (2026-06-07)
+
+### 优化
+- 补充转账编辑页面渲染测试
+
 ## v2.1.4 (2026-06-07)
 
 ### 修复
 - 转账记录支持完整编辑 + 快照录入草稿保留
+
 
 ## v2.1.3 (2026-05-13)
 
@@ -177,18 +183,6 @@ FLASK_PORT=5001                      # 服务端口
 
 ### 修复
 - 修复分类页测试断言与实际预设分类不匹配
-
-
-## v2.1.0 (2026-05-12)
-
-### 新增
-- AI 文案接入智谱 GLM + 按月缓存 + 视图区分
-- 记账页新增「最近常用」快捷填充 + 清理导航
-- 首页仪表盘优化 — 合并顶部栏、精简资产卡片、新增快捷操作
-- 数据导出+月度总结报告+家庭贡献视图+月度待办自动检测
-
-### 优化
-- 补充 v2 新功能测试 — 待办自动检测/最近常用/AI缓存/仪表盘优化
 
 
 > 完整变更日志见 [CHANGELOG.md](./CHANGELOG.md)
