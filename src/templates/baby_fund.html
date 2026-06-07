@@ -166,6 +166,77 @@
         </form>
     </div>
 
+    <!-- ===== 备忘录 ===== -->
+    <div class="card" style="margin-top:16px;">
+        <div class="card-header">
+            <h2 class="card-title">📝 备忘录</h2>
+            <span style="font-size:13px;color:var(--color-text-muted);">{{ memos|length }} 条</span>
+        </div>
+
+        <!-- 添加备忘 -->
+        <div style="padding:12px 20px;border-bottom:1px solid var(--color-border-light, #F0EDE9);">
+            <form action="{{ url_for('baby_fund.memo_add') }}" method="POST" style="display:flex;gap:8px;">
+                <input type="text" name="memo_content" class="form-input" placeholder="写下备忘内容..." style="flex:1;" required maxlength="500">
+                <button type="submit" style="padding:8px 16px;background:var(--color-income, #D4A574);color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;white-space:nowrap;">添加</button>
+            </form>
+        </div>
+
+        <!-- 备忘列表 -->
+        <div style="padding:12px 20px;">
+            {% if memos %}
+            {% for memo in memos %}
+            <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--color-border-light, #F0EDE9);{% if memo.status == 'completed' %}opacity:0.6;{% endif %}">
+                <!-- 状态切换 -->
+                <form action="{{ url_for('baby_fund.memo_toggle', memo_id=memo.id) }}" method="POST" style="margin:0;">
+                    <button type="submit" style="background:none;border:none;cursor:pointer;font-size:18px;padding:0;line-height:1;">
+                        {% if memo.status == 'completed' %}✅{% else %}⬜{% endif %}
+                    </button>
+                </form>
+
+                <!-- 内容 -->
+                <div style="flex:1;min-width:0;">
+                    <div style="font-size:14px;{% if memo.status == 'completed' %}text-decoration:line-through;color:var(--color-text-muted);{% endif %}">{{ memo.content }}</div>
+                    <div style="font-size:11px;color:var(--color-text-muted);margin-top:2px;">
+                        {{ memo.author.nickname or memo.author.username }} · {{ (memo.created_at + timedelta(hours=8)).strftime('%Y-%m-%d %H:%M') }}
+                        {% if memo.status == 'completed' and memo.completed_at %}
+                        · 已完成于 {{ (memo.completed_at + timedelta(hours=8)).strftime('%m-%d %H:%M') }}
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- 操作 -->
+                <div style="display:flex;gap:4px;align-items:center;flex-shrink:0;">
+                    <button type="button" onclick="editMemo({{ memo.id }}, '{{ memo.content|e }}')" class="btn-edit" style="opacity:1;" title="编辑">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2M2 14l1-4L11.5 1.5l2 2L5 12l-4 1z"/></svg>
+                    </button>
+                    <form action="{{ url_for('baby_fund.memo_delete', memo_id=memo.id) }}" method="POST" style="margin:0;">
+                        <button type="submit" class="btn-delete" style="opacity:1;" title="删除" data-confirm-delete data-confirm-message="确定删除这条备忘？">
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h10M5 6v8a1 1 0 001 1h4a1 1 0 001-1V6M8 6V4M6 6v1M10 6v1"/></svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div style="text-align:center;padding:20px;color:var(--color-text-muted);font-size:13px;">暂无备忘</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 编辑备忘弹窗 -->
+    <div id="memo-edit-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.4);align-items:center;justify-content:center;">
+        <div style="background:#fff;border-radius:12px;padding:24px;width:90%;max-width:400px;margin:auto;">
+            <h3 style="font-size:15px;font-weight:600;margin-bottom:12px;">编辑备忘</h3>
+            <form id="memo-edit-form" method="POST">
+                <input type="text" name="memo_content" id="memo-edit-input" class="form-input" style="margin-bottom:12px;" required maxlength="500">
+                <div style="display:flex;gap:8px;justify-content:flex-end;">
+                    <button type="button" onclick="closeMemoEdit()" style="padding:8px 16px;background:none;border:1px solid var(--color-border);border-radius:8px;font-size:13px;cursor:pointer;">取消</button>
+                    <button type="submit" style="padding:8px 16px;background:var(--color-income, #D4A574);color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- ===== 浮层：编辑宝宝基金 ===== -->
     <div class="drawer-overlay" id="overlay-edit"></div>
     <div class="drawer" id="drawer-edit">
@@ -201,6 +272,23 @@
 
 {% block scripts %}
     <script>
+        // ===== 备忘录编辑 =====
+        function editMemo(id, content) {
+            var modal = document.getElementById('memo-edit-modal');
+            var form = document.getElementById('memo-edit-form');
+            var input = document.getElementById('memo-edit-input');
+            form.action = '/baby-fund/memo/' + id + '/edit';
+            input.value = content;
+            modal.style.display = 'flex';
+            input.focus();
+        }
+        function closeMemoEdit() {
+            document.getElementById('memo-edit-modal').style.display = 'none';
+        }
+        document.getElementById('memo-edit-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeMemoEdit();
+        });
+
         // ===== 抽屉浮层 =====
         function openDrawer(drawerId, overlayId) {
             document.getElementById(overlayId).classList.add('open');
