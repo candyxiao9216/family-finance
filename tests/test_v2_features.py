@@ -284,3 +284,49 @@ class TestTransferEdit:
         assert 'value="income"' in html
         # 不应显示转账字段
         assert 'from_account_id' not in html
+
+
+class TestBabyFundMemo:
+    """宝宝基金备忘录测试"""
+
+    def test_add_memo(self, logged_in_client, app):
+        """新增备忘后应出现在列表"""
+        resp = logged_in_client.post('/baby-fund/memo/add',
+                                     data={'memo_content': '测试备忘内容'},
+                                     follow_redirects=True)
+        assert resp.status_code == 200
+        html = resp.data.decode()
+        assert '测试备忘内容' in html
+
+    def test_toggle_memo(self, logged_in_client, app):
+        """标记完成后状态应变为 completed"""
+        from models import BabyFundMemo
+        # 先添加一条
+        logged_in_client.post('/baby-fund/memo/add',
+                              data={'memo_content': '待完成备忘'})
+        with app.app_context():
+            memo = BabyFundMemo.query.filter_by(content='待完成备忘').first()
+            assert memo is not None
+            memo_id = memo.id
+            assert memo.status == 'pending'
+
+        # toggle
+        logged_in_client.post(f'/baby-fund/memo/{memo_id}/toggle')
+        with app.app_context():
+            memo = BabyFundMemo.query.get(memo_id)
+            assert memo.status == 'completed'
+
+    def test_delete_memo(self, logged_in_client, app):
+        """删除后备忘应消失"""
+        from models import BabyFundMemo
+        # 先添加
+        logged_in_client.post('/baby-fund/memo/add',
+                              data={'memo_content': '要删除的备忘'})
+        with app.app_context():
+            memo = BabyFundMemo.query.filter_by(content='要删除的备忘').first()
+            memo_id = memo.id
+
+        # 删除
+        logged_in_client.post(f'/baby-fund/memo/{memo_id}/delete')
+        with app.app_context():
+            assert BabyFundMemo.query.get(memo_id) is None
