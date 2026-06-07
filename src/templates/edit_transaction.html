@@ -6,6 +6,77 @@
                 <h2 class="card-title">修改交易记录</h2>
             </div>
             <form action="/edit/{{ transaction.id }}" method="POST">
+
+                {% if transaction.type == 'transfer_out' %}
+                <!-- ===== 转账编辑表单 ===== -->
+                <div class="type-selector">
+                    <label class="type-option">
+                        <input type="radio" name="type" value="transfer_out" checked required>
+                        <span class="type-label transfer">🔄 转账</span>
+                    </label>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">金额</label>
+                        <input type="number" name="amount" class="form-input" value="{{ '%.2f'|format(transaction.amount) }}" step="0.01" min="0.01" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">从（转出账户）</label>
+                        <select name="from_account_id" class="form-select" required>
+                            <option value="">选择转出账户</option>
+                            {% if family_accounts %}
+                                {% for member, accts in family_accounts.items() %}
+                                <optgroup label="── {{ member.nickname or member.username }} ──">
+                                    {% for a in accts %}
+                                    <option value="{{ a.id }}" {{ 'selected' if a.id == transaction.account_id }}>{{ a.name }}（{{ a.account_type.name }}）</option>
+                                    {% endfor %}
+                                </optgroup>
+                                {% endfor %}
+                            {% else %}
+                                {% for a in accounts %}
+                                <option value="{{ a.id }}" {{ 'selected' if a.id == transaction.account_id }}>{{ a.name }}（{{ a.account_type.name }}）</option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">到（转入账户）</label>
+                        <select name="to_account_id" class="form-select" required>
+                            <option value="">选择转入账户</option>
+                            {% if family_accounts %}
+                                {% for member, accts in family_accounts.items() %}
+                                <optgroup label="── {{ member.nickname or member.username }} ──">
+                                    {% for a in accts %}
+                                    <option value="{{ a.id }}" {{ 'selected' if pair and a.id == pair.account_id }}>{{ a.name }}（{{ a.account_type.name }}）</option>
+                                    {% endfor %}
+                                </optgroup>
+                                {% endfor %}
+                            {% else %}
+                                {% for a in accounts %}
+                                <option value="{{ a.id }}" {{ 'selected' if pair and a.id == pair.account_id }}>{{ a.name }}（{{ a.account_type.name }}）</option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">日期</label>
+                        <input type="date" name="date" class="form-input" value="{{ transaction.transaction_date }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">备注（选填）</label>
+                        <input type="text" name="description" class="form-input" value="{{ transaction.description or '' }}">
+                    </div>
+                </div>
+
+                {% else %}
+                <!-- ===== 收入/支出编辑表单 ===== -->
                 <div class="type-selector">
                     <label class="type-option">
                         <input type="radio" name="type" value="income" {{ 'checked' if transaction.type == 'income' }} required>
@@ -45,9 +116,19 @@
                         <label class="form-label">账户（选填）</label>
                         <select name="account_id" class="form-select">
                             <option value="">不关联账户</option>
-                            {% for a in accounts %}
-                            <option value="{{ a.id }}" {{ 'selected' if a.id == transaction.account_id }}>{{ a.name }}（{{ a.account_type.name }}）</option>
-                            {% endfor %}
+                            {% if family_accounts %}
+                                {% for member, accts in family_accounts.items() %}
+                                <optgroup label="── {{ member.nickname or member.username }} ──">
+                                    {% for a in accts %}
+                                    <option value="{{ a.id }}" {{ 'selected' if a.id == transaction.account_id }}>{{ a.name }}（{{ a.account_type.name }}）</option>
+                                    {% endfor %}
+                                </optgroup>
+                                {% endfor %}
+                            {% else %}
+                                {% for a in accounts %}
+                                <option value="{{ a.id }}" {{ 'selected' if a.id == transaction.account_id }}>{{ a.name }}（{{ a.account_type.name }}）</option>
+                                {% endfor %}
+                            {% endif %}
                         </select>
                     </div>
                 </div>
@@ -62,10 +143,11 @@
                         <input type="text" name="description" class="form-input" value="{{ transaction.description or '' }}">
                     </div>
                 </div>
+                {% endif %}
 
                 <div style="display: flex; gap: 12px; margin-top: 8px;">
                     <button type="submit" class="btn-submit" style="flex: 1;">保存修改</button>
-                    <a href="{{ url_for('transaction.transaction_list') }}#txn-{{ transaction.id }}" class="btn-submit" style="flex: 1; background: #999; text-decoration: none; text-align: center;">取消</a>
+                    <a href="{{ url_for('transaction.transaction_list') }}" class="btn-submit" style="flex: 1; background: #999; text-decoration: none; text-align: center;">取消</a>
                 </div>
             </form>
         </div>
@@ -78,13 +160,13 @@
             </div>
             <div style="padding: 16px;">
                 {% for mod in transaction.modifications|sort(attribute='modified_at', reverse=True) %}
-                <div style="padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px;">
-                    <span style="color: var(--text-muted);">
+                <div style="padding: 8px 0; border-bottom: 1px solid var(--color-border-light, #F0EDE9); font-size: 13px;">
+                    <span style="color: var(--color-text-muted, #9A9A9A);">
                         {{ mod.modifier.nickname or mod.modifier.username }}
                         修改了「{{ mod.field_name }}」：
                         {{ mod.old_value }} → {{ mod.new_value }}
                     </span>
-                    <span style="float: right; color: var(--text-muted); font-size: 12px;">
+                    <span style="float: right; color: var(--color-text-muted, #9A9A9A); font-size: 12px;">
                         {{ mod.modified_at.strftime('%Y-%m-%d %H:%M') }}
                     </span>
                 </div>

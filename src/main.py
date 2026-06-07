@@ -314,12 +314,32 @@ def edit_transaction(transaction_id):
         categories = Category.query.filter(
             (Category.user_id == None) | (Category.user_id == user_id)
         ).all()
-        accounts = Account.query.filter_by(user_id=user_id).all()
+
+        # 获取全家账户（转账编辑需要）
+        family = user.family
+        if family:
+            family_accounts = {}
+            for member in family.members:
+                member_accounts = Account.query.filter_by(user_id=member.id).all()
+                if member_accounts:
+                    family_accounts[member] = member_accounts
+            all_accounts = Account.query.filter(Account.user_id.in_([m.id for m in family.members])).all()
+        else:
+            family_accounts = {}
+            all_accounts = Account.query.filter_by(user_id=user_id).all()
+
+        # 转账配对记录
+        pair = None
+        if transaction.type == 'transfer_out' and transaction.transfer_pair_id:
+            pair = Transaction.query.get(transaction.transfer_pair_id)
 
         return render_template('edit_transaction.html',
                               transaction=transaction,
+                              pair=pair,
                               categories=categories,
-                              accounts=accounts,
+                              accounts=all_accounts,
+                              family_accounts=family_accounts,
+                              family=family,
                               username=session.get('nickname', session.get('username', '用户')),
                               page_title='编辑交易')
 
@@ -337,7 +357,97 @@ def edit_transaction(transaction_id):
     except ValueError:
         return "日期格式错误", 400
 
-    # 逐字段对比，记录变化
+    # ===== 转账编辑特殊处理 =====
+    if transaction.type == 'transfer_out' and transaction.transfer_pair_id:
+        pair = Transaction.query.get(transaction.transfer_pair_id)
+        new_from_account_id = request.form.get('from_account_id', type=int)
+        new_to_account_id = request.form.get('to_account_id', type=int)
+        new_amount_decimal = Decimal(new_amount)
+
+        old_from_account_id = transaction.account_id
+        old_to_account_id = pair.account_id if pair else None
+        old_amount = transaction.amount
+
+        # 记录修改
+        modifications = []
+        if float(old_amount) != float(new_amount_decimal):
+            modifications.append(TransactionModification(
+                transaction_id=transaction.id, modified_by=user_id,
+                field_name='金额', old_value=str(float(old_amount)), new_value=new_amount))
+        if old_from_account_id != new_from_account_id:
+            old_acct = Account.query.get(old_from_account_id) if old_from_account_id else None
+            new_acct = Account.query.get(new_from_account_id) if new_from_account_id else None
+            modifications.append(TransactionModification(
+                transaction_id=transaction.id, modified_by=user_id,
+                field_name='转出账户', old_value=old_acct.name if old_acct else '-', new_value=new_acct.name if new_acct else '-'))
+        if old_to_account_id != new_to_account_id:
+            old_acct = Account.query.get(old_to_account_id) if old_to_account_id else None
+            new_acct = Account.query.get(new_to_account_id) if new_to_account_id else None
+            modifications.append(TransactionModification(
+                transaction_id=transaction.id, modified_by=user_id,
+                field_name='转入账户', old_value=old_acct.name if old_acct else '-', new_value=new_acct.name if new_acct else '-'))
+        if str(transaction.transaction_date) != new_date_str:
+            modifications.append(TransactionModification(
+                transaction_id=transaction.id, modified_by=user_id,
+                field_name='日期', old_value=str(transaction.transaction_date), new_value=new_date_str))
+        if (transaction.description or '') != (new_description or ''):
+            modifications.append(TransactionModification(
+                transaction_id=transaction.id, modified_by=user_id,
+                field_name='备注', old_value=transaction.description or '', new_value=new_description or ''))
+
+        if modifications:
+            # 1. 回滚旧账户余额
+            if old_from_account_id:
+                old_from = Account.query.get(old_from_account_id)
+                if old_from:
+                    old_from.current_balance = (old_from.current_balance or 0) + old_amount
+            if old_to_account_id:
+                old_to = Account.query.get(old_to_account_id)
+                if old_to:
+                    old_to.current_balance = (old_to.current_balance or 0) - old_amount
+
+            # 2. 删除旧的 AccountBalance 变更记录
+            AccountBalance.query.filter_by(
+                account_id=old_from_account_id, source='transfer',
+                balance=Account.query.get(old_from_account_id).current_balance if old_from_account_id else 0
+            ).delete(synchronize_session=False)
+            AccountBalance.query.filter_by(
+                account_id=old_to_account_id, source='transfer',
+                balance=Account.query.get(old_to_account_id).current_balance if old_to_account_id else 0
+            ).delete(synchronize_session=False)
+
+            # 3. 更新交易记录
+            transaction.amount = new_amount_decimal
+            transaction.account_id = new_from_account_id
+            transaction.transaction_date = new_date
+            transaction.description = new_description or None
+            transaction.last_modified_by = user_id
+            transaction.last_modified_at = datetime.utcnow()
+            transaction.modification_count = (transaction.modification_count or 0) + 1
+
+            if pair:
+                pair.amount = new_amount_decimal
+                pair.account_id = new_to_account_id
+                pair.transaction_date = new_date
+                pair.description = new_description or None
+
+            # 4. 更新新账户余额
+            if new_from_account_id:
+                new_from = Account.query.get(new_from_account_id)
+                if new_from:
+                    new_from.current_balance = (new_from.current_balance or 0) - new_amount_decimal
+            if new_to_account_id:
+                new_to = Account.query.get(new_to_account_id)
+                if new_to:
+                    new_to.current_balance = (new_to.current_balance or 0) + new_amount_decimal
+
+            for mod in modifications:
+                db.session.add(mod)
+            db.session.commit()
+
+        return redirect(url_for('transaction.transaction_list'))
+
+    # ===== 普通收入/支出编辑 =====
     modifications = []
     field_map = {
         'type': ('类型', str(transaction.type), new_type),
