@@ -213,3 +213,74 @@ class TestDashboardOptimization:
         assert resp.status_code == 200
         html = resp.data.decode()
         assert 'view=family' in html
+
+
+class TestTransferEdit:
+    """转账记录编辑测试"""
+
+    def test_transfer_edit_page_renders(self, logged_in_client, app):
+        """转账记录编辑页应显示转账专用表单"""
+        with app.app_context():
+            user = User.query.filter_by(username='testuser').first()
+            # 创建账户
+            at = AccountType.query.first()
+            acct_from = Account(name='测试卡A', user_id=user.id, type_id=at.id)
+            acct_to = Account(name='测试卡B', user_id=user.id, type_id=at.id)
+            db.session.add(acct_from)
+            db.session.add(acct_to)
+            db.session.flush()
+
+            # 创建转账配对记录
+            txn_out = Transaction(
+                amount=1000, type='transfer_out', user_id=user.id,
+                account_id=acct_from.id, transaction_date=date.today(),
+                description='测试转账', created_at=datetime.utcnow()
+            )
+            db.session.add(txn_out)
+            db.session.flush()
+
+            txn_in = Transaction(
+                amount=1000, type='transfer_in', user_id=user.id,
+                account_id=acct_to.id, transaction_date=date.today(),
+                description='测试转账', created_at=datetime.utcnow(),
+                transfer_pair_id=txn_out.id
+            )
+            db.session.add(txn_in)
+            db.session.flush()
+
+            txn_out.transfer_pair_id = txn_in.id
+            db.session.commit()
+            txn_id = txn_out.id
+
+        resp = logged_in_client.get(f'/edit/{txn_id}')
+        assert resp.status_code == 200
+        html = resp.data.decode()
+        # 应包含转账表单字段
+        assert '转出账户' in html
+        assert '转入账户' in html
+        assert 'from_account_id' in html
+        assert 'to_account_id' in html
+        # 不应显示收入/支出 radio
+        assert 'value="income"' not in html
+
+    def test_normal_edit_page_no_transfer_fields(self, logged_in_client, app):
+        """收入/支出编辑页不应显示转账字段"""
+        with app.app_context():
+            user = User.query.filter_by(username='testuser').first()
+            cat = Category.query.first()
+            txn = Transaction(
+                amount=500, type='income', category_id=cat.id,
+                user_id=user.id, transaction_date=date.today(),
+                created_at=datetime.utcnow()
+            )
+            db.session.add(txn)
+            db.session.commit()
+            txn_id = txn.id
+
+        resp = logged_in_client.get(f'/edit/{txn_id}')
+        assert resp.status_code == 200
+        html = resp.data.decode()
+        # 应显示收入/支出 radio
+        assert 'value="income"' in html
+        # 不应显示转账字段
+        assert 'from_account_id' not in html
