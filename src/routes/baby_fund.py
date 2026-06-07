@@ -6,7 +6,7 @@ from flask import Blueprint, redirect, render_template, request, session, url_fo
 from pypinyin import lazy_pinyin
 from sqlalchemy import func
 
-from models import db, User, BabyFund, Transaction, TransactionModification, Account, Category
+from models import db, User, BabyFund, BabyFundMemo, Transaction, TransactionModification, Account, Category
 
 baby_fund_bp = Blueprint('baby_fund', __name__, url_prefix='/baby-fund')
 
@@ -71,6 +71,11 @@ def baby_fund_list():
         event_data[key] = event_data.get(key, 0) + float(f.amount)
     event_chart = sorted(event_data.items(), key=lambda x: -x[1])
 
+    # 备忘录
+    memos = BabyFundMemo.query.filter(
+        BabyFundMemo.user_id.in_(member_ids)
+    ).order_by(BabyFundMemo.status.asc(), BabyFundMemo.created_at.desc()).all()
+
     return render_template('baby_fund.html',
                            funds=funds,
                            total_amount=float(total_amount),
@@ -80,6 +85,7 @@ def baby_fund_list():
                            event_types=event_types,
                            person_chart=person_chart,
                            event_chart=event_chart,
+                           memos=memos,
                            current_view=current_view,
                            family=family,
                            username=session.get('nickname', session.get('username', '用户')),
@@ -205,4 +211,76 @@ def delete_fund(fund_id):
 
     db.session.delete(fund)
     db.session.commit()
+    return redirect(url_for('baby_fund.baby_fund_list'))
+
+
+# ===== 备忘录 CRUD =====
+
+@baby_fund_bp.route('/memo/add', methods=['POST'])
+def memo_add():
+    """新增备忘"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('auth.login'))
+
+    content = request.form.get('memo_content', '').strip()
+    if not content:
+        flash('备忘内容不能为空', 'error')
+        return redirect(url_for('baby_fund.baby_fund_list'))
+
+    memo = BabyFundMemo(user_id=user_id, content=content)
+    db.session.add(memo)
+    db.session.commit()
+    flash('备忘已添加', 'success')
+    return redirect(url_for('baby_fund.baby_fund_list'))
+
+
+@baby_fund_bp.route('/memo/<int:memo_id>/edit', methods=['POST'])
+def memo_edit(memo_id):
+    """编辑备忘"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('auth.login'))
+
+    memo = BabyFundMemo.query.get_or_404(memo_id)
+    content = request.form.get('memo_content', '').strip()
+    if not content:
+        flash('备忘内容不能为空', 'error')
+        return redirect(url_for('baby_fund.baby_fund_list'))
+
+    memo.content = content
+    db.session.commit()
+    flash('备忘已更新', 'success')
+    return redirect(url_for('baby_fund.baby_fund_list'))
+
+
+@baby_fund_bp.route('/memo/<int:memo_id>/toggle', methods=['POST'])
+def memo_toggle(memo_id):
+    """切换备忘状态（待办↔已完成）"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('auth.login'))
+
+    memo = BabyFundMemo.query.get_or_404(memo_id)
+    if memo.status == 'pending':
+        memo.status = 'completed'
+        memo.completed_at = datetime.utcnow()
+    else:
+        memo.status = 'pending'
+        memo.completed_at = None
+    db.session.commit()
+    return redirect(url_for('baby_fund.baby_fund_list'))
+
+
+@baby_fund_bp.route('/memo/<int:memo_id>/delete', methods=['POST'])
+def memo_delete(memo_id):
+    """删除备忘"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('auth.login'))
+
+    memo = BabyFundMemo.query.get_or_404(memo_id)
+    db.session.delete(memo)
+    db.session.commit()
+    flash('备忘已删除', 'success')
     return redirect(url_for('baby_fund.baby_fund_list'))

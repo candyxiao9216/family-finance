@@ -739,3 +739,17 @@ class MonthlySummaryCache(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     owner = db.relationship('User', foreign_keys=[user_id])
+
+
+class BabyFundMemo(db.Model):
+    """宝宝基金备忘录"""
+    __tablename__ = 'baby_fund_memos'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    status = db.Column(db.String(20), default='pending')  # 'pending' / 'completed'
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    completed_at = db.Column(db.DateTime, nullable=True)
+
+    author = db.relationship('User', foreign_keys=[user_id])
