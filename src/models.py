@@ -220,6 +220,46 @@ DEFAULT_ACCOUNT_TYPES = [
 ]
 
 
+
+class AccountGroup(db.Model):
+    """账户分组表 - 用于将账户分组管理"""
+    __tablename__ = 'account_groups'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    color = db.Column(db.String(20), default='#D4A574')  # 分组颜色 (HEX)
+    display_order = db.Column(db.Integer, default=0)  # 显示顺序
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # 关系定义
+    owner = db.relationship('User', backref='account_groups', lazy=True)
+    accounts = db.relationship('Account', backref='group', lazy=True)
+
+    # 复合唯一键：同一用户的分组名称应该唯一
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'name', name='uq_user_group_name'),
+    )
+
+    def __repr__(self):
+        return f"<AccountGroup {self.id}: {self.name}>"
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'name': self.name,
+            'description': self.description,
+            'color': self.color,
+            'display_order': self.display_order,
+            'account_count': len(self.accounts) if self.accounts else 0,
+            'total_balance': float(sum(a.current_balance for a in self.accounts)) if self.accounts else 0.0,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+
 class Account(db.Model):
     """账户表 - 用户的具体账户"""
     __tablename__ = 'accounts'
@@ -231,6 +271,7 @@ class Account(db.Model):
     currency = db.Column(db.String(3), default='CNY')  # CNY / HKD / USD
     initial_balance = db.Column(db.Numeric(10, 2), default=0)
     current_balance = db.Column(db.Numeric(10, 2), default=0)
+    group_id = db.Column(db.Integer, db.ForeignKey('account_groups.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # 关系定义
@@ -250,7 +291,9 @@ class Account(db.Model):
             'category': self.account_type.category if self.account_type else None,
             'initial_balance': float(self.initial_balance),
             'current_balance': float(self.current_balance),
-            'user_id': self.user_id
+            'user_id': self.user_id,
+            'group_id': self.group_id,
+            'group_name': self.group.name if self.group else None,
         }
 
 

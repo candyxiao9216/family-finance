@@ -283,3 +283,153 @@ class TestBatchSnapshot:
                 account_id=account_id, record_month=record_month
             ).all()
             assert len(snapshots) == 0
+
+
+class TestAccountGroups:
+    """账户分组管理测试"""
+
+    def test_list_groups_empty(self, logged_in_client):
+        """无分组时返回空列表"""
+        client = logged_in_client
+        resp = client.get('/accounts/groups')
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data['groups'] == []
+
+    def test_create_group(self, logged_in_client, app):
+        """创建分组"""
+        client = logged_in_client
+        resp = client.post('/accounts/groups/create', data={
+            'name': '测试分组',
+            'color': '#3498DB'
+        }, follow_redirects=True)
+        assert resp.status_code == 200
+
+        with app.app_context():
+            from models import AccountGroup
+            group = AccountGroup.query.filter_by(name='测试分组').first()
+            assert group is not None
+            assert group.color == '#3498DB'
+
+    def test_create_group_duplicate(self, logged_in_client, app):
+        """创建重名分组应失败"""
+        client = logged_in_client
+        client.post('/accounts/groups/create', data={'name': '重复组', 'color': '#D4A574'}, follow_redirects=True)
+        resp = client.post('/accounts/groups/create', data={'name': '重复组', 'color': '#E74C3C'}, follow_redirects=True)
+        assert resp.status_code == 200
+        assert '已存在' in resp.data.decode('utf-8')
+
+    def test_update_group(self, logged_in_client, app):
+        """更新分组"""
+        client = logged_in_client
+        # 先创建
+        client.post('/accounts/groups/create', data={'name': '待更新组', 'color': '#D4A574'}, follow_redirects=True)
+        with app.app_context():
+            from models import AccountGroup
+            group = AccountGroup.query.filter_by(name='待更新组').first()
+            group_id = group.id
+
+        resp = client.post(f'/accounts/groups/{group_id}/update', data={
+            'name': '已更新组',
+            'color': '#2ECC71'
+        }, follow_redirects=True)
+        assert resp.status_code == 200
+
+        with app.app_context():
+            group = AccountGroup.query.get(group_id)
+            assert group.name == '已更新组'
+            assert group.color == '#2ECC71'
+
+    def test_delete_group(self, logged_in_client, app):
+        """删除分组"""
+        client = logged_in_client
+        client.post('/accounts/groups/create', data={'name': '待删除组', 'color': '#D4A574'}, follow_redirects=True)
+        with app.app_context():
+            from models import AccountGroup
+            group = AccountGroup.query.filter_by(name='待删除组').first()
+            group_id = group.id
+
+        resp = client.post(f'/accounts/groups/{group_id}/delete', follow_redirects=True)
+        assert resp.status_code == 200
+
+        with app.app_context():
+            assert AccountGroup.query.get(group_id) is None
+
+    def test_move_account_to_group(self, account_client, app):
+        """将账户移动到分组"""
+        client, user_id, account_id = account_client
+        # 创建分组
+        client.post('/accounts/groups/create', data={'name': '移动测试组', 'color': '#D4A574'}, follow_redirects=True)
+        with app.app_context():
+            from models import AccountGroup
+            group = AccountGroup.query.filter_by(name='移动测试组').first()
+            group_id = group.id
+
+        resp = client.post(f'/accounts/{account_id}/move-to-group', data={
+            'group_id': group_id
+        }, follow_redirects=True)
+        assert resp.status_code == 200
+
+        with app.app_context():
+            account = Account.query.get(account_id)
+            assert account.group_id == group_id
+
+    def test_batch_snapshot_group_distribution(self, app):
+        """测试组级别余额分摊到子账户"""
+        from decimal import Decimal
+        from dateutil.relativedelta import relativedelta
+
+        with app.app_context():
+            from models import AccountGroup
+
+            user = User(username='group_dist_user', nickname='分摊测试')
+            user.set_password('Test1234')
+            db.session.add(user)
+            db.session.commit()
+            user_id = user.id
+
+            # 创建分组
+            group = AccountGroup(user_id=user_id, name='分摊组', color='#D4A574', display_order=1)
+            db.session.add(group)
+            db.session.commit()
+            group_id = group.id
+
+            # 创建两个账户归属该组
+            fund_type = AccountType.query.filter_by(category='fund').first()
+            a1 = Account(user_id=user_id, name='子账户A', type_id=fund_type.id, currency='CNY',
+                         initial_balance=60000, current_balance=60000, group_id=group_id)
+            a2 = Account(user_id=user_id, name='子账户B', type_id=fund_type.id, currency='CNY',
+                         initial_balance=40000, current_balance=40000, group_id=group_id)
+            db.session.add_all([a1, a2])
+            db.session.commit()
+            a1_id, a2_id = a1.id, a2.id
+
+            # 录入上月快照（用于计算分摊比例）
+            prev_month = date.today().replace(day=1) - relativedelta(months=1)
+            snap1 = AccountBalance(account_id=a1_id, balance=60000, record_month=prev_month, recorded_by=user_id)
+            snap2 = AccountBalance(account_id=a2_id, balance=40000, record_month=prev_month, recorded_by=user_id)
+            db.session.add_all([snap1, snap2])
+            db.session.commit()
+
+        client = app.test_client()
+        with client.session_transaction() as sess:
+            sess['user_id'] = user_id
+
+        # 提交组总额 110000（不填子账户），应按 60:40 分摊
+        month_str = date.today().strftime('%Y-%m')
+        resp = client.post('/accounts/batch-snapshot', data={
+            'month': month_str,
+            'view': 'personal',
+            f'group_balance_{group_id}': '110000'
+        }, follow_redirects=True)
+        assert resp.status_code == 200
+
+        with app.app_context():
+            record_month = date.today().replace(day=1)
+            s1 = AccountBalance.query.filter_by(account_id=a1_id, record_month=record_month).first()
+            s2 = AccountBalance.query.filter_by(account_id=a2_id, record_month=record_month).first()
+            assert s1 is not None
+            assert s2 is not None
+            # 60000/100000 * 110000 = 66000, 40000/100000 * 110000 = 44000
+            assert float(s1.balance) == pytest.approx(66000, abs=1)
+            assert float(s2.balance) == pytest.approx(44000, abs=1)

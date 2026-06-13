@@ -36,6 +36,7 @@ def init_database(app: Flask) -> None:
         _safe_add_column('transactions', 'transfer_pair_id', 'INTEGER')
         _safe_add_column('users', 'avatar_text', 'VARCHAR(4)')
         _safe_add_column('account_balance', 'source', "VARCHAR(20) DEFAULT 'snapshot'")
+        _safe_add_column('accounts', 'group_id', 'INTEGER')
 
         # 移除 account_balance 的 unique constraint（允许同月多条转账记录）
         try:
