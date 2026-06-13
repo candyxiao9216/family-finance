@@ -28,6 +28,349 @@
         line-height: 1.8;
     }
     .theory-cell:hover .theory-tooltip { display: block; }
+
+    /* 快照弹窗：分组折叠 */
+    .snapshot-sub-accounts.collapsed { display: none; }
+    .snapshot-toggle.open { transform: rotate(90deg); }
+
+    /* 颜色选择器 */
+    .color-picker {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin: 8px 0;
+    }
+
+    .color-option {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        border: 2px solid transparent;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .color-option:hover {
+        border-color: #666;
+    }
+
+    .color-option.selected {
+        border-color: #333;
+        box-shadow: 0 0 0 2px #fff, 0 0 0 4px #333;
+    }
+
+    /* 分组管理模态框 */
+    .groups-modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 999;
+    }
+
+    .groups-modal-overlay.open {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .groups-modal {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        width: 90%;
+        max-width: 580px;
+        max-height: 80vh;
+        overflow-y: auto;
+        padding: 24px;
+    }
+
+    .groups-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .groups-modal-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--color-text-primary);
+    }
+
+    .groups-modal-close {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f5f2ed;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 20px;
+        color: #999;
+        transition: all 0.2s;
+    }
+
+    .groups-modal-close:hover {
+        background: #e0dcd7;
+        color: #333;
+    }
+
+    .group-form-section {
+        margin-bottom: 20px;
+        padding: 16px;
+        background: #f8f5f1;
+        border-radius: 8px;
+    }
+
+    .group-form-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--color-text-primary);
+        margin-bottom: 12px;
+    }
+
+    .group-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 14px 0;
+        border-bottom: 1px solid #f0ece7;
+    }
+
+    .group-item:last-child { border-bottom: none; }
+
+    .group-item.editing {
+        background: #fffbf5;
+        margin: 0 -12px;
+        padding: 14px 12px;
+        border-radius: 8px;
+        border: 1.5px solid #D4A574;
+        border-bottom: 1.5px solid #D4A574;
+    }
+
+    .group-item-color {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        margin-top: 3px;
+    }
+
+    .group-item-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .group-item-name {
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 4px;
+    }
+
+    .group-item-accounts {
+        font-size: 12px;
+        color: #8B7355;
+        line-height: 1.5;
+    }
+
+    .group-item-accounts .account-tag {
+        display: inline-block;
+        background: #f5f0eb;
+        padding: 2px 8px;
+        border-radius: 4px;
+        margin: 2px 4px 2px 0;
+        font-size: 11px;
+    }
+
+    .group-item-actions {
+        display: flex;
+        gap: 4px;
+        flex-shrink: 0;
+    }
+
+    .group-item-btn {
+        background: none;
+        border: 1px solid #e0dcd7;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        padding: 4px 8px;
+        transition: all 0.15s;
+    }
+
+    .group-item-btn:hover {
+        background: #f5f0eb;
+    }
+
+    .group-item-btn.del:hover {
+        background: #fdeaea;
+        border-color: #e74c3c;
+    }
+
+    /* 编辑态 */
+    .gm-edit-form {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .gm-edit-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .gm-edit-form input[type="text"] {
+        flex: 1;
+        padding: 7px 10px;
+        border: 1px solid #e0dcd7;
+        border-radius: 6px;
+        font-size: 13px;
+        outline: none;
+    }
+
+    .gm-edit-form input[type="text"]:focus {
+        border-color: #D4A574;
+    }
+
+    .gm-color-options {
+        display: flex;
+        gap: 6px;
+    }
+
+    .gm-color-opt {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: all 0.15s;
+    }
+
+    .gm-color-opt:hover {
+        transform: scale(1.2);
+    }
+
+    .gm-color-opt.selected {
+        border-color: #333;
+        transform: scale(1.2);
+    }
+
+    .gm-assign-section {
+        margin-top: 8px;
+    }
+
+    .gm-assign-label {
+        font-size: 11px;
+        color: #8B7355;
+        margin-bottom: 4px;
+    }
+
+    .gm-assign-accounts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .gm-assign-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 16px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.15s;
+        border: 1px solid #e0dcd7;
+        background: #fff;
+    }
+
+    .gm-assign-chip:hover {
+        border-color: #D4A574;
+    }
+
+    .gm-assign-chip.assigned {
+        background: #D4A574;
+        color: #fff;
+        border-color: #D4A574;
+    }
+
+    .gm-assign-chip.disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    .gm-edit-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+        margin-top: 4px;
+    }
+
+    .gm-edit-actions button {
+        padding: 6px 14px;
+        font-size: 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+    }
+
+    .gm-edit-actions .save {
+        background: #D4A574;
+        color: #fff;
+        border: none;
+    }
+
+    .gm-edit-actions .cancel {
+        background: none;
+        border: 1px solid #e0dcd7;
+        color: #666;
+    }
+
+    /* 新建分组 */
+    .gm-new-group-form {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .gm-new-group-form input {
+        flex: 1;
+        min-width: 150px;
+        padding: 8px 12px;
+        border: 1px solid #e0dcd7;
+        border-radius: 8px;
+        font-size: 13px;
+        outline: none;
+    }
+
+    .gm-new-group-form input:focus {
+        border-color: #D4A574;
+    }
+
+    .gm-btn-create {
+        padding: 8px 18px;
+        background: #E8998D;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .gm-btn-create:hover {
+        opacity: 0.85;
+    }
 </style>
 {% endblock %}
 
@@ -62,12 +405,13 @@
 
         <!-- 操作按钮栏 -->
         <div class="acct-actions-bar">
+            <button class="btn-action btn-action--secondary" id="btn-manage-groups">📁 管理分组</button>
             <button class="btn-action" id="btn-add-account">+ 创建账户</button>
             <button class="btn-action btn-action--secondary" id="btn-batch-snapshot">📊 批量录入快照</button>
         </div>
 
+        <!-- 账户三列布局 -->
         {% if savings_accounts or fund_accounts or stock_accounts %}
-        <!-- 三列布局 -->
         <div class="acct-grid">
         <!-- 储蓄账户 -->
         <div class="card">
@@ -177,7 +521,6 @@
                 {% endif %}
         </div>
         </div>
-
         {% else %}
         <!-- 空状态 -->
         <div class="card">
@@ -329,6 +672,17 @@
                 <label class="form-label">初始余额</label>
                 <input type="number" name="initial_balance" class="form-input" placeholder="0.00" step="0.01" min="0" value="0">
             </div>
+            {% if groups %}
+            <div class="form-group">
+                <label class="form-label">所属分组（可选）</label>
+                <select name="group_id" class="form-select">
+                    <option value="">未分组</option>
+                    {% for g in groups %}
+                    <option value="{{ g.id }}">{{ g.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
             <button type="submit" class="btn-submit">创建账户</button>
         </form>
     </div>
@@ -352,47 +706,105 @@
                 </div>
 
                 <!-- 表头 -->
-                <div style="display:grid;grid-template-columns:110px 90px 90px 90px 130px 80px 1fr;gap:6px;padding:8px 12px;background:#f8f5f1;border-radius:8px;font-size:12px;color:#999;margin-bottom:4px;">
-                    <div>账户</div>
-                    <div>上月余额</div>
-                    <div>理论变化</div>
-                    <div>预计余额</div>
+                <div style="display:grid;grid-template-columns:150px 90px 80px 90px 140px 60px 1fr;gap:8px;padding:8px 16px;font-size:11px;color:#999;margin-bottom:4px;">
+                    <div>账户 / 分组</div>
+                    <div style="text-align:right;">上月余额</div>
+                    <div style="text-align:right;">理论变化</div>
+                    <div style="text-align:right;">预计余额</div>
                     <div>本月余额</div>
-                    <div>差额</div>
+                    <div style="text-align:center;">差额</div>
                     <div>备注</div>
                 </div>
 
-                <!-- 储蓄账户 -->
-                {% if savings_accounts %}
-                <div style="font-size:11px;color:#D4A574;padding:8px 12px 4px;font-weight:600;">储蓄账户</div>
+                <!-- 未分组储蓄账户（独立行） -->
+                {% set ungrouped_savings = [] %}
                 {% for a in savings_accounts %}
+                    {% if not a.group_id %}
+                        {% if ungrouped_savings.append(a) %}{% endif %}
+                    {% endif %}
+                {% endfor %}
+                {% if ungrouped_savings %}
+                <div style="font-size:11px;color:#D4A574;font-weight:600;padding:8px 16px 4px;">储蓄账户</div>
+                {% for a in ungrouped_savings %}
                 {% set prev_bal = prev_snapshots[a.id].balance|float if prev_snapshots.get(a.id) else None %}
                 {% set theory = account_theory.get(a.id, 0) %}
                 {% set expected = prev_bal + theory if prev_bal is not none else None %}
-                <div style="display:grid;grid-template-columns:110px 90px 90px 90px 130px 80px 1fr;gap:6px;padding:8px 12px;align-items:center;border-bottom:1px solid #f0ece7;">
+                <div style="display:grid;grid-template-columns:150px 90px 80px 90px 140px 60px 1fr;gap:8px;padding:10px 16px;align-items:center;border-bottom:1px solid #f0ece7;">
                     <div style="font-size:13px;font-weight:500;">{{ a.name }}</div>
-                    <div style="font-size:12px;color:#999;">{% if prev_bal is not none %}¥{{ prev_bal|currency(0) }}{% else %}—{% endif %}</div>
-                    <div class="theory-cell" style="font-size:12px;position:relative;cursor:help;{% if theory > 0 %}color:#4CAF50;{% elif theory < 0 %}color:#f44336;{% else %}color:#999;{% endif %}">{% if prev_bal is not none %}{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}{% if account_theory_details.get(a.id) %}<div class="theory-tooltip">{% for d in account_theory_details[a.id] %}<div style="display:flex;justify-content:space-between;gap:12px;"><span>{{ d.desc[:15] }}</span><span style="{% if d.sign == '+' %}color:#4CAF50{% else %}color:#f44336{% endif %}">{{ d.sign }}¥{{ d.amount|currency(0) }}</span></div>{% endfor %}<div style="border-top:1px solid #e0dcd7;margin-top:4px;padding-top:4px;display:flex;justify-content:space-between;font-weight:600;"><span>合计</span><span>{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}</span></div></div>{% endif %}{% else %}—{% endif %}</div>
-                    <div style="font-size:12px;color:#666;font-weight:500;">{% if expected is not none %}¥{{ expected|currency(0) }}{% else %}—{% endif %}</div>
+                    <div style="font-size:12px;color:#999;text-align:right;">{% if prev_bal is not none %}¥{{ prev_bal|currency(0) }}{% else %}—{% endif %}</div>
+                    <div class="theory-cell" style="font-size:12px;text-align:right;position:relative;cursor:help;{% if theory > 0 %}color:#4CAF50;{% elif theory < 0 %}color:#f44336;{% else %}color:#999;{% endif %}">{% if prev_bal is not none %}{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}{% if account_theory_details.get(a.id) %}<div class="theory-tooltip">{% for d in account_theory_details[a.id] %}<div style="display:flex;justify-content:space-between;gap:12px;"><span>{{ d.desc[:15] }}</span><span style="{% if d.sign == '+' %}color:#4CAF50{% else %}color:#f44336{% endif %}">{{ d.sign }}¥{{ d.amount|currency(0) }}</span></div>{% endfor %}<div style="border-top:1px solid #e0dcd7;margin-top:4px;padding-top:4px;display:flex;justify-content:space-between;font-weight:600;"><span>合计</span><span>{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}</span></div></div>{% endif %}{% else %}—{% endif %}</div>
+                    <div style="font-size:12px;color:#666;font-weight:500;text-align:right;">{% if expected is not none %}¥{{ expected|currency(0) }}{% else %}—{% endif %}</div>
                     <div><input type="number" name="balance_{{ a.id }}" style="width:100%;padding:6px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:13px;background:#fff;" placeholder="输入余额" step="0.01" min="0" data-prev="{{ prev_bal if prev_bal is not none else '' }}" data-expected="{{ expected if expected is not none else '' }}" data-currency="CNY" data-aid="{{ a.id }}" oninput="calcDiff(this)"></div>
-                    <div id="diff_{{ a.id }}" style="font-size:12px;">—</div>
+                    <div id="diff_{{ a.id }}" style="font-size:12px;text-align:center;">—</div>
                     <div><input type="text" name="note_{{ a.id }}" style="width:100%;padding:6px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:12px;color:#666;" placeholder="备注..." maxlength="200"></div>
                 </div>
                 {% endfor %}
                 {% endif %}
 
-                <!-- 基金理财 -->
-                {% if fund_accounts %}
-                <div style="font-size:11px;color:#3498DB;padding:8px 12px 4px;font-weight:600;">基金理财</div>
-                {% for a in fund_accounts %}
+                <!-- 分组（每组一个 group-section） -->
+                {% for group in groups %}
+                {% set g_accounts = grouped_accounts.get(group.id, []) %}
+                {% if g_accounts %}
+                {% set ns = namespace(group_prev=0, group_theory=0) %}
+                {% for a in g_accounts %}
+                    {% set p = prev_snapshots[a.id].balance|float if prev_snapshots.get(a.id) else 0 %}
+                    {% set ns.group_prev = ns.group_prev + p %}
+                    {% set ns.group_theory = ns.group_theory + account_theory.get(a.id, 0) %}
+                {% endfor %}
+                {% set group_expected = ns.group_prev + ns.group_theory %}
+                <div style="margin-bottom:16px;border:1px solid #f0ece7;border-radius:12px;overflow:hidden;">
+                    <!-- 组头 -->
+                    <div style="display:grid;grid-template-columns:150px 90px 80px 90px 140px 60px 1fr;gap:8px;padding:12px 16px;background:#f8f5f1;align-items:center;cursor:pointer;" onclick="toggleGroup(this)">
+                        <div style="font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;">
+                            <span class="snapshot-toggle open" style="font-size:12px;color:#999;transition:transform 0.2s;">▶</span>
+                            {{ group.name }} <span style="font-size:10px;background:#F5E6D3;color:#8B6914;padding:2px 6px;border-radius:4px;margin-left:4px;">组</span>
+                        </div>
+                        <div style="font-size:12px;color:#999;text-align:right;">¥{{ ns.group_prev|currency(0) }}</div>
+                        <div style="font-size:12px;text-align:right;{% if ns.group_theory > 0 %}color:#4CAF50;{% elif ns.group_theory < 0 %}color:#f44336;{% else %}color:#999;{% endif %}">{{ '+' if ns.group_theory >= 0 }}{{ ns.group_theory|int|currency(0) }}</div>
+                        <div style="font-size:12px;color:#666;font-weight:500;text-align:right;">¥{{ group_expected|currency(0) }}</div>
+                        <div onclick="event.stopPropagation();"><input type="number" name="group_balance_{{ group.id }}" style="width:100%;padding:8px 10px;border:2px solid #D4A574;border-radius:8px;font-size:15px;font-weight:600;background:#fffbf5;outline:none;" placeholder="输入组总额" step="0.01" min="0" data-expected="{{ group_expected }}" data-group-id="{{ group.id }}" oninput="calcGroupDiff(this)"></div>
+                        <div id="gdiff_{{ group.id }}" style="font-size:12px;text-align:center;">—</div>
+                        <div onclick="event.stopPropagation();"><input type="text" name="group_note_{{ group.id }}" style="width:100%;padding:5px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:12px;color:#666;" placeholder="备注..."></div>
+                    </div>
+                    <!-- 子账户 -->
+                    <div class="snapshot-sub-accounts" style="border-top:1px solid #f0ece7;">
+                        {% for a in g_accounts %}
+                        {% set prev_bal = prev_snapshots[a.id].balance|float if prev_snapshots.get(a.id) else None %}
+                        {% set theory = account_theory.get(a.id, 0) %}
+                        {% set expected = prev_bal + theory if prev_bal is not none else None %}
+                        <div style="display:grid;grid-template-columns:150px 90px 80px 90px 140px 60px 1fr;gap:8px;padding:8px 16px;align-items:center;border-bottom:1px solid #f0ece7;">
+                            <div style="font-size:13px;color:#6B6B6B;padding-left:24px;">{{ a.name }} <span style="font-size:10px;background:#f0f0f0;color:#999;padding:2px 6px;border-radius:4px;margin-left:4px;">选填</span></div>
+                            <div style="font-size:12px;color:#999;text-align:right;">{% if prev_bal is not none %}¥{{ prev_bal|currency(0) }}{% else %}—{% endif %}</div>
+                            <div class="theory-cell" style="font-size:12px;text-align:right;position:relative;cursor:help;{% if theory > 0 %}color:#4CAF50;{% elif theory < 0 %}color:#f44336;{% else %}color:#999;{% endif %}">{% if prev_bal is not none %}{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}{% if account_theory_details.get(a.id) %}<div class="theory-tooltip">{% for d in account_theory_details[a.id] %}<div style="display:flex;justify-content:space-between;gap:12px;"><span>{{ d.desc[:15] }}</span><span style="{% if d.sign == '+' %}color:#4CAF50{% else %}color:#f44336{% endif %}">{{ d.sign }}¥{{ d.amount|currency(0) }}</span></div>{% endfor %}<div style="border-top:1px solid #e0dcd7;margin-top:4px;padding-top:4px;display:flex;justify-content:space-between;font-weight:600;"><span>合计</span><span>{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}</span></div></div>{% endif %}{% else %}—{% endif %}</div>
+                            <div style="font-size:12px;color:#666;text-align:right;">{% if expected is not none %}¥{{ expected|currency(0) }}{% else %}—{% endif %}</div>
+                            <div><input type="number" name="balance_{{ a.id }}" style="width:100%;padding:5px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:13px;background:#fff;" placeholder="选填" step="0.01" min="0" data-prev="{{ prev_bal if prev_bal is not none else '' }}" data-expected="{{ expected if expected is not none else '' }}" data-currency="{{ a.currency or 'CNY' }}" data-aid="{{ a.id }}" oninput="calcDiff(this)"></div>
+                            <div id="diff_{{ a.id }}" style="font-size:11px;text-align:center;color:#999;">—</div>
+                            <div><input type="text" name="note_{{ a.id }}" style="width:100%;padding:4px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:11px;color:#666;" placeholder="备注..." maxlength="200"></div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+
+                <!-- 未分组基金/股票账户（独立行） -->
+                {% set ungrouped_other = [] %}
+                {% for a in fund_accounts + stock_accounts %}
+                    {% if not a.group_id %}
+                        {% if ungrouped_other.append(a) %}{% endif %}
+                    {% endif %}
+                {% endfor %}
+                {% if ungrouped_other %}
+                <div style="font-size:11px;color:#3498DB;font-weight:600;padding:8px 16px 4px;">其他独立账户</div>
+                {% for a in ungrouped_other %}
                 {% set prev_bal = prev_snapshots[a.id].balance|float if prev_snapshots.get(a.id) else None %}
                 {% set theory = account_theory.get(a.id, 0) %}
                 {% set expected = prev_bal + theory if prev_bal is not none else None %}
-                <div style="display:grid;grid-template-columns:110px 90px 90px 90px 130px 80px 1fr;gap:6px;padding:8px 12px;align-items:center;border-bottom:1px solid #f0ece7;">
+                <div style="display:grid;grid-template-columns:150px 90px 80px 90px 140px 60px 1fr;gap:8px;padding:10px 16px;align-items:center;border-bottom:1px solid #f0ece7;">
                     <div style="font-size:13px;font-weight:500;">{{ a.name }}</div>
-                    <div style="font-size:12px;color:#999;">{% if prev_bal is not none %}{% if a.currency and a.currency != 'CNY' %}{{ a.currency }}{% else %}¥{% endif %}{{ prev_bal|currency(0) }}{% else %}—{% endif %}</div>
-                    <div class="theory-cell" style="font-size:12px;position:relative;cursor:help;{% if theory > 0 %}color:#4CAF50;{% elif theory < 0 %}color:#f44336;{% else %}color:#999;{% endif %}">{% if prev_bal is not none %}{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}{% if account_theory_details.get(a.id) %}<div class="theory-tooltip">{% for d in account_theory_details[a.id] %}<div style="display:flex;justify-content:space-between;gap:12px;"><span>{{ d.desc[:15] }}</span><span style="{% if d.sign == '+' %}color:#4CAF50{% else %}color:#f44336{% endif %}">{{ d.sign }}¥{{ d.amount|currency(0) }}</span></div>{% endfor %}<div style="border-top:1px solid #e0dcd7;margin-top:4px;padding-top:4px;display:flex;justify-content:space-between;font-weight:600;"><span>合计</span><span>{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}</span></div></div>{% endif %}{% else %}—{% endif %}</div>
-                    <div style="font-size:12px;color:#666;font-weight:500;">{% if expected is not none %}{% if a.currency and a.currency != 'CNY' %}{{ a.currency }}{% else %}¥{% endif %}{{ expected|currency(0) }}{% else %}—{% endif %}</div>
+                    <div style="font-size:12px;color:#999;text-align:right;">{% if prev_bal is not none %}{% if a.currency and a.currency != 'CNY' %}{{ a.currency }}{% else %}¥{% endif %}{{ prev_bal|currency(0) }}{% else %}—{% endif %}</div>
+                    <div class="theory-cell" style="font-size:12px;text-align:right;position:relative;cursor:help;{% if theory > 0 %}color:#4CAF50;{% elif theory < 0 %}color:#f44336;{% else %}color:#999;{% endif %}">{% if prev_bal is not none %}{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}{% if account_theory_details.get(a.id) %}<div class="theory-tooltip">{% for d in account_theory_details[a.id] %}<div style="display:flex;justify-content:space-between;gap:12px;"><span>{{ d.desc[:15] }}</span><span style="{% if d.sign == '+' %}color:#4CAF50{% else %}color:#f44336{% endif %}">{{ d.sign }}¥{{ d.amount|currency(0) }}</span></div>{% endfor %}<div style="border-top:1px solid #e0dcd7;margin-top:4px;padding-top:4px;display:flex;justify-content:space-between;font-weight:600;"><span>合计</span><span>{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}</span></div></div>{% endif %}{% else %}—{% endif %}</div>
+                    <div style="font-size:12px;color:#666;font-weight:500;text-align:right;">{% if expected is not none %}{% if a.currency and a.currency != 'CNY' %}{{ a.currency }}{% else %}¥{% endif %}{{ expected|currency(0) }}{% else %}—{% endif %}</div>
                     <div style="display:flex;gap:4px;">
                         {% if a.currency and a.currency != 'CNY' %}
                         <select name="currency_{{ a.id }}" style="width:55px;padding:4px;border:1px solid #e0dcd7;border-radius:6px;font-size:10px;" data-aid="{{ a.id }}" onchange="updateCurrencyDisplay(this)">
@@ -403,33 +815,7 @@
                         {% endif %}
                         <input type="number" name="balance_{{ a.id }}" style="flex:1;width:100%;padding:6px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:13px;background:#fff;" placeholder="输入余额" step="0.01" min="0" data-prev="{{ prev_bal if prev_bal is not none else '' }}" data-expected="{{ expected if expected is not none else '' }}" data-currency="{{ a.currency or 'CNY' }}" data-aid="{{ a.id }}" oninput="calcDiff(this)">
                     </div>
-                    <div id="diff_{{ a.id }}" style="font-size:12px;">—</div>
-                    <div><input type="text" name="note_{{ a.id }}" style="width:100%;padding:6px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:12px;color:#666;" placeholder="备注..." maxlength="200"></div>
-                </div>
-                {% endfor %}
-                {% endif %}
-
-                <!-- 股票账户 -->
-                {% if stock_accounts %}
-                <div style="font-size:11px;color:#7C8BA1;padding:8px 12px 4px;font-weight:600;">股票账户</div>
-                {% for a in stock_accounts %}
-                {% set prev_bal = prev_snapshots[a.id].balance|float if prev_snapshots.get(a.id) else None %}
-                {% set theory = account_theory.get(a.id, 0) %}
-                {% set expected = prev_bal + theory if prev_bal is not none else None %}
-                <div style="display:grid;grid-template-columns:110px 90px 90px 90px 130px 80px 1fr;gap:6px;padding:8px 12px;align-items:center;border-bottom:1px solid #f0ece7;">
-                    <div style="font-size:13px;font-weight:500;">{{ a.name }}</div>
-                    <div style="font-size:12px;color:#999;">{% if prev_bal is not none %}{{ a.currency or 'CNY' }} {{ prev_bal|currency(0) }}{% else %}—{% endif %}</div>
-                    <div class="theory-cell" style="font-size:12px;position:relative;cursor:help;{% if theory > 0 %}color:#4CAF50;{% elif theory < 0 %}color:#f44336;{% else %}color:#999;{% endif %}">{% if prev_bal is not none %}{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}{% if account_theory_details.get(a.id) %}<div class="theory-tooltip">{% for d in account_theory_details[a.id] %}<div style="display:flex;justify-content:space-between;gap:12px;"><span>{{ d.desc[:15] }}</span><span style="{% if d.sign == '+' %}color:#4CAF50{% else %}color:#f44336{% endif %}">{{ d.sign }}¥{{ d.amount|currency(0) }}</span></div>{% endfor %}<div style="border-top:1px solid #e0dcd7;margin-top:4px;padding-top:4px;display:flex;justify-content:space-between;font-weight:600;"><span>合计</span><span>{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}</span></div></div>{% endif %}{% else %}—{% endif %}</div>
-                    <div style="font-size:12px;color:#666;font-weight:500;">{% if expected is not none %}{{ a.currency or 'CNY' }} {{ expected|currency(0) }}{% else %}—{% endif %}</div>
-                    <div style="display:flex;gap:4px;">
-                        <select name="currency_{{ a.id }}" style="width:55px;padding:4px;border:1px solid #e0dcd7;border-radius:6px;font-size:10px;" data-aid="{{ a.id }}" onchange="updateCurrencyDisplay(this)">
-                            <option value="HKD" {{ 'selected' if (a.currency or 'HKD') == 'HKD' }}>港币</option>
-                            <option value="CNY" {{ 'selected' if a.currency == 'CNY' }}>人民币</option>
-                            <option value="USD" {{ 'selected' if a.currency == 'USD' }}>美元</option>
-                        </select>
-                        <input type="number" name="balance_{{ a.id }}" style="flex:1;width:100%;padding:6px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:13px;background:#fff;" placeholder="输入余额" step="0.01" min="0" data-prev="{{ prev_bal if prev_bal is not none else '' }}" data-expected="{{ expected if expected is not none else '' }}" data-currency="{{ a.currency or 'HKD' }}" data-aid="{{ a.id }}" oninput="calcDiff(this)">
-                    </div>
-                    <div id="diff_{{ a.id }}" style="font-size:12px;">—</div>
+                    <div id="diff_{{ a.id }}" style="font-size:12px;text-align:center;">—</div>
                     <div><input type="text" name="note_{{ a.id }}" style="width:100%;padding:6px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:12px;color:#666;" placeholder="备注..." maxlength="200"></div>
                 </div>
                 {% endfor %}
@@ -457,6 +843,33 @@
             </form>
         </div>
     </div>
+
+    <!-- ===== 模态框：分组管理（交互式） ===== -->
+    <div class="groups-modal-overlay" id="groups-modal">
+        <div class="groups-modal">
+            <div class="groups-modal-header">
+                <h2 class="groups-modal-title">📁 管理账户分组</h2>
+                <button class="groups-modal-close" type="button" onclick="closeGroupsModal()">&times;</button>
+            </div>
+            <div style="background:#E8F5E9;border-radius:8px;padding:8px 12px;margin-bottom:16px;font-size:12px;color:#2E7D32;">
+                💡 分组用于「批量录入快照」时聚合展示，主页布局不受影响。点击 ✏️ 编辑并分配账户。
+            </div>
+
+            <!-- 分组列表（JS动态渲染） -->
+            <div id="gm-group-list" style="margin-bottom:20px;"></div>
+
+            <!-- 新建分组 -->
+            <div style="border-top:1px solid #f0ece7;padding-top:16px;">
+                <div style="font-size:13px;font-weight:600;color:#8B7355;margin-bottom:10px;">+ 新建分组</div>
+                <div class="gm-new-group-form">
+                    <input type="text" id="gm-new-name" placeholder="输入分组名称..." maxlength="100">
+                    <div class="gm-color-options" id="gm-new-colors"></div>
+                    <button class="gm-btn-create" type="button" onclick="gmCreateGroup()">创建</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -482,9 +895,22 @@
         // 批量快照模态框
         var btnBatch = document.getElementById('btn-batch-snapshot');
         if (btnBatch) btnBatch.addEventListener('click', function() {
+            if (gmGroupsChanged) {
+                // 分组有变动，刷新页面后自动打开快照弹窗
+                sessionStorage.setItem('openBatchModal', '1');
+                location.reload();
+                return;
+            }
             document.getElementById('batch-modal').style.display = 'flex';
             document.body.style.overflow = 'hidden';
         });
+
+        // 页面加载后检查是否需要自动打开快照弹窗
+        if (sessionStorage.getItem('openBatchModal')) {
+            sessionStorage.removeItem('openBatchModal');
+            document.getElementById('batch-modal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
 
         function closeBatchModal() {
             document.getElementById('batch-modal').style.display = 'none';
@@ -494,6 +920,25 @@
         // 点击遮罩关闭
         document.getElementById('batch-modal').addEventListener('click', function(e) {
             if (e.target === this) closeBatchModal();
+        });
+
+        // 分组管理模态框
+        var btnManageGroups = document.getElementById('btn-manage-groups');
+        if (btnManageGroups) {
+            btnManageGroups.addEventListener('click', function() {
+                document.getElementById('groups-modal').classList.add('open');
+                document.body.style.overflow = 'hidden';
+                gmRender();
+            });
+        }
+
+        function closeGroupsModal() {
+            document.getElementById('groups-modal').classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        document.getElementById('groups-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeGroupsModal();
         });
 
         // 默认月份设为当月
@@ -508,8 +953,240 @@
             if (e.key === 'Escape') {
                 closeDrawer('drawer-account', 'overlay-account');
                 closeBatchModal();
+                closeGroupsModal();
             }
         });
+
+        // ===== 分组管理（交互式） =====
+        var GM_COLORS = ['#D4A574', '#E74C3C', '#3498DB', '#2ECC71', '#F39C12', '#9B59B6', '#1ABC9C', '#34495E'];
+
+        // 从 Jinja2 注入初始数据
+        var gmAllAccounts = [
+            {% for a in savings_accounts + fund_accounts + stock_accounts %}
+            { id: {{ a.id }}, name: '{{ a.name }}', groupId: {{ a.group_id or 'null' }} },
+            {% endfor %}
+        ];
+
+        var gmGroups = [
+            {% for g in groups %}
+            { id: {{ g.id }}, name: '{{ g.name }}', color: '{{ g.color }}', accountIds: [{% for a in grouped_accounts.get(g.id, []) %}{{ a.id }}{% if not loop.last %},{% endif %}{% endfor %}] },
+            {% endfor %}
+        ];
+
+        var gmEditingId = null;
+        var gmNewColor = GM_COLORS[0];
+        var gmGroupsChanged = false;
+
+        function gmRender() {
+            var list = document.getElementById('gm-group-list');
+            if (gmGroups.length === 0) {
+                list.innerHTML = '<div style="text-align:center;padding:24px;color:#8B7355;font-size:13px;">暂无分组，创建一个试试吧</div>';
+                return;
+            }
+            var html = '';
+            gmGroups.forEach(function(g) {
+                if (gmEditingId === g.id) {
+                    html += gmRenderEditForm(g);
+                } else {
+                    html += gmRenderItem(g);
+                }
+            });
+            list.innerHTML = html;
+        }
+
+        function gmRenderItem(g) {
+            var tags = g.accountIds.map(function(id) {
+                var a = gmAllAccounts.find(function(x) { return x.id === id; });
+                return a ? '<span class="account-tag">' + a.name + '</span>' : '';
+            }).join('');
+
+            return '<div class="group-item">' +
+                '<div class="group-item-color" style="background:' + g.color + ';"></div>' +
+                '<div class="group-item-info">' +
+                    '<div class="group-item-name">' + g.name + '</div>' +
+                    '<div class="group-item-accounts">' + (tags || '<span style="color:#bbb;">未分配账户</span>') + '</div>' +
+                '</div>' +
+                '<div class="group-item-actions">' +
+                    '<button class="group-item-btn" onclick="gmStartEdit(' + g.id + ')" title="编辑">✏️</button>' +
+                    '<button class="group-item-btn del" onclick="gmDeleteGroup(' + g.id + ')" title="删除">🗑️</button>' +
+                '</div>' +
+            '</div>';
+        }
+
+        function gmRenderEditForm(g) {
+            var colorOpts = GM_COLORS.map(function(c) {
+                return '<div class="gm-color-opt' + (c === g.color ? ' selected' : '') + '" style="background:' + c + ';" onclick="gmSetEditColor(\'' + c + '\')"></div>';
+            }).join('');
+
+            var chips = gmAllAccounts.map(function(a) {
+                var assigned = g.accountIds.indexOf(a.id) >= 0;
+                var otherGroup = gmGroups.find(function(og) { return og.id !== g.id && og.accountIds.indexOf(a.id) >= 0; });
+                if (otherGroup) {
+                    return '<span class="gm-assign-chip disabled" title="已在「' + otherGroup.name + '」中">' + a.name + '</span>';
+                }
+                return '<span class="gm-assign-chip' + (assigned ? ' assigned' : '') + '" onclick="gmToggleAccount(' + g.id + ',' + a.id + ')">' + a.name + (assigned ? ' ×' : '') + '</span>';
+            }).join('');
+
+            return '<div class="group-item editing">' +
+                '<div class="gm-edit-form">' +
+                    '<div class="gm-edit-row">' +
+                        '<input type="text" id="gm-edit-name-' + g.id + '" value="' + g.name + '" placeholder="分组名称">' +
+                        '<div class="gm-color-options">' + colorOpts + '</div>' +
+                    '</div>' +
+                    '<div class="gm-assign-section">' +
+                        '<div class="gm-assign-label">点击账户分配到此组（灰色 = 已在其他组）</div>' +
+                        '<div class="gm-assign-accounts">' + chips + '</div>' +
+                    '</div>' +
+                    '<div class="gm-edit-actions">' +
+                        '<button class="cancel" onclick="gmCancelEdit()">取消</button>' +
+                        '<button class="save" onclick="gmSaveEdit(' + g.id + ')">保存</button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+        }
+
+        function gmStartEdit(id) {
+            gmEditingId = id;
+            gmRender();
+        }
+
+        function gmCancelEdit() {
+            gmEditingId = null;
+            gmRender();
+        }
+
+        function gmSetEditColor(color) {
+            var g = gmGroups.find(function(x) { return x.id === gmEditingId; });
+            if (g) { g.color = color; gmRender(); }
+        }
+
+        function gmToggleAccount(groupId, accountId) {
+            var g = gmGroups.find(function(x) { return x.id === groupId; });
+            if (!g) return;
+            var idx = g.accountIds.indexOf(accountId);
+            if (idx >= 0) {
+                g.accountIds.splice(idx, 1);
+                // Call backend to remove from group
+                gmMoveAccount(accountId, '');
+            } else {
+                g.accountIds.push(accountId);
+                // Call backend to add to group
+                gmMoveAccount(accountId, groupId);
+            }
+            gmGroupsChanged = true;
+            gmRender();
+        }
+
+        function gmMoveAccount(accountId, groupId) {
+            var formData = new FormData();
+            formData.append('group_id', groupId);
+            fetch('/accounts/' + accountId + '/move-to-group', { method: 'POST', body: formData });
+        }
+
+        function gmSaveEdit(id) {
+            var g = gmGroups.find(function(x) { return x.id === id; });
+            if (!g) return;
+            var input = document.getElementById('gm-edit-name-' + id);
+            var newName = input.value.trim();
+            if (!newName) { alert('名称不能为空'); return; }
+
+            var formData = new FormData();
+            formData.append('name', newName);
+            formData.append('color', g.color);
+            fetch('/accounts/groups/' + id + '/update', { method: 'POST', body: formData }).then(function() {
+                g.name = newName;
+                gmEditingId = null;
+                gmGroupsChanged = true;
+                gmRender();
+            });
+        }
+
+        function gmDeleteGroup(id) {
+            var g = gmGroups.find(function(x) { return x.id === id; });
+            if (!g) return;
+            if (!confirm('确定删除分组「' + g.name + '」？其中的账户将变为未分组。')) return;
+            fetch('/accounts/groups/' + id + '/delete', { method: 'POST' }).then(function() {
+                gmGroups = gmGroups.filter(function(x) { return x.id !== id; });
+                gmGroupsChanged = true;
+                gmRender();
+            });
+        }
+
+        function gmCreateGroup() {
+            var input = document.getElementById('gm-new-name');
+            var name = input.value.trim();
+            if (!name) { alert('请输入分组名称'); return; }
+
+            var formData = new FormData();
+            formData.append('name', name);
+            formData.append('color', gmNewColor);
+            fetch('/accounts/groups/create', { method: 'POST', body: formData, redirect: 'manual' }).then(function(resp) {
+                // 获取最新分组列表
+                return fetch('/accounts/groups');
+            }).then(function(resp) { return resp.json(); }).then(function(data) {
+                if (data.groups) {
+                    // 重建 gmGroups，保留已有账户分配信息
+                    var oldMap = {};
+                    gmGroups.forEach(function(g) { oldMap[g.id] = g.accountIds; });
+                    gmGroups = data.groups.map(function(g) {
+                        return { id: g.id, name: g.name, color: g.color, accountIds: oldMap[g.id] || [] };
+                    });
+                    gmGroupsChanged = true;
+                    gmRender();
+                }
+                input.value = '';
+            });
+        }
+
+        function gmSelectNewColor(el, color) {
+            gmNewColor = color;
+            document.querySelectorAll('#gm-new-colors .gm-color-opt').forEach(function(x) { x.classList.remove('selected'); });
+            el.classList.add('selected');
+        }
+
+        // 初始化新建分组颜色选择
+        (function() {
+            var container = document.getElementById('gm-new-colors');
+            if (!container) return;
+            container.innerHTML = GM_COLORS.map(function(c, i) {
+                return '<div class="gm-color-opt' + (i === 0 ? ' selected' : '') + '" style="background:' + c + ';" onclick="gmSelectNewColor(this, \'' + c + '\')"></div>';
+            }).join('');
+        })();
+
+        // ===== 快照弹窗：分组折叠/展开 =====
+        function toggleGroup(header) {
+            var subAccounts = header.nextElementSibling;
+            var toggle = header.querySelector('.snapshot-toggle');
+            if (subAccounts.classList.contains('collapsed')) {
+                subAccounts.classList.remove('collapsed');
+                if (toggle) toggle.classList.add('open');
+            } else {
+                subAccounts.classList.add('collapsed');
+                if (toggle) toggle.classList.remove('open');
+            }
+        }
+
+        function calcGroupDiff(input) {
+            var groupId = input.dataset.groupId;
+            var el = document.getElementById('gdiff_' + groupId);
+            var expected = parseFloat(input.dataset.expected);
+            var curr = parseFloat(input.value);
+
+            if (isNaN(curr) || input.value === '') { el.innerHTML = '—'; return; }
+            if (isNaN(expected)) { el.innerHTML = '<span style="color:#999;">—</span>'; return; }
+
+            var diff = curr - expected;
+            var absDiff = Math.abs(diff);
+            var sign = diff >= 0 ? '+' : '-';
+
+            if (absDiff === 0) {
+                el.innerHTML = '<span style="color:#27ae60;font-weight:600;">✓</span>';
+            } else if (absDiff <= 100) {
+                el.innerHTML = '<span style="color:#27ae60;font-size:11px;">' + sign + absDiff.toLocaleString('zh-CN', {maximumFractionDigits:0}) + ' ✓</span>';
+            } else {
+                el.innerHTML = '<span style="color:#c0392b;font-weight:500;">' + sign + absDiff.toLocaleString('zh-CN', {maximumFractionDigits:0}) + '</span>';
+            }
+        }
 
         // ===== 快照草稿：localStorage 保存/恢复 =====
         var SNAPSHOT_DRAFT_KEY = 'ff_snapshot_draft';
@@ -521,7 +1198,13 @@
             form.querySelectorAll('input[name^="balance_"]').forEach(function(input) {
                 if (input.value) data[input.name] = input.value;
             });
+            form.querySelectorAll('input[name^="group_balance_"]').forEach(function(input) {
+                if (input.value) data[input.name] = input.value;
+            });
             form.querySelectorAll('input[name^="note_"]').forEach(function(input) {
+                if (input.value) data[input.name] = input.value;
+            });
+            form.querySelectorAll('input[name^="group_note_"]').forEach(function(input) {
                 if (input.value) data[input.name] = input.value;
             });
             var monthInput = document.getElementById('batch-month');
@@ -548,8 +1231,11 @@
                     if (input) {
                         input.value = data[key];
                         // 触发差额计算
-                        if (key.startsWith('balance_') && input.oninput) {
+                        if (key.startsWith('balance_') && input.dataset && input.dataset.aid) {
                             calcDiff(input);
+                        }
+                        if (key.startsWith('group_balance_') && input.dataset && input.dataset.groupId) {
+                            calcGroupDiff(input);
                         }
                     }
                 });
@@ -563,11 +1249,20 @@
             form.querySelectorAll('input[name^="balance_"]').forEach(function(input) {
                 input.value = '';
             });
+            form.querySelectorAll('input[name^="group_balance_"]').forEach(function(input) {
+                input.value = '';
+            });
             form.querySelectorAll('input[name^="note_"]').forEach(function(input) {
+                input.value = '';
+            });
+            form.querySelectorAll('input[name^="group_note_"]').forEach(function(input) {
                 input.value = '';
             });
             // 重置差额显示
             form.querySelectorAll('[id^="diff_"]').forEach(function(el) {
+                el.innerHTML = '—';
+            });
+            form.querySelectorAll('[id^="gdiff_"]').forEach(function(el) {
                 el.innerHTML = '—';
             });
             // 重置月份为当月
@@ -759,5 +1454,58 @@
                 applyFilters();
             });
         }
+
+
+// Function to persist group order to database
+        function updateGroupOrder() {
+            const groupCards = document.querySelectorAll('.group-card');
+            let newOrder = Array.from(groupCards).map((card, index) => {
+                return {
+                    id: card.getAttribute('data-group-id'),
+                    order: index + 1
+                };
+            });
+
+            newOrder.forEach(item => {
+                const formData = new FormData();
+                formData.append('display_order', item.order);
+                fetch(`/accounts/groups/${item.id}/reorder`, {
+                    method: 'POST',
+                    body: formData
+                })
+                .catch(err => console.error('Error updating group order:', err));
+            });
+        }
+
+                // ===== 分组卡片拖拽排序 =====
+        var draggedElement = null;
+
+        document.querySelectorAll('.group-card').forEach(function(card) {
+            card.addEventListener('dragstart', function(e) {
+                draggedElement = this;
+                this.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+            });
+
+            card.addEventListener('dragend', function(e) {
+                this.classList.remove('dragging');
+                draggedElement = null;
+            });
+
+            card.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+            });
+
+            card.addEventListener('drop', function(e) {
+                e.preventDefault();
+                if (draggedElement && draggedElement !== this) {
+                    // 交换位置
+                    this.parentNode.insertBefore(draggedElement, this);
+                    // 保存新的排序顺序到数据库
+                    updateGroupOrder();
+                }
+            });
+        });
     </script>
 {% endblock %}

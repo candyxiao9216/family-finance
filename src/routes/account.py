@@ -8,7 +8,7 @@ from dateutil.relativedelta import relativedelta
 from flask import Blueprint, redirect, render_template, request, session, url_for, flash
 from pypinyin import lazy_pinyin
 
-from models import db, Account, AccountType, AccountBalance, User, Transaction
+from models import db, Account, AccountType, AccountBalance, User, Transaction, AccountGroup
 
 account_bp = Blueprint('account', __name__, url_prefix='/accounts')
 
@@ -114,7 +114,30 @@ def account_list():
             account_theory[aid] = net
             account_theory_details[aid] = details
 
+    # 获取所有分组信息
+    groups = AccountGroup.query.filter_by(user_id=user_id).order_by(AccountGroup.display_order).all()
+    
+    # 按分组组织账户
+    all_accounts = savings_accounts + fund_accounts + stock_accounts
+    grouped_accounts = {}  # {group_id: [accounts]}
+    group_stats = {}  # {group_id: {'account_count': N, 'total_balance': X}}
+    for group in groups:
+        accounts_in_group = [a for a in all_accounts if a.group_id == group.id]
+        grouped_accounts[group.id] = accounts_in_group
+        # 计算分组统计信息
+        group_stats[group.id] = {
+            'account_count': len(accounts_in_group),
+            'total_balance': sum(float(a.current_balance) * rates.get(a.currency or 'CNY', 1.0) for a in accounts_in_group)
+        }
+    
+    # 未分组的账户
+    ungrouped_accounts = [a for a in all_accounts if not a.group_id]
+
     return render_template('accounts.html',
+                           groups=groups,
+                           grouped_accounts=grouped_accounts,
+                           group_stats=group_stats,
+                           ungrouped_accounts=ungrouped_accounts,
                            savings_accounts=savings_accounts,
                            fund_accounts=fund_accounts,
                            stock_accounts=stock_accounts,
@@ -153,7 +176,8 @@ def create_account():
         type_id=type_id,
         currency=currency,
         initial_balance=Decimal(initial_balance),
-        current_balance=Decimal(initial_balance)
+        current_balance=Decimal(initial_balance),
+        group_id=request.form.get('group_id', type=int) or None,
     )
     db.session.add(account)
     db.session.commit()
@@ -321,6 +345,81 @@ def batch_snapshot():
 
         count += 1
 
+    # 处理分组级别输入：按比例分配到组内未单独填写的账户
+    groups = AccountGroup.query.filter_by(user_id=user_id).order_by(AccountGroup.display_order).all()
+    for group in groups:
+        group_balance_str = request.form.get(f'group_balance_{group.id}', '').strip()
+        if not group_balance_str:
+            continue
+        group_balance = Decimal(group_balance_str)
+        # 获取组内账户
+        group_accounts = [a for a in accounts if a.group_id == group.id]
+        if not group_accounts:
+            continue
+        # 计算上月余额用于按比例分配
+        prev_month = record_month - relativedelta(months=1)
+        prev_balances = {}
+        for a in group_accounts:
+            if request.form.get(f'balance_{a.id}', '').strip():
+                continue  # 已单独填写，跳过
+            prev_rec = AccountBalance.query.filter_by(account_id=a.id, record_month=prev_month).first()
+            if prev_rec:
+                prev_balances[a.id] = Decimal(str(prev_rec.balance))
+            else:
+                prev_balances[a.id] = Decimal('0')
+
+        # 未单独填写的账户
+        unfilled = [a for a in group_accounts if not request.form.get(f'balance_{a.id}', '').strip()]
+        if not unfilled:
+            continue
+
+        # 计算需要分配的金额（组总额 - 已单独填写的子账户合计）
+        filled_total = Decimal('0')
+        for a in group_accounts:
+            bal_str = request.form.get(f'balance_{a.id}', '').strip()
+            if bal_str:
+                filled_total += Decimal(bal_str)
+
+        remaining = group_balance - filled_total
+        unfilled_prev_total = sum(prev_balances.get(a.id, Decimal('0')) for a in unfilled)
+
+        for a in unfilled:
+            if unfilled_prev_total > 0:
+                ratio = prev_balances.get(a.id, Decimal('0')) / unfilled_prev_total
+            else:
+                ratio = Decimal('1') / Decimal(str(len(unfilled)))
+            allocated = (remaining * ratio).quantize(Decimal('0.01'))
+
+            prev_bal = prev_balances.get(a.id, Decimal('0'))
+            change_amount = allocated - prev_bal if prev_bal else None
+
+            existing = AccountBalance.query.filter_by(
+                account_id=a.id, record_month=record_month
+            ).first()
+
+            if existing:
+                existing.balance = allocated
+                existing.change_amount = change_amount
+                existing.recorded_by = user_id
+            else:
+                snapshot = AccountBalance(
+                    account_id=a.id, balance=allocated,
+                    change_amount=change_amount, record_month=record_month,
+                    recorded_by=user_id
+                )
+                db.session.add(snapshot)
+
+            # 更新账户当前余额
+            latest_snapshot = AccountBalance.query.filter_by(
+                account_id=a.id
+            ).order_by(AccountBalance.record_month.desc()).first()
+
+            if latest_snapshot and latest_snapshot.record_month <= record_month:
+                a.current_balance = allocated
+            elif not latest_snapshot:
+                a.current_balance = allocated
+            count += 1
+
     db.session.commit()
     flash(f'已录入 {count} 个账户的快照', 'success')
     return redirect(url_for('account.account_list'))
@@ -343,4 +442,154 @@ def delete_account(account_id):
     db.session.delete(account)
     db.session.commit()
 
+    return redirect(url_for('account.account_list'))
+
+
+# 账户分组管理路由
+
+
+@account_bp.route('/groups', methods=['GET'])
+def list_groups():
+    """获取用户的所有账户分组 (API)"""
+    user_id = session.get('user_id')
+    groups = AccountGroup.query.filter_by(user_id=user_id).order_by(AccountGroup.display_order).all()
+    return {'groups': [g.to_dict() for g in groups]}, 200
+
+
+@account_bp.route('/groups/create', methods=['POST'])
+def create_group():
+    """创建账户分组"""
+    user_id = session.get('user_id')
+    name = request.form.get('name', '').strip()
+    description = request.form.get('description', '').strip()
+    color = request.form.get('color', '#D4A574').strip()
+
+    if not name:
+        flash('分组名称不能为空', 'error')
+        return redirect(url_for('account.account_list'))
+
+    # 检查是否已存在同名分组
+    existing = AccountGroup.query.filter_by(user_id=user_id, name=name).first()
+    if existing:
+        flash('该分组名称已存在', 'error')
+        return redirect(url_for('account.account_list'))
+
+    # 获取最大的 display_order
+    max_order = db.session.query(db.func.max(AccountGroup.display_order)).filter_by(
+        user_id=user_id
+    ).scalar() or 0
+
+    group = AccountGroup(
+        user_id=user_id,
+        name=name,
+        description=description or None,
+        color=color,
+        display_order=max_order + 1
+    )
+    db.session.add(group)
+    db.session.commit()
+
+    flash(f'分组 "{name}" 创建成功', 'success')
+    return redirect(url_for('account.account_list'))
+
+
+@account_bp.route('/groups/<int:group_id>/update', methods=['POST'])
+def update_group(group_id):
+    """更新账户分组"""
+    user_id = session.get('user_id')
+    group = AccountGroup.query.get_or_404(group_id)
+
+    if group.user_id != user_id:
+        return "无权操作此分组", 403
+
+    name = request.form.get('name', '').strip()
+    description = request.form.get('description', '').strip()
+    color = request.form.get('color', group.color).strip()
+
+    if not name:
+        flash('分组名称不能为空', 'error')
+        return redirect(url_for('account.account_list'))
+
+    # 检查新名称是否与其他分组冲突
+    existing = AccountGroup.query.filter(
+        AccountGroup.user_id == user_id,
+        AccountGroup.name == name,
+        AccountGroup.id != group_id
+    ).first()
+    if existing:
+        flash('新的分组名称已存在', 'error')
+        return redirect(url_for('account.account_list'))
+
+    group.name = name
+    group.description = description or None
+    group.color = color
+    group.updated_at = datetime.utcnow()
+    db.session.commit()
+
+    flash(f'分组 "{name}" 已更新', 'success')
+    return redirect(url_for('account.account_list'))
+
+
+@account_bp.route('/groups/<int:group_id>/delete', methods=['POST'])
+def delete_group(group_id):
+    """删除账户分组"""
+    user_id = session.get('user_id')
+    group = AccountGroup.query.get_or_404(group_id)
+
+    if group.user_id != user_id:
+        return "无权操作此分组", 403
+
+    # 将分组内的账户设为未分组
+    Account.query.filter_by(group_id=group_id).update({'group_id': None})
+    
+    # 删除分组
+    group_name = group.name
+    db.session.delete(group)
+    db.session.commit()
+
+    flash(f'分组 "{group_name}" 已删除，其中的账户已转为未分组', 'success')
+    return redirect(url_for('account.account_list'))
+
+
+@account_bp.route('/groups/<int:group_id>/reorder', methods=['POST'])
+def reorder_groups(group_id):
+    """重新排序分组"""
+    user_id = session.get('user_id')
+    group = AccountGroup.query.get_or_404(group_id)
+
+    if group.user_id != user_id:
+        return "无权操作此分组", 403
+
+    display_order = request.form.get('display_order', type=int)
+    if display_order is not None:
+        group.display_order = display_order
+        group.updated_at = datetime.utcnow()
+        db.session.commit()
+
+    return redirect(url_for('account.account_list'))
+
+
+@account_bp.route('/<int:account_id>/move-to-group', methods=['POST'])
+def move_account_to_group(account_id):
+    """将账户移动到指定分组"""
+    user_id = session.get('user_id')
+    account = Account.query.get_or_404(account_id)
+
+    if account.user_id != user_id:
+        return "无权操作此账户", 403
+
+    group_id = request.form.get('group_id', type=int)
+    
+    # 如果 group_id 为 None 或 0，则将账户设为未分组
+    if not group_id:
+        account.group_id = None
+    else:
+        # 验证分组存在且属于该用户
+        group = AccountGroup.query.filter_by(id=group_id, user_id=user_id).first()
+        if not group:
+            return "分组不存在", 404
+        account.group_id = group_id
+
+    db.session.commit()
+    flash('账户分组已更新', 'success')
     return redirect(url_for('account.account_list'))
