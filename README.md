@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/版本-v2.1.6-blue" alt="version">
+  <img src="https://img.shields.io/badge/版本-v2.1.7-blue" alt="version">
   <img src="https://img.shields.io/badge/Python-3.8+-green" alt="python">
   <img src="https://img.shields.io/badge/Flask-3.0-lightgrey" alt="flask">
   <img src="https://img.shields.io/badge/测试覆盖率-81%25-brightgreen" alt="coverage">
@@ -156,6 +156,14 @@ FLASK_PORT=5001                      # 服务端口
 
 ## 📋 版本历史
 
+## v2.1.7 (2026-06-13)
+
+### 新增
+- 账户分组管理 + 快照按组展示
+
+### 优化
+- 补充账户分组路由测试（覆盖率 81%）
+
 ## v2.1.6 (2026-06-08)
 
 ### 新增
@@ -163,6 +171,7 @@ FLASK_PORT=5001                      # 服务端口
 
 ### 优化
 - test+docs: 补充备忘录测试 + 更新操作指南
+
 
 ## v2.1.5 (2026-06-07)
 
@@ -180,12 +189,6 @@ FLASK_PORT=5001                      # 服务端口
 
 ### 优化
 - 从仓库移除 12 个 demo HTML 文件，加入 gitignore
-
-
-## v2.1.2 (2026-05-13)
-
-### 新增
-- 交易列表改为表格形式 + 筛选 + 月度操作指南
 
 
 > 完整变更日志见 [CHANGELOG.md](./CHANGELOG.md)
