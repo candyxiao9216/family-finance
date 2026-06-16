@@ -639,28 +639,27 @@
                 <label class="form-label">账户类型</label>
                 <select name="type_id" class="form-select" required>
                     <option value="">选择类型</option>
-                    <optgroup label="储蓄">
-                        {% for t in account_types if t.category == 'savings' %}
-                        <option value="{{ t.id }}">{{ t.name }}</option>
-                        {% endfor %}
-                    </optgroup>
-                    <optgroup label="基金理财">
-                        {% for t in account_types if t.category == 'fund' %}
-                        <option value="{{ t.id }}">{{ t.name }}</option>
-                        {% endfor %}
-                    </optgroup>
-                    <optgroup label="股票">
-                        {% for t in account_types if t.category == 'stock' %}
-                        <option value="{{ t.id }}">{{ t.name }}</option>
-                        {% endfor %}
-                    </optgroup>
+                    {% for t in account_types if t.category == 'savings' %}
+                    <option value="{{ t.id }}">储蓄账户</option>
+                    {% if loop.first %}{% endif %}
+                    {% endfor %}
+                    {% for t in account_types if t.category == 'fund' %}
+                    {% if loop.first %}
+                    <option value="{{ t.id }}">基金理财</option>
+                    {% endif %}
+                    {% endfor %}
+                    {% for t in account_types if t.category == 'stock' %}
+                    {% if loop.first %}
+                    <option value="{{ t.id }}">股票账户</option>
+                    {% endif %}
+                    {% endfor %}
                 </select>
             </div>
             <div class="form-group">
                 <label class="form-label">账户名称</label>
                 <input type="text" name="name" class="form-input" placeholder="例如：招商银行储蓄卡" required maxlength="50">
             </div>
-            <div class="form-group" id="currency-group" style="display:none;">
+            <div class="form-group" id="currency-group">
                 <label class="form-label">币种</label>
                 <select name="currency" id="account-currency" class="form-select">
                     <option value="CNY">人民币 (CNY)</option>
@@ -706,7 +705,7 @@
                 </div>
 
                 <!-- 表头 -->
-                <div style="display:grid;grid-template-columns:150px 90px 80px 90px 140px 60px 1fr;gap:8px;padding:8px 16px;font-size:11px;color:#999;margin-bottom:4px;">
+                <div style="display:grid;grid-template-columns:150px 100px 80px 100px 190px 60px 1fr;gap:8px;padding:8px 16px;font-size:11px;color:#999;margin-bottom:4px;">
                     <div>账户 / 分组</div>
                     <div style="text-align:right;">上月余额</div>
                     <div style="text-align:right;">理论变化</div>
@@ -729,7 +728,7 @@
                 {% set prev_bal = prev_snapshots[a.id].balance|float if prev_snapshots.get(a.id) else None %}
                 {% set theory = account_theory.get(a.id, 0) %}
                 {% set expected = prev_bal + theory if prev_bal is not none else None %}
-                <div style="display:grid;grid-template-columns:150px 90px 80px 90px 140px 60px 1fr;gap:8px;padding:10px 16px;align-items:center;border-bottom:1px solid #f0ece7;">
+                <div style="display:grid;grid-template-columns:150px 100px 80px 100px 190px 60px 1fr;gap:8px;padding:10px 16px;align-items:center;border-bottom:1px solid #f0ece7;">
                     <div style="font-size:13px;font-weight:500;">{{ a.name }}</div>
                     <div style="font-size:12px;color:#999;text-align:right;">{% if prev_bal is not none %}¥{{ prev_bal|currency(0) }}{% else %}—{% endif %}</div>
                     <div class="theory-cell" style="font-size:12px;text-align:right;position:relative;cursor:help;{% if theory > 0 %}color:#4CAF50;{% elif theory < 0 %}color:#f44336;{% else %}color:#999;{% endif %}">{% if prev_bal is not none %}{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}{% if account_theory_details.get(a.id) %}<div class="theory-tooltip">{% for d in account_theory_details[a.id] %}<div style="display:flex;justify-content:space-between;gap:12px;"><span>{{ d.desc[:15] }}</span><span style="{% if d.sign == '+' %}color:#4CAF50{% else %}color:#f44336{% endif %}">{{ d.sign }}¥{{ d.amount|currency(0) }}</span></div>{% endfor %}<div style="border-top:1px solid #e0dcd7;margin-top:4px;padding-top:4px;display:flex;justify-content:space-between;font-weight:600;"><span>合计</span><span>{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}</span></div></div>{% endif %}{% else %}—{% endif %}</div>
@@ -752,17 +751,19 @@
                     {% set ns.group_theory = ns.group_theory + account_theory.get(a.id, 0) %}
                 {% endfor %}
                 {% set group_expected = ns.group_prev + ns.group_theory %}
+                {% set group_currency = g_accounts[0].currency if g_accounts[0].currency and g_accounts[0].currency != 'CNY' else '' %}
+                {% set currency_prefix = group_currency + ' ' if group_currency else '¥' %}
                 <div style="margin-bottom:16px;border:1px solid #f0ece7;border-radius:12px;overflow:hidden;">
                     <!-- 组头 -->
-                    <div style="display:grid;grid-template-columns:150px 90px 80px 90px 140px 60px 1fr;gap:8px;padding:12px 16px;background:#f8f5f1;align-items:center;cursor:pointer;" onclick="toggleGroup(this)">
+                    <div style="display:grid;grid-template-columns:150px 100px 80px 100px 190px 60px 1fr;gap:8px;padding:12px 16px;background:#f8f5f1;align-items:center;cursor:pointer;" onclick="toggleGroup(this)">
                         <div style="font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;">
                             <span class="snapshot-toggle open" style="font-size:12px;color:#999;transition:transform 0.2s;">▶</span>
                             {{ group.name }} <span style="font-size:10px;background:#F5E6D3;color:#8B6914;padding:2px 6px;border-radius:4px;margin-left:4px;">组</span>
                         </div>
-                        <div style="font-size:12px;color:#999;text-align:right;">¥{{ ns.group_prev|currency(0) }}</div>
+                        <div style="font-size:12px;color:#999;text-align:right;">{{ currency_prefix }}{{ ns.group_prev|currency(0) }}</div>
                         <div style="font-size:12px;text-align:right;{% if ns.group_theory > 0 %}color:#4CAF50;{% elif ns.group_theory < 0 %}color:#f44336;{% else %}color:#999;{% endif %}">{{ '+' if ns.group_theory >= 0 }}{{ ns.group_theory|int|currency(0) }}</div>
-                        <div style="font-size:12px;color:#666;font-weight:500;text-align:right;">¥{{ group_expected|currency(0) }}</div>
-                        <div onclick="event.stopPropagation();"><input type="number" name="group_balance_{{ group.id }}" style="width:100%;padding:8px 10px;border:2px solid #D4A574;border-radius:8px;font-size:15px;font-weight:600;background:#fffbf5;outline:none;" placeholder="输入组总额" step="0.01" min="0" data-expected="{{ group_expected }}" data-group-id="{{ group.id }}" oninput="calcGroupDiff(this)"></div>
+                        <div style="font-size:12px;color:#666;font-weight:500;text-align:right;">{{ currency_prefix }}{{ group_expected|currency(0) }}</div>
+                        <div onclick="event.stopPropagation();" style="display:flex;gap:4px;">{% if group_currency %}<select name="group_currency_{{ group.id }}" style="width:55px;padding:4px;border:1px solid #e0dcd7;border-radius:6px;font-size:10px;"><option value="HKD" {{ 'selected' if group_currency == 'HKD' }}>港币</option><option value="CNY" {{ 'selected' if group_currency == 'CNY' }}>人民币</option><option value="USD" {{ 'selected' if group_currency == 'USD' }}>美元</option></select>{% endif %}<input type="number" name="group_balance_{{ group.id }}" style="flex:1;padding:8px 10px;border:2px solid #D4A574;border-radius:8px;font-size:15px;font-weight:600;background:#fffbf5;outline:none;" placeholder="输入组总额" step="0.01" min="0" data-expected="{{ group_expected }}" data-group-id="{{ group.id }}" oninput="calcGroupDiff(this)"></div>
                         <div id="gdiff_{{ group.id }}" style="font-size:12px;text-align:center;">—</div>
                         <div onclick="event.stopPropagation();"><input type="text" name="group_note_{{ group.id }}" style="width:100%;padding:5px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:12px;color:#666;" placeholder="备注..."></div>
                     </div>
@@ -772,12 +773,12 @@
                         {% set prev_bal = prev_snapshots[a.id].balance|float if prev_snapshots.get(a.id) else None %}
                         {% set theory = account_theory.get(a.id, 0) %}
                         {% set expected = prev_bal + theory if prev_bal is not none else None %}
-                        <div style="display:grid;grid-template-columns:150px 90px 80px 90px 140px 60px 1fr;gap:8px;padding:8px 16px;align-items:center;border-bottom:1px solid #f0ece7;">
+                        <div style="display:grid;grid-template-columns:150px 100px 80px 100px 190px 60px 1fr;gap:8px;padding:8px 16px;align-items:center;border-bottom:1px solid #f0ece7;">
                             <div style="font-size:13px;color:#6B6B6B;padding-left:24px;">{{ a.name }} <span style="font-size:10px;background:#f0f0f0;color:#999;padding:2px 6px;border-radius:4px;margin-left:4px;">选填</span></div>
-                            <div style="font-size:12px;color:#999;text-align:right;">{% if prev_bal is not none %}¥{{ prev_bal|currency(0) }}{% else %}—{% endif %}</div>
+                            <div style="font-size:12px;color:#999;text-align:right;">{% if prev_bal is not none %}{% if a.currency and a.currency != 'CNY' %}{{ a.currency }} {% else %}¥{% endif %}{{ prev_bal|currency(0) }}{% else %}—{% endif %}</div>
                             <div class="theory-cell" style="font-size:12px;text-align:right;position:relative;cursor:help;{% if theory > 0 %}color:#4CAF50;{% elif theory < 0 %}color:#f44336;{% else %}color:#999;{% endif %}">{% if prev_bal is not none %}{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}{% if account_theory_details.get(a.id) %}<div class="theory-tooltip">{% for d in account_theory_details[a.id] %}<div style="display:flex;justify-content:space-between;gap:12px;"><span>{{ d.desc[:15] }}</span><span style="{% if d.sign == '+' %}color:#4CAF50{% else %}color:#f44336{% endif %}">{{ d.sign }}¥{{ d.amount|currency(0) }}</span></div>{% endfor %}<div style="border-top:1px solid #e0dcd7;margin-top:4px;padding-top:4px;display:flex;justify-content:space-between;font-weight:600;"><span>合计</span><span>{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}</span></div></div>{% endif %}{% else %}—{% endif %}</div>
-                            <div style="font-size:12px;color:#666;text-align:right;">{% if expected is not none %}¥{{ expected|currency(0) }}{% else %}—{% endif %}</div>
-                            <div><input type="number" name="balance_{{ a.id }}" style="width:100%;padding:5px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:13px;background:#fff;" placeholder="选填" step="0.01" min="0" data-prev="{{ prev_bal if prev_bal is not none else '' }}" data-expected="{{ expected if expected is not none else '' }}" data-currency="{{ a.currency or 'CNY' }}" data-aid="{{ a.id }}" oninput="calcDiff(this)"></div>
+                            <div style="font-size:12px;color:#666;text-align:right;">{% if expected is not none %}{% if a.currency and a.currency != 'CNY' %}{{ a.currency }} {% else %}¥{% endif %}{{ expected|currency(0) }}{% else %}—{% endif %}</div>
+                            <div style="display:flex;gap:4px;">{% if a.currency and a.currency != 'CNY' %}<select name="currency_{{ a.id }}" style="width:55px;padding:4px;border:1px solid #e0dcd7;border-radius:6px;font-size:10px;"><option value="HKD" {{ 'selected' if (a.currency or 'HKD') == 'HKD' }}>港币</option><option value="CNY" {{ 'selected' if a.currency == 'CNY' }}>人民币</option><option value="USD" {{ 'selected' if a.currency == 'USD' }}>美元</option></select>{% endif %}<input type="number" name="balance_{{ a.id }}" style="flex:1;width:100%;padding:5px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:13px;background:#fff;" placeholder="选填" step="0.01" min="0" data-prev="{{ prev_bal if prev_bal is not none else '' }}" data-expected="{{ expected if expected is not none else '' }}" data-currency="{{ a.currency or 'CNY' }}" data-aid="{{ a.id }}" data-group-id="{{ group.id }}" oninput="onSubInput(this)"></div>
                             <div id="diff_{{ a.id }}" style="font-size:11px;text-align:center;color:#999;">—</div>
                             <div><input type="text" name="note_{{ a.id }}" style="width:100%;padding:4px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:11px;color:#666;" placeholder="备注..." maxlength="200"></div>
                         </div>
@@ -800,11 +801,11 @@
                 {% set prev_bal = prev_snapshots[a.id].balance|float if prev_snapshots.get(a.id) else None %}
                 {% set theory = account_theory.get(a.id, 0) %}
                 {% set expected = prev_bal + theory if prev_bal is not none else None %}
-                <div style="display:grid;grid-template-columns:150px 90px 80px 90px 140px 60px 1fr;gap:8px;padding:10px 16px;align-items:center;border-bottom:1px solid #f0ece7;">
+                <div style="display:grid;grid-template-columns:150px 100px 80px 100px 190px 60px 1fr;gap:8px;padding:10px 16px;align-items:center;border-bottom:1px solid #f0ece7;">
                     <div style="font-size:13px;font-weight:500;">{{ a.name }}</div>
-                    <div style="font-size:12px;color:#999;text-align:right;">{% if prev_bal is not none %}{% if a.currency and a.currency != 'CNY' %}{{ a.currency }}{% else %}¥{% endif %}{{ prev_bal|currency(0) }}{% else %}—{% endif %}</div>
+                    <div style="font-size:12px;color:#999;text-align:right;">{% if prev_bal is not none %}{% if a.currency and a.currency != 'CNY' %}{{ a.currency }} {% else %}¥{% endif %}{{ prev_bal|currency(0) }}{% else %}—{% endif %}</div>
                     <div class="theory-cell" style="font-size:12px;text-align:right;position:relative;cursor:help;{% if theory > 0 %}color:#4CAF50;{% elif theory < 0 %}color:#f44336;{% else %}color:#999;{% endif %}">{% if prev_bal is not none %}{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}{% if account_theory_details.get(a.id) %}<div class="theory-tooltip">{% for d in account_theory_details[a.id] %}<div style="display:flex;justify-content:space-between;gap:12px;"><span>{{ d.desc[:15] }}</span><span style="{% if d.sign == '+' %}color:#4CAF50{% else %}color:#f44336{% endif %}">{{ d.sign }}¥{{ d.amount|currency(0) }}</span></div>{% endfor %}<div style="border-top:1px solid #e0dcd7;margin-top:4px;padding-top:4px;display:flex;justify-content:space-between;font-weight:600;"><span>合计</span><span>{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}</span></div></div>{% endif %}{% else %}—{% endif %}</div>
-                    <div style="font-size:12px;color:#666;font-weight:500;text-align:right;">{% if expected is not none %}{% if a.currency and a.currency != 'CNY' %}{{ a.currency }}{% else %}¥{% endif %}{{ expected|currency(0) }}{% else %}—{% endif %}</div>
+                    <div style="font-size:12px;color:#666;font-weight:500;text-align:right;">{% if expected is not none %}{% if a.currency and a.currency != 'CNY' %}{{ a.currency }} {% else %}¥{% endif %}{{ expected|currency(0) }}{% else %}—{% endif %}</div>
                     <div style="display:flex;gap:4px;">
                         {% if a.currency and a.currency != 'CNY' %}
                         <select name="currency_{{ a.id }}" style="width:55px;padding:4px;border:1px solid #e0dcd7;border-radius:6px;font-size:10px;" data-aid="{{ a.id }}" onchange="updateCurrencyDisplay(this)">
@@ -822,22 +823,22 @@
                 {% endif %}
 
                 <!-- 汇总栏 -->
-                <div id="batch-summary" style="margin-top:16px;padding:12px;background:#f8f5f1;border-radius:8px;display:flex;gap:12px;font-size:13px;">
-                    <div style="flex:1;text-align:center;">
-                        <div style="color:#999;font-size:11px;margin-bottom:4px;">本月总记账收支</div>
-                        <div id="summary-theory" style="font-weight:700;font-family:'Outfit',monospace;color:#D4A574;">—</div>
+                <div id="batch-summary" style="margin-top:16px;padding:16px;background:#f8f5f1;border-radius:12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;font-size:13px;">
+                    <div style="text-align:center;">
+                        <div style="color:#999;font-size:11px;margin-bottom:4px;">你记的账</div>
+                        <div id="summary-theory" style="font-weight:700;font-size:16px;font-family:'Outfit',monospace;color:#D4A574;">—</div>
+                        <div style="color:#bbb;font-size:10px;margin-top:3px;">本月记录的净收支</div>
                     </div>
-                    <div style="flex:1;text-align:center;">
-                        <div style="color:#999;font-size:11px;margin-bottom:4px;">实际总变化</div>
-                        <div id="summary-actual-change" style="font-weight:700;font-family:'Outfit',monospace;">—</div>
+                    <div style="text-align:center;">
+                        <div style="color:#999;font-size:11px;margin-bottom:4px;">真实变化</div>
+                        <div id="summary-actual-change" style="font-weight:700;font-size:16px;font-family:'Outfit',monospace;">—</div>
+                        <div style="color:#bbb;font-size:10px;margin-top:3px;">账户余额实际变动</div>
                     </div>
-                    <div style="flex:1;text-align:center;">
-                        <div style="color:#999;font-size:11px;margin-bottom:4px;">总差额</div>
-                        <div id="summary-total-diff" style="font-weight:700;font-family:'Outfit',monospace;">—</div>
-                    </div>
-                    <div style="flex:1;text-align:center;">
-                        <div style="color:#999;font-size:11px;margin-bottom:4px;">需关注</div>
-                        <div id="summary-warn-count" style="font-weight:700;font-family:'Outfit',monospace;">—</div>
+                    <div style="text-align:center;">
+                        <div style="color:#999;font-size:11px;margin-bottom:4px;">漏记的</div>
+                        <div id="summary-unrecorded" style="font-weight:700;font-size:16px;font-family:'Outfit',monospace;">—</div>
+                        <div style="color:#bbb;font-size:10px;margin-top:3px;">= 真实变化 - 记的账</div>
+                        <div id="summary-hint" style="font-size:11px;margin-top:4px;"></div>
                     </div>
                 </div>
             </form>
@@ -1166,26 +1167,129 @@
             }
         }
 
+        // ===== 智能分摊：组总额 → 自动按比例预填子账户 =====
+        var manualOverrides = {}; // 记录手动修改过的子账户 { aid: true }
+
         function calcGroupDiff(input) {
             var groupId = input.dataset.groupId;
             var el = document.getElementById('gdiff_' + groupId);
             var expected = parseFloat(input.dataset.expected);
             var curr = parseFloat(input.value);
 
-            if (isNaN(curr) || input.value === '') { el.innerHTML = '—'; return; }
-            if (isNaN(expected)) { el.innerHTML = '<span style="color:#999;">—</span>'; return; }
-
-            var diff = curr - expected;
-            var absDiff = Math.abs(diff);
-            var sign = diff >= 0 ? '+' : '-';
-
-            if (absDiff === 0) {
-                el.innerHTML = '<span style="color:#27ae60;font-weight:600;">✓</span>';
-            } else if (absDiff <= 100) {
-                el.innerHTML = '<span style="color:#27ae60;font-size:11px;">' + sign + absDiff.toLocaleString('zh-CN', {maximumFractionDigits:0}) + ' ✓</span>';
-            } else {
-                el.innerHTML = '<span style="color:#c0392b;font-weight:500;">' + sign + absDiff.toLocaleString('zh-CN', {maximumFractionDigits:0}) + '</span>';
+            // 显示组差额
+            if (isNaN(curr) || input.value === '') {
+                el.innerHTML = '—';
+                // 清空组总额 → 清空自动填入的子账户
+                clearAutoFilledSubs(groupId);
+                updateSummary();
+                return;
             }
+            if (isNaN(expected)) { el.innerHTML = '<span style="color:#999;">—</span>'; }
+            else {
+                var diff = curr - expected;
+                var absDiff = Math.abs(diff);
+                var sign = diff >= 0 ? '+' : '-';
+                if (absDiff === 0) {
+                    el.innerHTML = '<span style="color:#27ae60;font-weight:600;">✓</span>';
+                } else if (absDiff <= 100) {
+                    el.innerHTML = '<span style="color:#27ae60;font-size:11px;">' + sign + absDiff.toLocaleString('zh-CN', {maximumFractionDigits:0}) + ' ✓</span>';
+                } else {
+                    el.innerHTML = '<span style="color:#c0392b;font-weight:500;">' + sign + absDiff.toLocaleString('zh-CN', {maximumFractionDigits:0}) + '</span>';
+                }
+            }
+
+            // 智能分摊到子账户
+            distributeToSubs(groupId, curr);
+            updateSummary();
+        }
+
+        function distributeToSubs(groupId, groupTotal) {
+            // 找到该组所有子账户输入框
+            var subInputs = document.querySelectorAll('input[data-group-id="' + groupId + '"][data-aid]');
+            if (!subInputs.length) return;
+
+            // 计算手动锁定的占用金额 + 未锁定账户的上月总额
+            var lockedTotal = 0;
+            var unlockedInputs = [];
+            var unlockedPrevTotal = 0;
+
+            subInputs.forEach(function(sub) {
+                var aid = sub.dataset.aid;
+                if (manualOverrides[aid]) {
+                    lockedTotal += parseFloat(sub.value) || 0;
+                } else {
+                    unlockedInputs.push(sub);
+                    unlockedPrevTotal += parseFloat(sub.dataset.prev) || 0;
+                }
+            });
+
+            var remaining = groupTotal - lockedTotal;
+
+            // 按比例分配到未锁定的子账户
+            var allocatedSum = 0;
+            unlockedInputs.forEach(function(sub, idx) {
+                var prev = parseFloat(sub.dataset.prev) || 0;
+                var allocated;
+                if (idx === unlockedInputs.length - 1) {
+                    // 最后一个用减法兜底（避免舍入误差）
+                    allocated = Math.round(remaining - allocatedSum);
+                } else if (unlockedPrevTotal > 0) {
+                    allocated = Math.round(remaining * prev / unlockedPrevTotal);
+                } else {
+                    allocated = Math.round(remaining / unlockedInputs.length);
+                }
+                allocatedSum += allocated;
+
+                sub.value = allocated;
+                sub.style.color = '#999';
+                sub.style.fontStyle = 'italic';
+                sub.style.background = '#fafafa';
+                calcDiff(sub);
+            });
+        }
+
+        function clearAutoFilledSubs(groupId) {
+            var subInputs = document.querySelectorAll('input[data-group-id="' + groupId + '"][data-aid]');
+            subInputs.forEach(function(sub) {
+                var aid = sub.dataset.aid;
+                if (!manualOverrides[aid]) {
+                    sub.value = '';
+                    sub.style.color = '';
+                    sub.style.fontStyle = '';
+                    sub.style.background = '#fff';
+                    var diffEl = document.getElementById('diff_' + aid);
+                    if (diffEl) diffEl.innerHTML = '—';
+                }
+            });
+        }
+
+        function onSubInput(input) {
+            var aid = input.dataset.aid;
+            var groupId = input.dataset.groupId;
+
+            if (input.value === '') {
+                // 清空 → 取消锁定
+                delete manualOverrides[aid];
+                input.style.color = '';
+                input.style.fontStyle = '';
+                input.style.background = '#fff';
+                var diffEl = document.getElementById('diff_' + aid);
+                if (diffEl) diffEl.innerHTML = '—';
+            } else {
+                // 手动输入 → 锁定，恢复正常样式
+                manualOverrides[aid] = true;
+                input.style.color = 'var(--color-text)';
+                input.style.fontStyle = 'normal';
+                input.style.background = '#fff';
+                calcDiff(input);
+            }
+
+            // 如果组总额有值，重新分摊
+            var groupInput = document.querySelector('input[name="group_balance_' + groupId + '"]');
+            if (groupInput && groupInput.value) {
+                distributeToSubs(groupId, parseFloat(groupInput.value));
+            }
+            updateSummary();
         }
 
         // ===== 快照草稿：localStorage 保存/恢复 =====
@@ -1244,10 +1348,14 @@
 
         function clearSnapshotDraft() {
             localStorage.removeItem(SNAPSHOT_DRAFT_KEY);
+            manualOverrides = {}; // 清除手动锁定状态
             var form = document.getElementById('batch-form');
             if (!form) return;
             form.querySelectorAll('input[name^="balance_"]').forEach(function(input) {
                 input.value = '';
+                input.style.color = '';
+                input.style.fontStyle = '';
+                input.style.background = '#fff';
             });
             form.querySelectorAll('input[name^="group_balance_"]').forEach(function(input) {
                 input.value = '';
@@ -1320,11 +1428,9 @@
             var inputs = document.querySelectorAll('input[data-aid][data-expected]');
             var totalTheory = 0;
             var totalActualChange = 0;
-            var totalDiff = 0;
-            var warnCount = 0;
             var hasData = false;
 
-            // 本月总记账收支（所有账户理论变化之和）
+            // 你记的账：所有账户的理论变化之和（本月记录的净收支）
             for (var key in ACCOUNT_THEORY) {
                 totalTheory += ACCOUNT_THEORY[key];
             }
@@ -1332,25 +1438,17 @@
             inputs.forEach(function(input) {
                 var curr = parseFloat(input.value);
                 var prev = parseFloat(input.dataset.prev);
-                var expected = parseFloat(input.dataset.expected);
 
                 if (isNaN(curr) || input.value === '') return;
                 hasData = true;
 
-                // 实际总变化
+                // 真实变化：本月余额 - 上月余额
                 if (!isNaN(prev)) {
                     totalActualChange += (curr - prev);
                 }
-
-                // 总差额 + 需关注
-                if (!isNaN(expected)) {
-                    var diff = curr - expected;
-                    totalDiff += diff;
-                    if (Math.abs(diff) > 100) warnCount++;
-                }
             });
 
-            // 更新 UI
+            // 更新 UI —— 你记的账
             var theoryEl = document.getElementById('summary-theory');
             var sign = totalTheory >= 0 ? '+' : '-';
             theoryEl.textContent = sign + '¥' + Math.abs(totalTheory).toLocaleString('zh-CN', {maximumFractionDigits:0});
@@ -1358,24 +1456,35 @@
 
             if (!hasData) {
                 document.getElementById('summary-actual-change').textContent = '—';
-                document.getElementById('summary-total-diff').textContent = '—';
-                document.getElementById('summary-warn-count').textContent = '—';
+                document.getElementById('summary-actual-change').style.color = '#999';
+                document.getElementById('summary-unrecorded').textContent = '—';
+                document.getElementById('summary-unrecorded').style.color = '#999';
+                document.getElementById('summary-hint').textContent = '';
                 return;
             }
 
+            // 真实变化
             var actualEl = document.getElementById('summary-actual-change');
             var aSign = totalActualChange >= 0 ? '+' : '-';
             actualEl.textContent = aSign + '¥' + Math.abs(totalActualChange).toLocaleString('zh-CN', {maximumFractionDigits:0});
             actualEl.style.color = totalActualChange >= 0 ? '#D4A574' : '#c0392b';
 
-            var diffEl = document.getElementById('summary-total-diff');
-            var dSign = totalDiff >= 0 ? '+' : '-';
-            diffEl.textContent = dSign + '¥' + Math.abs(totalDiff).toLocaleString('zh-CN', {maximumFractionDigits:0});
-            diffEl.style.color = Math.abs(totalDiff) <= 100 ? '#27ae60' : '#c0392b';
+            // 漏记的 = 真实变化 - 记的账
+            var unrecorded = totalActualChange - totalTheory;
+            var unrecordedEl = document.getElementById('summary-unrecorded');
+            var dSign = unrecorded >= 0 ? '+' : '-';
+            unrecordedEl.textContent = dSign + '¥' + Math.abs(unrecorded).toLocaleString('zh-CN', {maximumFractionDigits:0});
+            unrecordedEl.style.color = Math.abs(unrecorded) <= 500 ? '#27ae60' : '#c0392b';
 
-            var warnEl = document.getElementById('summary-warn-count');
-            warnEl.textContent = warnCount > 0 ? warnCount + ' 个账户' : '无 ✓';
-            warnEl.style.color = warnCount > 0 ? '#c0392b' : '#27ae60';
+            // 提示文案
+            var hintEl = document.getElementById('summary-hint');
+            if (Math.abs(unrecorded) <= 500) {
+                hintEl.innerHTML = '<span style="color:#27ae60;">✓ 账记全了</span>';
+            } else if (unrecorded > 0) {
+                hintEl.innerHTML = '<span style="color:#c0392b;">⚠️ 有未记录收入</span>';
+            } else {
+                hintEl.innerHTML = '<span style="color:#c0392b;">⚠️ 有未记录支出</span>';
+            }
         }
 
         // 初始化汇总（显示理论收支）
@@ -1392,16 +1501,6 @@
         }
 
         // 创建账户：基金理财/股票类型时显示币种选择
-        var typeSelect = document.querySelector('select[name="type_id"]');
-        var currencyGroup = document.getElementById('currency-group');
-        if (typeSelect && currencyGroup) {
-            typeSelect.addEventListener('change', function() {
-                var opt = this.options[this.selectedIndex];
-                var group = opt.parentElement;
-                currencyGroup.style.display = (group && (group.label === '基金理财' || group.label === '股票')) ? '' : 'none';
-            });
-        }
-
         // ===== 快照表格筛选 =====
         var filterAccount = document.getElementById('filter-account');
         var filterMonth = document.getElementById('filter-month');
