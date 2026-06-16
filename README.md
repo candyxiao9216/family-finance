@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/版本-v2.1.7-blue" alt="version">
+  <img src="https://img.shields.io/badge/版本-v2.1.8-blue" alt="version">
   <img src="https://img.shields.io/badge/Python-3.8+-green" alt="python">
   <img src="https://img.shields.io/badge/Flask-3.0-lightgrey" alt="flask">
   <img src="https://img.shields.io/badge/测试覆盖率-81%25-brightgreen" alt="coverage">
@@ -156,6 +156,11 @@ FLASK_PORT=5001                      # 服务端口
 
 ## 📋 版本历史
 
+## v2.1.8 (2026-06-16)
+
+### 新增
+- 账户管理优化 — 类型简化/币种显示/智能分摊/汇总栏
+
 ## v2.1.7 (2026-06-13)
 
 ### 新增
@@ -163,6 +168,7 @@ FLASK_PORT=5001                      # 服务端口
 
 ### 优化
 - 补充账户分组路由测试（覆盖率 81%）
+
 
 ## v2.1.6 (2026-06-08)
 
@@ -183,12 +189,6 @@ FLASK_PORT=5001                      # 服务端口
 
 ### 修复
 - 转账记录支持完整编辑 + 快照录入草稿保留
-
-
-## v2.1.3 (2026-05-13)
-
-### 优化
-- 从仓库移除 12 个 demo HTML 文件，加入 gitignore
 
 
 > 完整变更日志见 [CHANGELOG.md](./CHANGELOG.md)
