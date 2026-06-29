@@ -2,7 +2,7 @@ from datetime import timedelta
 from datetime import timedelta
 from flask import Flask
 from models import db, Category, DEFAULT_CATEGORIES, AccountType, DEFAULT_ACCOUNT_TYPES
-from config import BASE_DIR, SQLALCHEMY_DATABASE_URI, SQLALCHEMY_TRACK_MODIFICATIONS, SECRET_KEY
+from config import BASE_DIR, SQLALCHEMY_DATABASE_URI, SQLALCHEMY_TRACK_MODIFICATIONS, SECRET_KEY, INSECURE_SECRET_KEY
 
 
 def _safe_add_column(table, column, col_type):
@@ -102,6 +102,14 @@ def init_database(app: Flask) -> None:
 
 def create_app() -> Flask:
     """创建并配置 Flask 应用"""
+    # 安全闸：SECRET_KEY 缺失或仍为不安全默认值时，拒绝启动而非静默降级
+    if not SECRET_KEY or SECRET_KEY == INSECURE_SECRET_KEY:
+        raise RuntimeError(
+            'SECRET_KEY 未设置或仍为不安全的默认值，拒绝启动。\n'
+            '请在 .env 中设置一个随机密钥，生成方法：\n'
+            '  python3 -c "import secrets; print(secrets.token_hex(32))"'
+        )
+
     app = Flask(__name__)
     app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = SQLALCHEMY_TRACK_MODIFICATIONS

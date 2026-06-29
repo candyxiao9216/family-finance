@@ -132,6 +132,12 @@
 - **方案**: 新增 `backup.sh` + `push-deploy.sh` 部署前自动备份
 - **防范**: 备份已集成到部署流程，backups/ 目录在本地保留
 
+### 5. 生产环境使用公开默认 SECRET_KEY
+- **问题**: 生产 `.env` 的 `SECRET_KEY` 等于代码里写死的默认值 `dev-secret-key-change-in-production`，而该值在公开 GitHub 仓库可见。任何人都能伪造 session cookie 冒充任意成员登录
+- **根因**: `config.py` 用 `os.environ.get('SECRET_KEY', '默认值')` 静默兜底，缺失时不报错；注释里的"安全提醒"无强制力
+- **方案**: 已轮换生产 key（随机 64 字符）；`create_app()` 增加启动安全闸——key 缺失或为默认值时 `raise RuntimeError` 拒绝启动
+- **防范**: 配置不安全就拒绝启动而非降级。新增的需"只生产强制"的校验，注意放在 `create_app()` 而非 config import 层（避免 conftest 导入即触发）
+
 ---
 
 **版本**: v2.1.9
