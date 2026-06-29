@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/版本-v2.1.10-blue" alt="version">
+  <img src="https://img.shields.io/badge/版本-v2.1.11-blue" alt="version">
   <img src="https://img.shields.io/badge/Python-3.8+-green" alt="python">
   <img src="https://img.shields.io/badge/Flask-3.0-lightgrey" alt="flask">
   <img src="https://img.shields.io/badge/测试覆盖率-81%25-brightgreen" alt="coverage">
@@ -156,6 +156,11 @@ FLASK_PORT=5001                      # 服务端口
 
 ## 📋 版本历史
 
+## v2.1.11 (2026-06-30)
+
+### 修复
+- SECRET_KEY 启动安全闸，拒绝不安全默认值
+
 ## v2.1.10 (2026-06-29)
 
 ### 优化
@@ -163,6 +168,7 @@ FLASK_PORT=5001                      # 服务端口
 
 ### 文档
 - 校正文档事实性数字与版本号
+
 
 ## v2.1.9 (2026-06-29)
 
@@ -183,15 +189,6 @@ FLASK_PORT=5001                      # 服务端口
 
 ### 优化
 - 补充账户分组路由测试（覆盖率 81%）
-
-
-## v2.1.6 (2026-06-08)
-
-### 新增
-- 新增备忘录功能
-
-### 优化
-- test+docs: 补充备忘录测试 + 更新操作指南
 
 
 > 完整变更日志见 [CHANGELOG.md](./CHANGELOG.md)
