@@ -32,9 +32,9 @@
 │   └── deploy.sh        #   服务器从零初始化（只执行一次）
 ├── src/
 │   ├── main.py          # 应用入口 + 仪表盘首页路由
-│   ├── models.py        # 数据模型（16 张表）
+│   ├── models.py        # 数据模型（24 张表）
 │   ├── database.py      # 数据库初始化 + Jinja2 过滤器
-│   ├── routes/          # Flask 蓝图（12 个）
+│   ├── routes/          # Flask 蓝图（14 个）
 │   ├── services/        # AI 分析 + 行情数据
 │   ├── static/          # CSS + JS
 │   └── templates/       # Jinja2 页面模板
@@ -68,8 +68,8 @@
 - **覆盖率**: ≥ 80%（硬性，release.sh 会阻断）
 - **测试位置**: `tests/` 目录，文件命名 `test_*.py`
 - **运行**: `python3 -m pytest tests/ --cov=src --cov-config=pyproject.toml`
-- **排除**: database.py, config.py, main.py, migration*, services/ai_advisor.py, services/market_data.py, routes/advisor.py
-- **当前状态**: 139+ 测试，覆盖率 81%
+- **排除**: database.py, config.py, main.py, services/ai_advisor.py, services/market_data.py, routes/advisor.py
+- **当前状态**: 185 测试，覆盖率 81%
 
 ---
 
@@ -134,5 +134,5 @@
 
 ---
 
-**版本**: v2.0.5
-**最后更新**: 2026-05-08
+**版本**: v2.1.9
+**最后更新**: 2026-06-29

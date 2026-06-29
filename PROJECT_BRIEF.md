@@ -17,7 +17,7 @@ Python 3.8+ / Flask / SQLAlchemy / SQLite / Chart.js / 智谱 GLM / Gunicorn + N
 - **版本**: v2.1.9
 - **里程碑一已完成**: 家庭资产数据数字化（记账+资产+储蓄+AI顾问+持仓+行情）
 - **harness 已建立**: start → release → deploy 全自动化
-- **测试**: 139+ 用例，覆盖率 81%
+- **测试**: 185 用例，覆盖率 81%
 
 ## 已知技术债
 - CSRF 防护缺失（家庭内部使用，风险低）
@@ -45,7 +45,7 @@ pip install -r requirements.txt && python3 src/main.py
 
 ## 关键路径
 - `src/main.py` — 入口 + 仪表盘
-- `src/routes/advisor.py` — 最大文件（590行，AI 顾问）
-- `src/models.py` — 16 张表
+- `src/routes/advisor.py` — 最大文件（1221 行，AI 顾问）
+- `src/models.py` — 24 张表
 - `src/static/css/style.css` — 全局样式（注意 advisor 区域选择器作用域）
 - `CLAUDE.md` — 操作速查卡

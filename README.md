@@ -111,9 +111,9 @@ curl -sSL https://raw.githubusercontent.com/candyxiao9216/family-finance/main/de
 ```
 src/
 ├── main.py              # 应用入口 + 仪表盘首页
-├── models.py            # 数据模型（16 张表）
+├── models.py            # 数据模型（24 张表）
 ├── database.py          # 数据库初始化
-├── routes/              # Flask 蓝图（12 个模块）
+├── routes/              # Flask 蓝图（14 个模块）
 │   ├── advisor.py       #   智能财务顾问（AI + 持仓）
 │   ├── transaction.py   #   月度收支
 │   ├── account.py       #   资产总览
