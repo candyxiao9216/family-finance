@@ -213,10 +213,10 @@ def add_snapshot(account_id):
     ).first()
     change_amount = balance - Decimal(str(prev_record.balance)) if prev_record else None
 
-    # 插入或更新
+    # 插入或更新（只操作 snapshot 记录，不覆盖 transfer 记录）
     existing = AccountBalance.query.filter_by(
         account_id=account_id, record_month=record_month
-    ).first()
+    ).filter(AccountBalance.source != 'transfer').first()
 
     if existing:
         existing.balance = balance
@@ -315,10 +315,10 @@ def batch_snapshot():
         ).first()
         change_amount = balance - Decimal(str(prev_record.balance)) if prev_record else None
 
-        # 插入或更新
+        # 插入或更新（只操作 snapshot 记录，不覆盖 transfer 记录）
         existing = AccountBalance.query.filter_by(
             account_id=account.id, record_month=record_month
-        ).first()
+        ).filter(AccountBalance.source != 'transfer').first()
 
         if existing:
             existing.balance = balance
