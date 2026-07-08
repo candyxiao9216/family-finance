@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/版本-v2.1.13-blue" alt="version">
+  <img src="https://img.shields.io/badge/版本-v2.1.14-blue" alt="version">
   <img src="https://img.shields.io/badge/Python-3.8+-green" alt="python">
   <img src="https://img.shields.io/badge/Flask-3.0-lightgrey" alt="flask">
   <img src="https://img.shields.io/badge/测试覆盖率-81%25-brightgreen" alt="coverage">
@@ -156,10 +156,16 @@ FLASK_PORT=5001                      # 服务端口
 
 ## 📋 版本历史
 
+## v2.1.14 (2026-07-08)
+
+### 修复
+- 补齐分组分配路径同样的 transfer 覆盖问题
+
 ## v2.1.13 (2026-07-08)
 
 ### 修复
 - 快照录入不再覆盖同月 transfer 记录
+
 
 ## v2.1.12 (2026-07-08)
 
@@ -180,12 +186,6 @@ FLASK_PORT=5001                      # 服务端口
 
 ### 文档
 - 校正文档事实性数字与版本号
-
-
-## v2.1.9 (2026-06-29)
-
-### 修复
-- cleanup.sh 支持 squash 合并分支检测
 
 
 > 完整变更日志见 [CHANGELOG.md](./CHANGELOG.md)
