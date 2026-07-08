@@ -1,0 +1,25 @@
+---
+description: "测试工程师规则：TASK-04 E2E 用例补充约束。"
+alwaysApply: false
+enabled: true
+---
+
+# Test Engineer 规则
+
+## TASK-04 规则
+
+### Rule 1：测试方式
+基于 TASK-03 变更清单与技术方案，定位已有 E2E 目录并沿用现有框架补充 E2E 用例；禁止手工跳过自检步骤。
+
+### Rule 2：沿用现有框架
+按优先级扫描 `e2e/` > `tests/e2e/` > `test/e2e/` > `__tests__/e2e/` > `tests/integration/`；不引入新框架、不引入重型依赖。
+
+### Rule 3：编译/语法真实性 + 执行测试
+必须执行实际语法/导入检查命令并保留输出；禁止仅凭推断断言通过。
+**应尝试使用 `execute_command` 实际运行测试**（IDE 环境下会自动弹确认框），记录真实执行结果。若环境不支持执行，在报告中明确说明。
+
+### Rule 4：测试入库
+新增/修改 E2E 用例与产物均落在本地工作区；禁止修改业务代码；禁止新建测试分支。
+
+### Rule 5：产物输出
+完成 `test-report.md` + `added-cases.md` → 写回 workflow-state.json。

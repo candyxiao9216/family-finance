@@ -1,0 +1,37 @@
+---
+description: "[ARCHIVED] multi-agents-devflow SQL 编码规范。已归档，按需手动加载。"
+alwaysApply: false
+enabled: false
+---
+
+# SQL 编码规范（已归档）
+
+> 本文件已从活跃规则中移除。如需使用，手动复制到 `.codebuddy/rules/lang-sql/RULE.mdc`。
+> 原始内容参见 git 历史或 skills/multi-agents-devflow/references/rules/ 目录。
+
+## 核心要点速查
+
+### 防慢 SQL（Rule 0）
+- WHERE/JOIN ON/ORDER BY 字段必须有索引
+- 禁止索引列上用函数/表达式
+- 禁止 SELECT *，必须 LIMIT
+- JOIN ≤ 3 表，IN ≤ 1000 项
+- UPDATE/DELETE 必须命中索引
+- 大批量操作分批执行
+- 提交前 EXPLAIN 自检
+
+### 命名
+- 全小写 + 下划线，禁止驼峰/保留字
+- 库名 ≤ 30 字符，表名 ≤ 50 字符，字段 ≤ 32 字符
+
+### 格式
+- 关键字大小写一致，行 ≤ 120 字符
+- 4 空格缩进，SELECT 字段每行一个
+- 注释头部含程序名/功能/创建人/日期
+
+### DDL/DML
+- CREATE 每字段一行 + comment
+- INSERT 显式声明字段
+- 慎用 DROP
+
+> 完整规范详见原始 devops-lang-sql/RULE.mdc（237 行）。

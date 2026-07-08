@@ -1,0 +1,162 @@
+---
+description: "devflow 全局规则（G1-G8）。适用于所有角色，涵盖配置优先、产物本地化、角色权限、产物目录规范、团队通信协议、Main Agent 即时调度。"
+alwaysApply: true
+enabled: true
+---
+
+# 全局规则
+
+## G1：部署与运行分离
+- Skill 只负责部署/初始化/升级；运行期按 `runtime/start-workflow.md` 启动
+
+## G2：配置优先
+执行前必须读取 `workflow-state.json`；业务配置以 `assets/devflow.defaults.yaml` 为准，被 `devflow.config.yaml`（若存在）覆盖。缺失 workflow-state.json 时终止。
+
+## G3：产物本地化
+所有产物落到 `{ARTIFACTS_ROOT}/{TASK_SLUG}/` 下，禁止跨需求复用目录。
+
+## G4：运行模式不可切换
+自动/人工模式一旦判定不得中途切换；无法确认时默认回退为人工模式。
+
+## G5：角色不越权
+每个角色只执行职责范围内工作；上一阶段未完成前下一阶段不得提前开始。
+
+## G5.1：用户交互由 Main Agent 统一协调 ⭐⭐⭐
+
+Team 模式下，所有角色作为 team member 异步常驻：
+- **brainstorming 等需要多轮对话的 skill** → 由 Main Agent 在调度循环中直接执行（Main Agent 是 team lead，拥有用户交互能力）
+- ⛔ **禁止 team member 直接与用户交互**（team member 通过 `send_message(recipient="main")` 向 Main Agent 汇报）
+
+### Main Agent 负责的人机交互节点
+
+| 节点 | 时机 | 交互内容 |
+|------|------|---------|
+| **需求分析+澄清** | Phase 0 完成后（medium/large） | Main Agent 先自主分析代码库，再调 `use_skill("brainstorming")` 与用户苏格拉底式逐个提问，产出 `01-requirement/requirement-report.md` |
+
+> 这是整个流程中**唯一的人工交互点**（auto_mode=true 时）。完成后全自动流转，不再需要阶段间人工确认。
+
+### 手动模式（auto_mode: false）
+
+当 `devflow.defaults.yaml` 或 `devflow.config.yaml` 中 `multi.auto_mode: false` 时，Main Agent 在 `manual_gates` 配置的事件完成后暂停，向用户展示当前阶段产物摘要并等待确认后再继续派发下游角色。详见 `start-workflow.md` Step 3 调度循环。
+
+## G6：产物目录规范
+
+### 6.1 目录结构
+
+**Multi-agent 模式（medium/large）：**
+```
+{artifacts_dir}/
+  ├── 01-requirement/         # 需求分析（requirement-report.md）
+  ├── 02-design/             # 技术方案（tech-design.md + execution-plan.md）
+  ├── 03-code/               # 代码变更报告（change-report.md + api-docs.md）
+  ├── 04-e2e/                # E2E 测试用例
+  └── workflow-summary.md    # 最终汇总报告
+```
+
+**Solo 模式（small）：**
+```
+{artifacts_dir}/
+  ├── 01-solo/               # solo-developer 全流程产物
+  └── workflow-summary.md    # 最终汇总报告
+```
+
+**全局知识目录（跨需求共享）：**
+```
+{ARTIFACTS_ROOT}/
+  └── knowledge/             # 全局知识目录（跨需求可查阅）
+      └── {task_slug}.md     # 每个需求一份知识沉淀
+```
+
+⚠️ 所有产物子目录**直接**位于 `{artifacts_dir}/` 下，禁止嵌套额外中间目录（如 `requirement-artifacts/`）。
+⚠️ `knowledge/` 目录位于 `{ARTIFACTS_ROOT}/` 下而非 `{artifacts_dir}/` 下，用于跨需求知识检索。
+
+### 6.2 YAML Front Matter（所有产物 Markdown 必含）
+```yaml
+---
+task_id: {TASK_ID}
+stage: {阶段标识}
+author: {角色中文名}
+date: {YYYY-MM-DD}
+run_mode: {auto/manual}
+---
+```
+
+### 6.3 禁止行为
+- ❌ 缺少 YAML front matter
+- ❌ 多个需求共用同一目录
+
+## G7：团队通信与唤醒协议（Team 模式）
+
+### 7.1 通信模式
+```
+模式：team-async | team_name = multi-agents-devflow-{task_slug}
+策略：team member → send_message(recipient="main") → Main Agent 读消息 → send_message 唤醒下游 member
+```
+
+所有角色启动时由 `team_create` 创建 team，作为 team member 常驻。Main Agent 是 team lead。
+
+### 7.2 阶段流转路由表
+<!-- ⚠️ 以下为 assets/devflow.defaults.yaml.routing_table 的摘要副本，自动生成。
+     冲突时以 devflow.defaults.yaml 为唯一权威源（SSOT）。 -->
+
+| 触发事件 | 目标角色 | 目标任务 |
+|----------|---------|---------|
+| workflow_initialized (small) | solo-developer | 执行 SOLO |
+| workflow_initialized (medium/large) | Main Agent | 需求分析+澄清（TASK-01） |
+| TASK-01_completed | architect | 执行 TASK-02 |
+| TASK-02_completed | developer | 执行 TASK-03 |
+| TASK-03_completed | code-reviewer | 执行 CODE-REVIEW（越界+acceptance 前置校验） |
+| CODE-REVIEW_passed | test-engineer | 执行 TASK-04 |
+| CODE-REVIEW_failed | developer | 修复后重新提交 |
+| TASK-04_completed | knowledge-engineer | 执行 TASK-05 |
+| TASK-05_completed | leader | 最终汇总 |
+| SOLO_completed | leader | 最终汇总 |
+| SOLO_overflow | main | Main Agent 重新 Phase 0 判定 |
+| *_failed | 原执行角色 | 重试 |
+| workflow_completed | （无） | 清理 |
+
+### 7.3 唤醒协议（team member 完成后）
+```
+Step 1: 写回 workflow-state.json（last_event / next_target / status 等）
+Step 2: send_message(recipient="main", content=<JSON payload>, summary="<event>")
+Step 3: 自然结束本轮 turn（保持 team member 常驻，等待下次唤醒）
+```
+
+### 7.4 send_message 目标规则
+- team member 只发给 `"main"`（Main Agent / team lead）
+- Main Agent 通过 `send_message(recipient=<role>)` 唤醒目标 member
+- ⛔ team member 间**禁止直接通信**（必须经 main 中转）
+
+### 7.5 消息格式
+```json
+{"event":"TASK-XX_completed","stage":"TASK-XX","workflow_state_path":"...","summary":"...","from_role":"...","next_target":{"subagent_name":"...","role_name":"...","task_description":"..."}}
+```
+
+### 7.6 禁止行为
+- ❌ 跳过 send_message 直接结束
+- ❌ team member 间直接通信（必须经 main 中转）
+- ❌ team member 自行 spawn 其他角色
+
+## G8：Main Agent 即时调度协议
+
+收到 team member 的 `send_message` 后，按 routing_table 立即派发：
+
+- `TASK-01_completed` → 立即 `send_message(recipient="architect")` 派发技术方案（TASK-02）
+- `TASK-02_completed` → 立即 `send_message(recipient="developer")` 派发编码（TASK-03）
+- `TASK-02_failed` → 立即 `send_message(recipient="architect")` 唤醒重试
+- `TASK-03_completed` → 立即 `send_message(recipient="code-reviewer")` 派发代码审查（越界+acceptance 校验合并为 CODE-REVIEW 前置步骤）
+- `TASK-03_failed` → 立即 `send_message(recipient="developer")` 唤醒重试
+- `CODE-REVIEW_passed` → 立即 `send_message(recipient="test-engineer")` 派发测试（TASK-04）
+- `CODE-REVIEW_failed` → 立即 `send_message(recipient="developer")` 打回修复
+- `TASK-04_completed` → 立即 `send_message(recipient="knowledge-engineer")` 派发知识沉淀（TASK-05）
+- `TASK-04_failed` → 立即 `send_message(recipient="test-engineer")` 唤醒重试
+- `TASK-05_completed` → 立即 `send_message(recipient="leader")` 派发最终汇总
+- `TASK-05_failed` → 立即 `send_message(recipient="knowledge-engineer")` 唤醒重试
+- `TASK-XX_failed` → 立即 `send_message(recipient=<原角色>)` 唤醒原角色重试
+- `workflow_completed` → 立即执行清理（逐个 shutdown_request → team_delete）
+- `SOLO_completed` → `send_message(recipient="leader")` 最终汇总
+- `SOLO_failed` → `send_message(recipient="solo-developer")` 唤醒重试
+- `SOLO_overflow` → Main Agent 直接重新执行 Phase 0（强制 medium/large）
+
+**禁止**：延迟调度、等待用户催促、忘记 dispatch。
+全流程自动流转，brainstorming 后不再有人工卡点。

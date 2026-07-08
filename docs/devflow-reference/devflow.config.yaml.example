@@ -1,0 +1,32 @@
+# devflow.config.yaml 配置覆盖示例
+#
+# 将此文件复制为 .codebuddy/devflow.config.yaml 并按需修改。
+# 只需写入需要覆盖的字段，未写的字段使用 devflow.defaults.yaml 中的默认值。
+# ⚠️ routing_table 为 SSOT（唯一权威源），不可被此文件覆写。
+
+# 产物根目录（默认为 {project_root}/artifacts）
+# artifacts:
+#   root_dir: "{project_root}/artifacts"
+
+# E2E 测试目录搜索路径
+# e2e:
+#   search_dirs:
+#     - "e2e"
+#     - "tests/e2e"
+#     - "test/e2e"
+#     - "__tests__/e2e"
+#     - "tests/integration"
+
+# 运行模式
+# solo:
+#   auto_mode: true          # Solo 路径是否自动模式
+# multi:
+#   auto_mode: true          # 多 Agent 路径是否自动模式（brainstorming 后全流程自动）
+
+# 并行度上限（sub-developer 同时派发数不超过此值）
+# max_parallel_sub_developers: 6
+
+# 项目特定配置（可在此补充编码规范等）
+# project_config:
+#   default_branch: "master"
+#   coding_standards: ""

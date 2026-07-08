@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 $CODEBUDDY_PROJECT_DIR/.codebuddy/hooks/approve-safe-commands.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
