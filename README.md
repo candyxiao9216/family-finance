@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/版本-v2.1.11-blue" alt="version">
+  <img src="https://img.shields.io/badge/版本-v2.1.12-blue" alt="version">
   <img src="https://img.shields.io/badge/Python-3.8+-green" alt="python">
   <img src="https://img.shields.io/badge/Flask-3.0-lightgrey" alt="flask">
   <img src="https://img.shields.io/badge/测试覆盖率-81%25-brightgreen" alt="coverage">
@@ -156,10 +156,16 @@ FLASK_PORT=5001                      # 服务端口
 
 ## 📋 版本历史
 
+## v2.1.12 (2026-07-08)
+
+### 修复
+- 修复分组汇总多币种裸加 bug
+
 ## v2.1.11 (2026-06-30)
 
 ### 修复
 - SECRET_KEY 启动安全闸，拒绝不安全默认值
+
 
 ## v2.1.10 (2026-06-29)
 
@@ -180,15 +186,6 @@ FLASK_PORT=5001                      # 服务端口
 
 ### 新增
 - 账户管理优化 — 类型简化/币种显示/智能分摊/汇总栏
-
-
-## v2.1.7 (2026-06-13)
-
-### 新增
-- 账户分组管理 + 快照按组展示
-
-### 优化
-- 补充账户分组路由测试（覆盖率 81%）
 
 
 > 完整变更日志见 [CHANGELOG.md](./CHANGELOG.md)
