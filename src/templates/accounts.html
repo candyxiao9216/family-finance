@@ -744,15 +744,18 @@
                 {% for group in groups %}
                 {% set g_accounts = grouped_accounts.get(group.id, []) %}
                 {% if g_accounts %}
+                {% set group_currency = g_accounts[0].currency if g_accounts[0].currency and g_accounts[0].currency != 'CNY' else 'CNY' %}
+                {% set group_rate = exchange_rates.get(group_currency, 1.0) %}
+                {% set currency_prefix = (group_currency + ' ') if group_currency != 'CNY' else '¥' %}
                 {% set ns = namespace(group_prev=0, group_theory=0) %}
                 {% for a in g_accounts %}
-                    {% set p = prev_snapshots[a.id].balance|float if prev_snapshots.get(a.id) else 0 %}
+                    {% set acct_rate = exchange_rates.get(a.currency or 'CNY', 1.0) %}
+                    {% set factor = acct_rate / group_rate %}
+                    {% set p = prev_snapshots[a.id].balance|float * factor if prev_snapshots.get(a.id) else 0 %}
                     {% set ns.group_prev = ns.group_prev + p %}
-                    {% set ns.group_theory = ns.group_theory + account_theory.get(a.id, 0) %}
+                    {% set ns.group_theory = ns.group_theory + account_theory.get(a.id, 0) * factor %}
                 {% endfor %}
                 {% set group_expected = ns.group_prev + ns.group_theory %}
-                {% set group_currency = g_accounts[0].currency if g_accounts[0].currency and g_accounts[0].currency != 'CNY' else '' %}
-                {% set currency_prefix = group_currency + ' ' if group_currency else '¥' %}
                 <div style="margin-bottom:16px;border:1px solid #f0ece7;border-radius:12px;overflow:hidden;">
                     <!-- 组头 -->
                     <div style="display:grid;grid-template-columns:150px 100px 80px 100px 190px 60px 1fr;gap:8px;padding:12px 16px;background:#f8f5f1;align-items:center;cursor:pointer;" onclick="toggleGroup(this)">
