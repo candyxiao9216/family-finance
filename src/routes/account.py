@@ -395,7 +395,7 @@ def batch_snapshot():
 
             existing = AccountBalance.query.filter_by(
                 account_id=a.id, record_month=record_month
-            ).first()
+            ).filter(AccountBalance.source != 'transfer').first()
 
             if existing:
                 existing.balance = allocated
