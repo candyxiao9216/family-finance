@@ -730,10 +730,10 @@
                 {% set expected = prev_bal + theory if prev_bal is not none else None %}
                 <div style="display:grid;grid-template-columns:150px 100px 80px 100px 190px 60px 1fr;gap:8px;padding:10px 16px;align-items:center;border-bottom:1px solid #f0ece7;">
                     <div style="font-size:13px;font-weight:500;">{{ a.name }}</div>
-                    <div style="font-size:12px;color:#999;text-align:right;">{% if prev_bal is not none %}¥{{ prev_bal|currency(0) }}{% else %}—{% endif %}</div>
+                    <div id="batch-prev-{{ a.id }}" style="font-size:12px;color:#999;text-align:right;">{% if prev_bal is not none %}¥{{ prev_bal|currency(0) }}{% else %}—{% endif %}</div>
                     <div class="theory-cell" style="font-size:12px;text-align:right;position:relative;cursor:help;{% if theory > 0 %}color:#4CAF50;{% elif theory < 0 %}color:#f44336;{% else %}color:#999;{% endif %}">{% if prev_bal is not none %}{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}{% if account_theory_details.get(a.id) %}<div class="theory-tooltip">{% for d in account_theory_details[a.id] %}<div style="display:flex;justify-content:space-between;gap:12px;"><span>{{ d.desc[:15] }}</span><span style="{% if d.sign == '+' %}color:#4CAF50{% else %}color:#f44336{% endif %}">{{ d.sign }}¥{{ d.amount|currency(0) }}</span></div>{% endfor %}<div style="border-top:1px solid #e0dcd7;margin-top:4px;padding-top:4px;display:flex;justify-content:space-between;font-weight:600;"><span>合计</span><span>{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}</span></div></div>{% endif %}{% else %}—{% endif %}</div>
-                    <div style="font-size:12px;color:#666;font-weight:500;text-align:right;">{% if expected is not none %}¥{{ expected|currency(0) }}{% else %}—{% endif %}</div>
-                    <div><input type="number" name="balance_{{ a.id }}" style="width:100%;padding:6px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:13px;background:#fff;" placeholder="输入余额" step="0.01" min="0" data-prev="{{ prev_bal if prev_bal is not none else '' }}" data-expected="{{ expected if expected is not none else '' }}" data-currency="CNY" data-aid="{{ a.id }}" oninput="calcDiff(this)"></div>
+                    <div id="batch-exp-{{ a.id }}" style="font-size:12px;color:#666;font-weight:500;text-align:right;">{% if expected is not none %}¥{{ expected|currency(0) }}{% else %}—{% endif %}</div>
+                    <div><input type="number" name="balance_{{ a.id }}" value="{{ snapshots[a.id].balance if snapshots.get(a.id) else '' }}" style="width:100%;padding:6px 8px;border:1px solid {% if snapshots.get(a.id) %}#D4A574{% else %}#e0dcd7{% endif %};border-radius:6px;font-size:13px;background:{% if snapshots.get(a.id) %}#fffbf5{% else %}#fff{% endif %};" placeholder="输入余额" step="0.01" min="0" data-prev="{{ prev_bal if prev_bal is not none else '' }}" data-expected="{{ expected if expected is not none else '' }}" data-currency="CNY" data-aid="{{ a.id }}" oninput="calcDiff(this)"></div>
                     <div id="diff_{{ a.id }}" style="font-size:12px;text-align:center;">—</div>
                     <div><input type="text" name="note_{{ a.id }}" style="width:100%;padding:6px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:12px;color:#666;" placeholder="备注..." maxlength="200"></div>
                 </div>
@@ -778,10 +778,10 @@
                         {% set expected = prev_bal + theory if prev_bal is not none else None %}
                         <div style="display:grid;grid-template-columns:150px 100px 80px 100px 190px 60px 1fr;gap:8px;padding:8px 16px;align-items:center;border-bottom:1px solid #f0ece7;">
                             <div style="font-size:13px;color:#6B6B6B;padding-left:24px;">{{ a.name }} <span style="font-size:10px;background:#f0f0f0;color:#999;padding:2px 6px;border-radius:4px;margin-left:4px;">选填</span></div>
-                            <div style="font-size:12px;color:#999;text-align:right;">{% if prev_bal is not none %}{% if a.currency and a.currency != 'CNY' %}{{ a.currency }} {% else %}¥{% endif %}{{ prev_bal|currency(0) }}{% else %}—{% endif %}</div>
+                            <div id="batch-prev-{{ a.id }}" style="font-size:12px;color:#999;text-align:right;">{% if prev_bal is not none %}{% if a.currency and a.currency != 'CNY' %}{{ a.currency }} {% else %}¥{% endif %}{{ prev_bal|currency(0) }}{% else %}—{% endif %}</div>
                             <div class="theory-cell" style="font-size:12px;text-align:right;position:relative;cursor:help;{% if theory > 0 %}color:#4CAF50;{% elif theory < 0 %}color:#f44336;{% else %}color:#999;{% endif %}">{% if prev_bal is not none %}{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}{% if account_theory_details.get(a.id) %}<div class="theory-tooltip">{% for d in account_theory_details[a.id] %}<div style="display:flex;justify-content:space-between;gap:12px;"><span>{{ d.desc[:15] }}</span><span style="{% if d.sign == '+' %}color:#4CAF50{% else %}color:#f44336{% endif %}">{{ d.sign }}¥{{ d.amount|currency(0) }}</span></div>{% endfor %}<div style="border-top:1px solid #e0dcd7;margin-top:4px;padding-top:4px;display:flex;justify-content:space-between;font-weight:600;"><span>合计</span><span>{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}</span></div></div>{% endif %}{% else %}—{% endif %}</div>
-                            <div style="font-size:12px;color:#666;text-align:right;">{% if expected is not none %}{% if a.currency and a.currency != 'CNY' %}{{ a.currency }} {% else %}¥{% endif %}{{ expected|currency(0) }}{% else %}—{% endif %}</div>
-                            <div style="display:flex;gap:4px;">{% if a.currency and a.currency != 'CNY' %}<select name="currency_{{ a.id }}" style="width:55px;padding:4px;border:1px solid #e0dcd7;border-radius:6px;font-size:10px;"><option value="HKD" {{ 'selected' if (a.currency or 'HKD') == 'HKD' }}>港币</option><option value="CNY" {{ 'selected' if a.currency == 'CNY' }}>人民币</option><option value="USD" {{ 'selected' if a.currency == 'USD' }}>美元</option></select>{% endif %}<input type="number" name="balance_{{ a.id }}" style="flex:1;width:100%;padding:5px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:13px;background:#fff;" placeholder="选填" step="0.01" min="0" data-prev="{{ prev_bal if prev_bal is not none else '' }}" data-expected="{{ expected if expected is not none else '' }}" data-currency="{{ a.currency or 'CNY' }}" data-aid="{{ a.id }}" data-group-id="{{ group.id }}" oninput="onSubInput(this)"></div>
+                            <div id="batch-exp-{{ a.id }}" style="font-size:12px;color:#666;text-align:right;">{% if expected is not none %}{% if a.currency and a.currency != 'CNY' %}{{ a.currency }} {% else %}¥{% endif %}{{ expected|currency(0) }}{% else %}—{% endif %}</div>
+                            <div style="display:flex;gap:4px;">{% if a.currency and a.currency != 'CNY' %}<select name="currency_{{ a.id }}" style="width:55px;padding:4px;border:1px solid #e0dcd7;border-radius:6px;font-size:10px;"><option value="HKD" {{ 'selected' if (a.currency or 'HKD') == 'HKD' }}>港币</option><option value="CNY" {{ 'selected' if a.currency == 'CNY' }}>人民币</option><option value="USD" {{ 'selected' if a.currency == 'USD' }}>美元</option></select>{% endif %}<input type="number" name="balance_{{ a.id }}" value="{{ snapshots[a.id].balance if snapshots.get(a.id) else '' }}" style="flex:1;width:100%;padding:5px 8px;border:1px solid {% if snapshots.get(a.id) %}#D4A574{% else %}#e0dcd7{% endif %};border-radius:6px;font-size:13px;background:{% if snapshots.get(a.id) %}#fffbf5{% else %}#fff{% endif %};" placeholder="选填" step="0.01" min="0" data-prev="{{ prev_bal if prev_bal is not none else '' }}" data-expected="{{ expected if expected is not none else '' }}" data-currency="{{ a.currency or 'CNY' }}" data-aid="{{ a.id }}" data-group-id="{{ group.id }}" oninput="onSubInput(this)"></div>
                             <div id="diff_{{ a.id }}" style="font-size:11px;text-align:center;color:#999;">—</div>
                             <div><input type="text" name="note_{{ a.id }}" style="width:100%;padding:4px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:11px;color:#666;" placeholder="备注..." maxlength="200"></div>
                         </div>
@@ -806,9 +806,9 @@
                 {% set expected = prev_bal + theory if prev_bal is not none else None %}
                 <div style="display:grid;grid-template-columns:150px 100px 80px 100px 190px 60px 1fr;gap:8px;padding:10px 16px;align-items:center;border-bottom:1px solid #f0ece7;">
                     <div style="font-size:13px;font-weight:500;">{{ a.name }}</div>
-                    <div style="font-size:12px;color:#999;text-align:right;">{% if prev_bal is not none %}{% if a.currency and a.currency != 'CNY' %}{{ a.currency }} {% else %}¥{% endif %}{{ prev_bal|currency(0) }}{% else %}—{% endif %}</div>
+                    <div id="batch-prev-{{ a.id }}" style="font-size:12px;color:#999;text-align:right;">{% if prev_bal is not none %}{% if a.currency and a.currency != 'CNY' %}{{ a.currency }} {% else %}¥{% endif %}{{ prev_bal|currency(0) }}{% else %}—{% endif %}</div>
                     <div class="theory-cell" style="font-size:12px;text-align:right;position:relative;cursor:help;{% if theory > 0 %}color:#4CAF50;{% elif theory < 0 %}color:#f44336;{% else %}color:#999;{% endif %}">{% if prev_bal is not none %}{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}{% if account_theory_details.get(a.id) %}<div class="theory-tooltip">{% for d in account_theory_details[a.id] %}<div style="display:flex;justify-content:space-between;gap:12px;"><span>{{ d.desc[:15] }}</span><span style="{% if d.sign == '+' %}color:#4CAF50{% else %}color:#f44336{% endif %}">{{ d.sign }}¥{{ d.amount|currency(0) }}</span></div>{% endfor %}<div style="border-top:1px solid #e0dcd7;margin-top:4px;padding-top:4px;display:flex;justify-content:space-between;font-weight:600;"><span>合计</span><span>{{ '+' if theory >= 0 }}{{ theory|int|currency(0) }}</span></div></div>{% endif %}{% else %}—{% endif %}</div>
-                    <div style="font-size:12px;color:#666;font-weight:500;text-align:right;">{% if expected is not none %}{% if a.currency and a.currency != 'CNY' %}{{ a.currency }} {% else %}¥{% endif %}{{ expected|currency(0) }}{% else %}—{% endif %}</div>
+                    <div id="batch-exp-{{ a.id }}" style="font-size:12px;color:#666;font-weight:500;text-align:right;">{% if expected is not none %}{% if a.currency and a.currency != 'CNY' %}{{ a.currency }} {% else %}¥{% endif %}{{ expected|currency(0) }}{% else %}—{% endif %}</div>
                     <div style="display:flex;gap:4px;">
                         {% if a.currency and a.currency != 'CNY' %}
                         <select name="currency_{{ a.id }}" style="width:55px;padding:4px;border:1px solid #e0dcd7;border-radius:6px;font-size:10px;" data-aid="{{ a.id }}" onchange="updateCurrencyDisplay(this)">
@@ -817,7 +817,7 @@
                             <option value="USD" {{ 'selected' if a.currency == 'USD' }}>美元</option>
                         </select>
                         {% endif %}
-                        <input type="number" name="balance_{{ a.id }}" style="flex:1;width:100%;padding:6px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:13px;background:#fff;" placeholder="输入余额" step="0.01" min="0" data-prev="{{ prev_bal if prev_bal is not none else '' }}" data-expected="{{ expected if expected is not none else '' }}" data-currency="{{ a.currency or 'CNY' }}" data-aid="{{ a.id }}" oninput="calcDiff(this)">
+                        <input type="number" name="balance_{{ a.id }}" value="{{ snapshots[a.id].balance if snapshots.get(a.id) else '' }}" style="flex:1;width:100%;padding:6px 8px;border:1px solid {% if snapshots.get(a.id) %}#D4A574{% else %}#e0dcd7{% endif %};border-radius:6px;font-size:13px;background:{% if snapshots.get(a.id) %}#fffbf5{% else %}#fff{% endif %};" placeholder="输入余额" step="0.01" min="0" data-prev="{{ prev_bal if prev_bal is not none else '' }}" data-expected="{{ expected if expected is not none else '' }}" data-currency="{{ a.currency or 'CNY' }}" data-aid="{{ a.id }}" oninput="calcDiff(this)">
                     </div>
                     <div id="diff_{{ a.id }}" style="font-size:12px;text-align:center;">—</div>
                     <div><input type="text" name="note_{{ a.id }}" style="width:100%;padding:6px 8px;border:1px solid #e0dcd7;border-radius:6px;font-size:12px;color:#666;" placeholder="备注..." maxlength="200"></div>
@@ -1403,6 +1403,43 @@
         // ===== 对账助手：差额实时计算 =====
         var RATES = {{ exchange_rates | tojson }};
         var ACCOUNT_THEORY = {{ account_theory | tojson }};
+
+        var BALANCE_HISTORY = {{ balance_history | tojson }};
+
+        // 月份切换：更新上月余额、预计余额、预填已录数据
+        function onBatchMonthChange() {
+            var monthVal = document.getElementById('batch-month').value;
+            if (!monthVal) return;
+            var p = monthVal.split('-'), y = parseInt(p[0]), m = parseInt(p[1]);
+            var pm = m === 1 ? 12 : m - 1, py = m === 1 ? y - 1 : y;
+            var prevKey = py + '-' + String(pm).padStart(2, '0');
+            Object.keys(BALANCE_HISTORY).forEach(function(aid) {
+                var hist = BALANCE_HISTORY[aid] || {};
+                var prevBal = hist[prevKey], currBal = hist[monthVal];
+                var theory = ACCOUNT_THEORY[aid] || 0;
+                var prevEl = document.getElementById('batch-prev-' + aid);
+                var expEl  = document.getElementById('batch-exp-'  + aid);
+                var inp    = document.querySelector('input[name="balance_' + aid + '"]');
+                if (prevEl) prevEl.textContent = prevBal !== undefined ? '¥' + Math.round(prevBal).toLocaleString() : '—';
+                var expected = prevBal !== undefined ? prevBal + theory : null;
+                if (expEl)  expEl.textContent  = expected !== null ? '¥' + Math.round(expected).toLocaleString() : '—';
+                if (inp) {
+                    inp.dataset.expected = expected !== null ? expected : '';
+                    inp.dataset.prev = prevBal !== undefined ? prevBal : '';
+                    if (currBal !== undefined) {
+                        inp.value = currBal;
+                        inp.style.borderColor = '#D4A574';
+                        inp.style.background  = '#fffbf5';
+                    } else {
+                        inp.value = '';
+                        inp.style.borderColor = '#e0dcd7';
+                        inp.style.background  = '#fff';
+                    }
+                    calcDiff(inp);
+                }
+            });
+        }
+        document.getElementById('batch-month').addEventListener('change', onBatchMonthChange);
 
         function calcDiff(input) {
             var aid = input.dataset.aid;

@@ -78,17 +78,30 @@ def account_list():
             AccountBalance.account_id.in_(account_ids)
         ).order_by(AccountBalance.record_month.desc(), AccountBalance.created_at.desc()).all()
 
-    # 获取上月快照（用于批量录入面板显示上月余额，只取快照类型）
+    # 获取上月最新余额（含 transfer，取 created_at 最新一条）
     prev_month = this_month - relativedelta(months=1)
     prev_snapshots = {}
     if account_ids:
-        prev_records = AccountBalance.query.filter(
-            AccountBalance.account_id.in_(account_ids),
-            AccountBalance.record_month == prev_month,
-            db.or_(AccountBalance.source == 'snapshot', AccountBalance.source == None)
-        ).all()
-        for r in prev_records:
-            prev_snapshots[r.account_id] = r
+        for aid in account_ids:
+            last = AccountBalance.query.filter_by(
+                account_id=aid, record_month=prev_month
+            ).order_by(AccountBalance.created_at.desc()).first()
+            if last:
+                prev_snapshots[aid] = last
+
+    # 构建余额历史（供前端月份切换时动态更新上月余额和预填已录数据）
+    balance_history = {}  # {account_id: {month_str: balance}}
+    if account_ids:
+        all_bal = AccountBalance.query.filter(
+            AccountBalance.account_id.in_(account_ids)
+        ).order_by(AccountBalance.created_at.desc()).all()
+        for r in all_bal:
+            aid = r.account_id
+            ms = r.record_month.strftime('%Y-%m')
+            if aid not in balance_history:
+                balance_history[aid] = {}
+            if ms not in balance_history[aid]:
+                balance_history[aid][ms] = float(r.balance)
 
     # 对账助手：计算本月每个账户的理论变化（关联交易净收支合计）
     next_month = this_month + relativedelta(months=1)
@@ -151,6 +164,7 @@ def account_list():
                            all_snapshots=all_snapshots,
                            account_theory=account_theory,
                            account_theory_details=account_theory_details,
+                           balance_history=balance_history,
                            exchange_rates=_get_exchange_rates(),
                            current_view=current_view,
                            family=family,
