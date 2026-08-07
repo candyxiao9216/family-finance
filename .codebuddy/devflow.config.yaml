@@ -1,0 +1,54 @@
+# devflow.config.yaml — 家庭财务系统（0225-FamilyFin）项目覆盖配置
+# 只写需要覆盖的字段，其余走 assets/devflow.defaults.yaml 默认值。
+# routing_table 为 SSOT，不在此覆写。
+
+# ===== 运行模式（保守档 B）=====
+# brainstorming 后仍全自动流转，但关键命令（git 写操作 / 部署 / rm）
+# 由 hooks/approve-safe-commands.py 拦截并要求人工确认，禁止在 main 提交。
+solo:
+  auto_mode: true
+multi:
+  auto_mode: true
+
+# ===== 项目特定配置：把本项目红线注入所有 Agent =====
+project_config:
+  default_branch: "main"
+
+  coding_standards: |
+    【本项目硬红线 —— 所有 Agent 必须无条件遵守，违反立即停下】
+
+    1. 分支红线（最高优先级）
+       - 绝对禁止在 main 分支 commit 任何改动，包括“一行小改动”“只是文档”“只是脚本”。
+       - 开始任何编码前，必须先执行 `./scripts/start.sh feature/xxx` 或 `./scripts/start.sh fix/xxx` 创建功能分支。
+       - 每次 git commit 前必须检查 `git branch --show-current`，若为 main 立即停下开分支。
+       - 合并方式为 squash merge，保持 main 线性。
+
+    2. 发版红线
+       - 严禁手动发版。发版必须走 `./scripts/release.sh patch|minor|major`
+         （内含 测试 + 覆盖率 + 冒烟 + squash merge + tag + CHANGELOG）。
+       - commit ≠ release：完成改动只 commit + push 到功能分支；只有用户明确说“发版”时才跑 release.sh。
+
+    3. 部署与数据红线
+       - 部署统一用 `./scripts/push-deploy.sh`（已内置自动备份）。
+       - 线上线下数据完全隔离：禁止用线上数据覆盖本地 data/family_finance.db，
+         禁止未经用户授权修改线上数据；backup.sh 只存档到 backups/，绝不 cp 回 data/。
+
+    4. 安全红线
+       - 严禁硬编码密钥，一律 .env + os.getenv 读取。
+       - 生产 SECRET_KEY 缺失或为默认值时应拒绝启动（见 create_app 启动闸）。
+
+    5. 测试与文档红线
+       - 覆盖率硬性 ≥ 80%（release.sh 会阻断），测试放 tests/，命名 test_*.py。
+       - 运行：python3 -m pytest tests/ --cov=src --cov-config=pyproject.toml
+       - 代码改动必须同步更新对应文档（CLAUDE.md / docs / CHANGELOG）。
+
+    6. SQLite 迁移注意
+       - 模型新增字段后 create_all() 不会 ALTER 已有表，需在 CHANGELOG 注明并手动
+         `ALTER TABLE xxx ADD COLUMN yyy`，否则线上 500。
+
+    7. CSS 作用域注意
+       - 新增局部样式（尤其 advisor 区域）若选择器名与全局重名，必须加父级限定，
+         例如 `.advisor-container .card-header`，避免覆盖全局样式。
+
+    【技术栈】Python 3.8+ / Flask 3.0 / SQLAlchemy / SQLite / Chart.js / 智谱 GLM / Sina Finance API
+    【关键路径】src/main.py(入口+仪表盘) / src/routes/advisor.py(最大文件) / src/models.py(24张表) / src/static/css/style.css

@@ -1,0 +1,110 @@
+# === multi-agents-devflow 默认配置 ===
+# 用户可在 .codebuddy/devflow.config.yaml 中部分覆写
+
+artifacts:
+  root_dir: "{project_root}/artifacts"
+
+e2e:
+  search_dirs:
+    - "e2e"
+    - "tests/e2e"
+    - "test/e2e"
+    - "__tests__/e2e"
+    - "tests/integration"
+
+# 运行模式
+solo:
+  auto_mode: true          # Solo 路径默认自动模式（跳过 manual 卡点）
+multi:
+  auto_mode: true          # 多 Agent 路径默认自动模式（brainstorming 后全流程自动）
+
+# 手动模式门控（仅 auto_mode: false 时生效）
+# 配置哪些事件完成后需要暂停等待用户确认再继续
+# 用户可在 devflow.config.yaml 中覆写
+manual_gates:
+  - TASK-02_completed      # 技术方案完成后确认
+  - CODE-REVIEW_passed     # 代码审查通过后确认
+  - TASK-04_completed      # 测试完成后确认
+
+# 知识沉淀
+knowledge:
+  # 全局知识目录（跨需求可查阅）
+  global_dir: "{project_root}/artifacts/knowledge"
+  # 直接输出到 {global_dir}/{task_slug}.md
+
+# runtime_mode — 运行时模式，决定 Main Agent 如何派发子 agent
+#   固定值：ide — team-async 模式，team_create + send_message 异步常驻
+#   所有角色作为 team member 常驻，通过 send_message 通信
+#   写入 workflow-state.json 后全流程不可变
+runtime_mode: ide
+
+# 并行度上限（sub-developer 同时派发数不超过此值）
+max_parallel_sub_developers: 6
+
+# Routing Table（SSOT 唯一权威源，硬编码常量，不可被 devflow.config.yaml 覆写）
+# 其他文档（global.mdc §7.2 / leader.md §审核路由表 / start-workflow.md §阶段映射）
+# 均为本表的摘要引用，冲突时以本表为准。
+#
+# 流转模式：阶段完成 → 直接流转下一阶段（无 leader 门禁审核）
+# leader 仅在流程末尾做最终汇总（TASK-05/SOLO 完成后）
+# Phase 0 由 Main Agent 直接执行
+routing_table:
+  workflow_initialized_small: solo-developer
+  workflow_initialized_other: main               # Main Agent 执行需求分析+澄清（TASK-01）
+  # TASK-01 路径（需求分析+澄清）
+  TASK-01_completed: architect                   # 需求分析完成 → 直接流转 architect 执行 TASK-02
+  # SOLO 路径
+  SOLO_completed: leader                         # solo 完成 → leader 生成最终汇总（不审核）
+  SOLO_failed: solo-developer
+  SOLO_overflow: main                            # 升级回退 → Main Agent 重新 Phase 0 判定
+  # Multi 路径：阶段完成 → 直接流转下一阶段执行角色
+  TASK-02_completed: developer                   # 方案完成 → 直接流转 developer 执行 TASK-03
+  TASK-02_failed: architect                      # architect 自身失败 → 重试
+  TASK-03_completed: code-reviewer               # 编码完成 → 直接流转 code-reviewer（越界+acceptance 校验合并为 CODE-REVIEW 前置步骤）
+  TASK-03_failed: developer                      # developer 自身失败 → 重试
+  CODE-REVIEW_passed: test-engineer              # 代码审查通过 → 直接流转 test-engineer 执行 TASK-04
+  CODE-REVIEW_failed: developer                  # code-reviewer 打回 → developer 修复
+  TASK-04_completed: knowledge-engineer          # 测试完成 → 直接流转 knowledge-engineer 执行 TASK-05
+  TASK-04_failed: test-engineer                  # test-engineer 自身失败 → 重试
+  TASK-05_completed: leader                      # 知识沉淀完成 → leader 生成最终汇总（不审核）
+  TASK-05_failed: knowledge-engineer             # knowledge-engineer 自身失败 → 重试
+  workflow_completed: main
+
+# ===== 流程耗时优化建议（可选，非默认启用）=====
+# optimization_hints:
+#   1. CODE-REVIEW 与 TASK-04 并行：code-reviewer 和 test-engineer 同时启动
+#      - 前提：test-engineer 基于 change-report（而非 review-report）编写用例
+#      - 可减少 ~20% 串行等待，但 review 发现的问题可能导致测试返工
+#   2. 延迟 spawn：已回退，当前为预 spawn 全部角色（提前创建可减少调度时的 spawn 延迟）
+#   [已实施] 3. 合并门禁：TASK-03 门禁已合并到 CODE-REVIEW 前置校验
+#   [已实施] 4. 移除 leader 门禁审核：各阶段完成后直接流转下一阶段
+
+# ===== 全局 Agent 规则（spawn 时注入 prompt） =====
+# 所有 team member spawn 时，Main Agent 必须将以下内容追加到 prompt 参数中。
+# 这样只需维护此处一份，无需在每个 agent .md 文件中重复。
+global_agent_rules: |
+  【全局通信规则 ⭐⭐⭐】
+  1. 完成任务后，必须通过 send_message(recipient="main", ...) 汇报。
+  2. recipient 必须是字符串 "main"（team lead / Main Agent）。
+  3. ⚠️ 严禁发给 "leader"！"leader" 是另一个 team member 角色，不是 team lead。
+  4. ⚠️ 严禁发给任何其他 team member（禁止 member 间直接通信）。
+  5. 发错目标会导致工作流卡死，没有任何恢复机制。
+  6. 发送后自然结束本轮 turn，保持常驻等待下次唤醒。
+
+# Team Members（7 角色）
+team_members:
+  - leader
+  - architect
+  - developer
+  - code-reviewer
+  - test-engineer
+  - knowledge-engineer
+  - solo-developer
+
+# 依赖 Skills
+dependencies:
+  skills:
+    - brainstorming
+    - tech-design
+    - knowledge-distillation
+  mcp_tools: []
