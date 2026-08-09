@@ -138,7 +138,19 @@
 - **方案**: 已轮换生产 key（随机 64 字符）；`create_app()` 增加启动安全闸——key 缺失或为默认值时 `raise RuntimeError` 拒绝启动
 - **防范**: 配置不安全就拒绝启动而非降级。新增的需"只生产强制"的校验，注意放在 `create_app()` 而非 config import 层（避免 conftest 导入即触发）
 
+### 6. 多站点共用 nginx 导致 IP 无法访问（2026-08-08）
+- **问题**: 裸 IP `http://119.91.205.137` 打不开家庭财务系统，一直显示另一个项目
+- **根因**: 服务器上同时跑着 3 个站点。family-finance 的 nginx 只绑了域名 `finance.candyxiao.cn`，裸 IP 请求命中的是默认站点 `ip-workbench`（转发到 :3000 的另一个应用）。nginx 虚拟主机按 Host 头匹配，跟"端口通不通"无关
+- **踩坑过程**: 曾尝试改成 `http://IP/finance` 子路径而卡死。子路径需要同时改两处才能work——① Flask 加 `ProxyFix`/`APPLICATION_ROOT`（项目完全没有）② 改掉模板和 JS 里 **32 处硬编码绝对路径**（`href="/static/..."`、`fetch('/upload/parse')`、`action="/add"` 等）。只改一边的症状是"首页能开但 CSS 丢失 / 链接 404"
+- **方案**: 改用 **8080 独立端口**。应用仍挂在根路径 `/`，139 处 `url_for` 和 32 处硬编码路径全部天然正确，**src/ 零改动**
+- **防范**:
+  - `deploy.sh` 不再使用 `listen 80` + `server_name _`（会抢占默认站点、打乱其他项目路由）；80 端口只绑具体域名，IP 直连走 8080
+  - `deploy.sh` 不再 `rm sites-enabled/default`，nginx 用 `reload` 而非 `restart`（避免中断其他站点）
+  - `push-deploy.sh` 健康检查改为 `http://IP:8080`——原先打裸 IP 等于在验证别人的项目，是假绿灯
+  - `tests/test_deploy_config.py` 守护上述不变量
+  - 部署拓扑与端口分配 → 见 [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)
+
 ---
 
-**版本**: v2.1.9
-**最后更新**: 2026-06-29
+**版本**: v2.1.15
+**最后更新**: 2026-08-08

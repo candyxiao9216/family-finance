@@ -38,6 +38,21 @@ pip install gunicorn
 # 5. 创建数据目录
 mkdir -p data
 
+# 5.5 创建 .env（若不存在）
+# 注意：create_app() 会在 SECRET_KEY 缺失或为默认值时拒绝启动，
+# 而 .env 在 .gitignore 中不会被 clone 下来，因此必须在初始化数据库前生成。
+if [ ! -f /opt/family-finance/.env ]; then
+    echo "🔑 生成 .env 与随机 SECRET_KEY..."
+    cat > /opt/family-finance/.env << ENV_EOF
+SECRET_KEY=$(openssl rand -hex 32)
+FLASK_DEBUG=False
+ENV_EOF
+    chmod 600 /opt/family-finance/.env
+    echo "⚠️  ZHIPU_API_KEY 未设置，AI 顾问功能不可用。需要时手动追加到 .env。"
+else
+    echo "✓ .env 已存在，保留原值（不覆盖 SECRET_KEY，避免已登录用户失效）"
+fi
+
 # 6. 初始化数据库
 echo "💾 初始化数据库..."
 cd src
@@ -93,38 +108,103 @@ systemctl restart family-finance
 echo "✅ Gunicorn 服务已启动"
 
 # 9. 配置 Nginx 反向代理
+#
+# 端口/域名分配（详见 docs/DEPLOYMENT.md）：
+#   本机可能与其他项目共用 nginx。历史事故：本脚本原先写
+#   `listen 80` + `server_name _`，会抢占默认站点、打乱其他项目路由。
+#   现在改为：8080 端口作 IP 直连入口，80 端口只绑本项目域名。
 echo "🌐 配置 Nginx..."
-cat > /etc/nginx/sites-available/family-finance << 'NGINX_EOF'
+
+NGINX_CONF=/etc/nginx/sites-available/family-finance
+DOMAIN="${DOMAIN:-finance.candyxiao.cn}"
+
+# 保护闸：检测同一 nginx 上的其他站点，避免误覆盖
+OTHER_SITES=""
+for site in /etc/nginx/sites-enabled/*; do
+    [ -e "$site" ] || continue
+    name=$(basename "$site")
+    [ "$name" = "family-finance" ] && continue
+    OTHER_SITES="${OTHER_SITES}     - ${name}"$'\n'
+done
+if [ -n "$OTHER_SITES" ]; then
+    echo "⚠️  检测到同一 nginx 上还有其他站点："
+    printf '%s' "$OTHER_SITES"
+    echo "   本脚本只写 $NGINX_CONF，不会修改上述站点。"
+    echo "   但请确认 8080 端口未被它们占用。"
+    read -r -p "   继续配置？(yes/no) " CONFIRM
+    if [ "$CONFIRM" != "yes" ]; then
+        echo "已取消 Nginx 配置。Gunicorn 服务仍在 127.0.0.1:5001 运行。"
+        exit 1
+    fi
+fi
+
+# 覆盖前无条件备份（含 certbot 生成的 HTTPS 配置）
+if [ -f "$NGINX_CONF" ]; then
+    BACKUP_CONF="${NGINX_CONF}.bak.$(date +%s)"
+    cp "$NGINX_CONF" "$BACKUP_CONF"
+    echo "✓ 原配置已备份到 $BACKUP_CONF"
+    if grep -q "listen 443" "$NGINX_CONF"; then
+        echo "⚠️  原配置含 HTTPS（可能由 certbot 管理），覆盖后需重新执行 certbot 或手动合并。"
+    fi
+fi
+
+cat > "$NGINX_CONF" << NGINX_EOF
+# IP 直连入口：不依赖域名，避免与同机其他站点争抢 80 端口默认站点
 server {
-    listen 80;
+    listen 8080;
     server_name _;
 
     client_max_body_size 10M;
 
     location / {
         proxy_pass http://127.0.0.1:5001;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
     }
 
     location /static {
         alias /opt/family-finance/src/static;
-        expires 7d;
+        # 开发阶段不缓存静态文件（见 CLAUDE.md 经验教训 #2）
+        expires off;
+        add_header Cache-Control "no-cache";
+    }
+}
+
+# 域名入口：80 端口只绑本项目域名，不使用 server_name _
+server {
+    listen 80;
+    server_name ${DOMAIN};
+
+    client_max_body_size 10M;
+
+    location / {
+        proxy_pass http://127.0.0.1:5001;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+
+    location /static {
+        alias /opt/family-finance/src/static;
+        expires off;
+        add_header Cache-Control "no-cache";
     }
 }
 NGINX_EOF
 
-# 启用站点
-ln -sf /etc/nginx/sites-available/family-finance /etc/nginx/sites-enabled/
-rm -f /etc/nginx/sites-enabled/default
+# 启用站点（不删除 sites-enabled/default，避免影响同机其他站点的兜底行为）
+ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/
 
-# 测试并重启 Nginx
+# 测试并热加载 Nginx（用 reload 而非 restart，不中断其他站点的连接）
 nginx -t
-systemctl restart nginx
+systemctl reload nginx
 
 echo "✅ Nginx 已配置"
+echo "   IP 直连: http://<服务器IP>:8080  （需放行 8080：ufw allow 8080/tcp + 云安全组）"
+echo "   域名访问: http://${DOMAIN}"
 
 # 10. 验证
 echo ""
@@ -132,7 +212,13 @@ echo "========================================="
 echo "🎉 部署完成！"
 echo "========================================="
 echo ""
-echo "访问地址: http://$(curl -s ifconfig.me)"
+echo "访问地址:"
+echo "  IP 直连:  http://$(curl -s ifconfig.me):8080"
+echo "  域名:     http://${DOMAIN}"
+echo ""
+echo "⚠️  首次部署请确认 8080 已放行:"
+echo "  服务器防火墙: ufw allow 8080/tcp"
+echo "  云安全组:     入站规则 TCP:8080（需在云控制台操作）"
 echo ""
 echo "常用命令:"
 echo "  查看状态:  systemctl status family-finance"

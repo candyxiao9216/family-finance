@@ -62,18 +62,21 @@ echo -e "${YELLOW}⟳ 等待服务启动...${NC}"
 sleep 5
 
 # 验证线上服务
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 "http://${SERVER_IP}" 2>/dev/null || echo "000")
+# 注意：必须带 :8080。裸 IP 的 80 端口是同机其他项目的默认站点，
+# 用它验证会得到「别人活着就报成功」的假绿灯。
+HEALTH_URL="http://${SERVER_IP}:8080"
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 "$HEALTH_URL" 2>/dev/null || echo "000")
 
 if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "302" ]; then
     echo ""
     echo -e "${GREEN}✓ 部署成功！${NC}"
     echo -e "  版本: v${VERSION}"
-    echo -e "  地址: http://${SERVER_IP}"
+    echo -e "  地址: ${HEALTH_URL}"
     echo -e "  状态: HTTP ${HTTP_CODE}"
 else
     echo ""
     echo -e "${YELLOW}⚠ 部署完成但验证异常（HTTP ${HTTP_CODE}）${NC}"
     echo "  服务可能还在启动中，建议手动检查:"
-    echo "  curl -I http://${SERVER_IP}"
+    echo "  curl -I ${HEALTH_URL}"
     echo "  ssh -i $SSH_KEY ubuntu@${SERVER_IP} 'sudo journalctl -u family-finance -n 20'"
 fi
