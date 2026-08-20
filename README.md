@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/版本-v2.1.17-blue" alt="version">
+  <img src="https://img.shields.io/badge/版本-v2.1.18-blue" alt="version">
   <img src="https://img.shields.io/badge/Python-3.8+-green" alt="python">
   <img src="https://img.shields.io/badge/Flask-3.0-lightgrey" alt="flask">
   <img src="https://img.shields.io/badge/测试覆盖率-81%25-brightgreen" alt="coverage">
@@ -156,10 +156,16 @@ FLASK_PORT=5001                      # 服务端口
 
 ## 📋 版本历史
 
+## v2.1.18 (2026-08-20)
+
+### 修复
+- before_request 白名单移除冗余的 family 路由
+
 ## v2.1.17 (2026-08-20)
 
 ### 修复
 - 修复点「家庭」视图跳登录（308 缓存 + session 早夭）
+
 
 ## v2.1.16 (2026-08-10)
 
@@ -177,12 +183,6 @@ FLASK_PORT=5001                      # 服务端口
 
 ### 修复
 - 补齐分组分配路径同样的 transfer 覆盖问题
-
-
-## v2.1.13 (2026-07-08)
-
-### 修复
-- 快照录入不再覆盖同月 transfer 记录
 
 
 > 完整变更日志见 [CHANGELOG.md](./CHANGELOG.md)
