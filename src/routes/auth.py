@@ -128,6 +128,7 @@ def register():
             session['username'] = user.username
             session['nickname'] = user.nickname
             session['family_id'] = user.family_id
+            session.permanent = True  # 与 login 路径一致，避免注册用户 session 早夭
 
             return redirect(url_for('index'))
 
