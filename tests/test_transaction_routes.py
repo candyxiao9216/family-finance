@@ -7,10 +7,10 @@ class TestTransactionList:
     """GET /transactions 路由测试"""
 
     def test_unauthenticated_still_renders(self, client):
-        """未登录用户访问页面不报错（路由未强制登录验证）"""
+        """未登录访问交易列表页应被全局 before_request 拦截跳登录"""
         resp = client.get('/transactions/')
-        # 该路由未强制登录，user_id=None 时 user=None，仍能渲染页面
-        assert resp.status_code == 200
+        assert resp.status_code == 302
+        assert '/auth/login' in resp.headers.get('Location', '')
 
     def test_list_page_returns_200(self, logged_in_client, app):
         """已登录用户访问月度收支页返回 200"""

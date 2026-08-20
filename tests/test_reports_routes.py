@@ -117,7 +117,7 @@ class TestTrendAPI:
         resp = client.get('/reports/api/trend')
         assert resp.status_code == 401
         data = json.loads(resp.data)
-        assert data['error'] == '未登录'
+        assert 'error' in data  # 文案由全局 before_request 统一，只断言有 error 字段
 
 
 class TestCategoryAPI:

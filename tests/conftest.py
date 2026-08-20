@@ -106,7 +106,8 @@ def create_test_app(db_path=None):
         return 'index stub'
 
     # 注册 main.py 中的编辑路由（非蓝图路由）
-    from main import add_transaction, edit_transaction, delete_transaction
+    from main import add_transaction, edit_transaction, delete_transaction, require_login
+    app.before_request(require_login)  # 全局登录闸，与生产一致（P1-8：此前缺失）
     app.add_url_rule('/add', 'add_transaction', add_transaction, methods=['POST'])
     app.add_url_rule('/edit/<int:transaction_id>', 'edit_transaction', edit_transaction, methods=['GET', 'POST'])
     app.add_url_rule('/delete/<int:transaction_id>', 'delete_transaction', delete_transaction, methods=['POST'])

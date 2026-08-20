@@ -96,6 +96,11 @@ def require_login():
 
     if request.endpoint and request.endpoint not in allowed_routes:
         if 'user_id' not in session:
+            # API 端点返回 401 JSON（前端 fetch 能区分「未登录」而非收到跳转页 HTML）；
+            # 页面请求才 302 跳登录。判定：路径含 /api/、JSON 请求、或写操作（POST/PUT/DELETE）。
+            if '/api/' in request.path or request.is_json or request.method in ('POST', 'PUT', 'DELETE'):
+                from flask import jsonify
+                return jsonify({'error': '请先登录'}), 401
             return redirect(url_for('auth.login'))
 
 
