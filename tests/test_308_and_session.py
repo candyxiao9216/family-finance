@@ -67,8 +67,9 @@ class TestTemplateLinksUseTrailingSlash:
 class TestRegisterSessionPersistent:
     """注册后自动登录的 session 必须是 persistent，与 login 路径一致"""
 
-    def test_register_auto_login_works(self, app):
+    def test_register_auto_login_works(self, app, monkeypatch):
         """注册成功后应自动登录，访问受保护页面不跳登录"""
+        monkeypatch.setenv("ALLOW_SELF_REGISTER_FAMILY", "True")
         client = app.test_client()
         r = _register(client)
         assert r.status_code == 302, f"注册应返回 302 跳首页，实际 {r.status_code}"

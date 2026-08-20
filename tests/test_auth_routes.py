@@ -147,8 +147,9 @@ class TestLoginPage:
 class TestRegister:
     """注册路由测试"""
 
-    def test_register_success(self, app, client):
-        """注册新用户成功"""
+    def test_register_success(self, app, client, monkeypatch):
+        """显式开启自建家庭后，注册新用户成功"""
+        monkeypatch.setenv("ALLOW_SELF_REGISTER_FAMILY", "True")
         resp = client.post('/auth/register', data={
             'username': 'newuser',
             'password': 'NewPass123',
@@ -161,6 +162,18 @@ class TestRegister:
             user = User.query.filter_by(username='newuser').first()
             assert user is not None
             assert user.nickname == '新用户'
+
+    def test_register_without_invite_code_rejected(self, app, client):
+        """默认策略：无邀请码注册被拒（防陌生人自助建号，P0-10）"""
+        resp = client.post('/auth/register', data={
+            'username': 'stranger',
+            'password': 'StrangerPass1',
+            'nickname': '陌生人'
+        }, follow_redirects=True)
+        assert resp.status_code == 200
+        assert '邀请码' in resp.data.decode('utf-8')
+        with app.app_context():
+            assert User.query.filter_by(username='stranger').first() is None
 
     def test_register_duplicate_username_fails(self, app, client):
         """注册重复用户名失败"""

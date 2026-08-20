@@ -1,9 +1,10 @@
 """快捷模板路由模块"""
 from decimal import Decimal
 
-from flask import Blueprint, redirect, render_template, request, session, url_for, flash
+from flask import Blueprint, redirect, render_template, request, session, url_for, flash, abort
 
 from models import db, User, TransactionTemplate, Category, Account
+from utils.auth import is_owner_or_family
 
 template_bp = Blueprint('template', __name__, url_prefix='/templates')
 
@@ -69,6 +70,10 @@ def add_template():
 def edit_template(tpl_id):
     """编辑快捷模板"""
     tpl = TransactionTemplate.query.get_or_404(tpl_id)
+    user_id = session.get('user_id')
+    user = User.query.get(user_id)
+    if not is_owner_or_family(tpl, user, user_id):
+        abort(403)
 
     tpl.name = request.form.get('name', tpl.name)
     tpl.amount = Decimal(request.form.get('amount', str(tpl.amount)))
@@ -86,6 +91,10 @@ def edit_template(tpl_id):
 def delete_template(tpl_id):
     """删除快捷模板"""
     tpl = TransactionTemplate.query.get_or_404(tpl_id)
+    user_id = session.get('user_id')
+    user = User.query.get(user_id)
+    if not is_owner_or_family(tpl, user, user_id):
+        abort(403)
     db.session.delete(tpl)
     db.session.commit()
     flash('模板已删除', 'success')
@@ -96,7 +105,12 @@ def delete_template(tpl_id):
 def use_template(tpl_id):
     """使用模板（递增使用次数）"""
     tpl = TransactionTemplate.query.get(tpl_id)
-    if tpl:
-        tpl.use_count = (tpl.use_count or 0) + 1
-        db.session.commit()
+    if not tpl:
+        return '', 204  # 不存在的模板静默忽略（保持历史行为）
+    user_id = session.get('user_id')
+    user = User.query.get(user_id)
+    if not is_owner_or_family(tpl, user, user_id):
+        abort(403)
+    tpl.use_count = (tpl.use_count or 0) + 1
+    db.session.commit()
     return '', 204

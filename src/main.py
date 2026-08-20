@@ -216,6 +216,18 @@ def add_transaction():
 
         from_account = Account.query.get(from_account_id)
         to_account = Account.query.get(to_account_id)
+
+        # 账户存在性 + 归属校验（P0-3/P0-4：防越权转账、防 NoneType 崩溃）
+        current_user = User.query.get(user_id)
+        if not from_account or not to_account:
+            flash('转出或转入账户不存在', 'error')
+            return redirect(url_for('transaction.transaction_list'))
+        from utils.auth import is_owner_or_family
+        if not is_owner_or_family(from_account, current_user, user_id) or \
+           not is_owner_or_family(to_account, current_user, user_id):
+            flash('无权操作这些账户', 'error')
+            return redirect(url_for('transaction.transaction_list'))
+
         transfer_amount = Decimal(amount)
 
         # 转出记录

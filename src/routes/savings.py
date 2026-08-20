@@ -3,10 +3,11 @@ from datetime import datetime
 from decimal import Decimal
 from collections import defaultdict
 
-from flask import Blueprint, redirect, render_template, request, session, url_for, flash
+from flask import Blueprint, redirect, render_template, request, session, url_for, flash, abort
 from sqlalchemy import func
 
 from models import db, User, SavingsPlan, SavingsRecord, Account
+from utils.auth import is_owner_or_family
 
 savings_bp = Blueprint('savings', __name__, url_prefix='/savings')
 
@@ -143,6 +144,10 @@ def add_plan():
 def edit_plan(plan_id):
     """编辑储蓄计划"""
     plan = SavingsPlan.query.get_or_404(plan_id)
+    user_id = session.get('user_id')
+    user = User.query.get(user_id)
+    if not is_owner_or_family(plan, user, user_id, field='created_by'):
+        abort(403)
     plan.name = request.form.get('name', plan.name)
     plan.target_amount = Decimal(request.form.get('target_amount', str(plan.target_amount)))
     db.session.commit()
@@ -153,6 +158,10 @@ def edit_plan(plan_id):
 def delete_plan(plan_id):
     """删除储蓄计划（级联删除记录）"""
     plan = SavingsPlan.query.get_or_404(plan_id)
+    user_id = session.get('user_id')
+    user = User.query.get(user_id)
+    if not is_owner_or_family(plan, user, user_id, field='created_by'):
+        abort(403)
     db.session.delete(plan)
     db.session.commit()
     return redirect(url_for('savings.savings_list'))
@@ -171,6 +180,12 @@ def add_record():
     if not all([plan_id, amount, record_date_str]):
         flash('请填写所有必填字段', 'error')
         return redirect(url_for('savings.savings_list'))
+
+    # 校验 plan 归属，防止给他人储蓄计划加记录
+    plan = SavingsPlan.query.get_or_404(plan_id)
+    user = User.query.get(user_id)
+    if not is_owner_or_family(plan, user, user_id, field='created_by'):
+        abort(403)
 
     try:
         record_date = datetime.strptime(record_date_str, '%Y-%m-%d').date()
@@ -194,6 +209,10 @@ def add_record():
 def edit_record(record_id):
     """编辑储蓄记录"""
     record = SavingsRecord.query.get_or_404(record_id)
+    user_id = session.get('user_id')
+    user = User.query.get(user_id)
+    if not is_owner_or_family(record, user, user_id):
+        abort(403)
 
     plan_id = request.form.get('plan_id', type=int)
     amount = request.form.get('amount')
@@ -225,6 +244,10 @@ def edit_record(record_id):
 def delete_record(record_id):
     """删除储蓄记录"""
     record = SavingsRecord.query.get_or_404(record_id)
+    user_id = session.get('user_id')
+    user = User.query.get(user_id)
+    if not is_owner_or_family(record, user, user_id):
+        abort(403)
     db.session.delete(record)
     db.session.commit()
     flash('储蓄记录已删除', 'success')

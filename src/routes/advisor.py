@@ -13,8 +13,18 @@ from flask import Blueprint, render_template, request, session, url_for, flash, 
 from models import (db, Account, AccountType, AccountBalance, User,
                     StockHolding, FundHolding, WealthHolding,
                     Transaction, SavingsPlan, SavingsRecord, AiAdviceHistory)
+from utils.auth import is_owner_or_family
 
 advisor_bp = Blueprint('advisor', __name__, url_prefix='/advisor')
+
+
+def _holding_forbidden(holding):
+    """持仓越权检查：返回 jsonify 403 响应，或 None 表示放行"""
+    user = _get_current_user()
+    user_id = session.get('user_id')
+    if not is_owner_or_family(holding, user, user_id):
+        return jsonify({'success': False, 'error': '无权操作该持仓'}), 403
+    return None
 
 
 # ============ 辅助函数 ============
@@ -311,6 +321,9 @@ def add_stock():
 def update_stock(id):
     """更新股票持仓"""
     holding = StockHolding.query.get_or_404(id)
+    forbidden = _holding_forbidden(holding)
+    if forbidden:
+        return forbidden
     data = request.json or request.form
 
     if 'shares' in data:
@@ -332,6 +345,9 @@ def update_stock(id):
 def delete_stock(id):
     """删除股票持仓"""
     holding = StockHolding.query.get_or_404(id)
+    forbidden = _holding_forbidden(holding)
+    if forbidden:
+        return forbidden
     db.session.delete(holding)
     db.session.commit()
 
@@ -374,6 +390,9 @@ def add_fund():
 def delete_fund(id):
     """删除基金持仓"""
     holding = FundHolding.query.get_or_404(id)
+    forbidden = _holding_forbidden(holding)
+    if forbidden:
+        return forbidden
     db.session.delete(holding)
     db.session.commit()
 
@@ -391,6 +410,9 @@ def transfer_fund(fund_id):
         return jsonify({'success': False, 'error': '请先登录'}), 401
 
     old_holding = FundHolding.query.get_or_404(fund_id)
+    forbidden = _holding_forbidden(old_holding)
+    if forbidden:
+        return forbidden
     data = request.json or {}
 
     new_fund_name = (data.get('new_fund_name') or '').strip()
@@ -458,6 +480,9 @@ def add_wealth():
 def delete_wealth(id):
     """删除理财产品"""
     holding = WealthHolding.query.get_or_404(id)
+    forbidden = _holding_forbidden(holding)
+    if forbidden:
+        return forbidden
     db.session.delete(holding)
     db.session.commit()
 

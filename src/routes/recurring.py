@@ -2,9 +2,10 @@
 from datetime import date, timedelta
 from decimal import Decimal
 
-from flask import Blueprint, redirect, render_template, request, session, url_for, flash
+from flask import Blueprint, redirect, render_template, request, session, url_for, flash, abort
 
 from models import db, User, RecurringTransaction, Transaction, Category, Account
+from utils.auth import is_owner_or_family
 
 recurring_bp = Blueprint('recurring', __name__, url_prefix='/recurring')
 
@@ -166,6 +167,10 @@ def add_recurring():
 def toggle_recurring(item_id):
     """切换定期交易的启用/暂停状态"""
     item = RecurringTransaction.query.get_or_404(item_id)
+    user_id = session.get('user_id')
+    user = User.query.get(user_id)
+    if not is_owner_or_family(item, user, user_id):
+        abort(403)
     item.is_active = not item.is_active
 
     # 重新启用时，如果 next_run_date 已过期，设为今天
@@ -181,6 +186,10 @@ def toggle_recurring(item_id):
 def delete_recurring(item_id):
     """删除定期交易"""
     item = RecurringTransaction.query.get_or_404(item_id)
+    user_id = session.get('user_id')
+    user = User.query.get(user_id)
+    if not is_owner_or_family(item, user, user_id):
+        abort(403)
     db.session.delete(item)
     db.session.commit()
     flash('定期交易已删除', 'success')

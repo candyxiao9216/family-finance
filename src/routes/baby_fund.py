@@ -2,11 +2,12 @@
 from datetime import datetime
 from decimal import Decimal
 
-from flask import Blueprint, redirect, render_template, request, session, url_for, flash
+from flask import Blueprint, redirect, render_template, request, session, url_for, flash, abort
 from pypinyin import lazy_pinyin
 from sqlalchemy import func
 
 from models import db, User, BabyFund, BabyFundMemo, Transaction, TransactionModification, Account, Category
+from utils.auth import is_owner_or_family
 
 baby_fund_bp = Blueprint('baby_fund', __name__, url_prefix='/baby-fund')
 
@@ -154,6 +155,10 @@ def add_fund():
 @baby_fund_bp.route('/<int:fund_id>/edit', methods=['POST'])
 def edit_fund(fund_id):
     fund = BabyFund.query.get_or_404(fund_id)
+    user_id = session.get('user_id')
+    user = User.query.get(user_id)
+    if not is_owner_or_family(fund, user, user_id, field='created_by'):
+        abort(403)
 
     new_giver = request.form.get('giver_name', fund.giver_name)
     new_amount = request.form.get('amount', str(fund.amount))
@@ -194,6 +199,10 @@ def edit_fund(fund_id):
 @baby_fund_bp.route('/<int:fund_id>/delete', methods=['POST'])
 def delete_fund(fund_id):
     fund = BabyFund.query.get_or_404(fund_id)
+    user_id = session.get('user_id')
+    user = User.query.get(user_id)
+    if not is_owner_or_family(fund, user, user_id, field='created_by'):
+        abort(403)
 
     # 级联删除：先删 TransactionModification，再删 Transaction
     if fund.transaction_id:
@@ -243,6 +252,9 @@ def memo_edit(memo_id):
         return redirect(url_for('auth.login'))
 
     memo = BabyFundMemo.query.get_or_404(memo_id)
+    user = User.query.get(user_id)
+    if not is_owner_or_family(memo, user, user_id):
+        abort(403)
     content = request.form.get('memo_content', '').strip()
     if not content:
         flash('备忘内容不能为空', 'error')
@@ -262,6 +274,9 @@ def memo_toggle(memo_id):
         return redirect(url_for('auth.login'))
 
     memo = BabyFundMemo.query.get_or_404(memo_id)
+    user = User.query.get(user_id)
+    if not is_owner_or_family(memo, user, user_id):
+        abort(403)
     if memo.status == 'pending':
         memo.status = 'completed'
         memo.completed_at = datetime.utcnow()
@@ -280,6 +295,9 @@ def memo_delete(memo_id):
         return redirect(url_for('auth.login'))
 
     memo = BabyFundMemo.query.get_or_404(memo_id)
+    user = User.query.get(user_id)
+    if not is_owner_or_family(memo, user, user_id):
+        abort(403)
     db.session.delete(memo)
     db.session.commit()
     flash('备忘已删除', 'success')

@@ -3,6 +3,7 @@
 实现注册、登录、登出功能，支持家庭创建和加入
 """
 
+import os
 import secrets
 import logging
 from datetime import datetime, timedelta
@@ -107,6 +108,7 @@ def register():
             db.session.flush()  # 获取 user.id
 
             # 家庭处理逻辑
+            allow_new_family = os.environ.get('ALLOW_SELF_REGISTER_FAMILY', 'False') == 'True'
             if invite_code:
                 # 使用邀请码加入家庭
                 family, error = join_family_with_invite_code(user, invite_code)
@@ -116,10 +118,14 @@ def register():
                     return render_template('auth/register-redesigned.html')
 
                 flash(f'注册成功！您已加入 {family.name}', 'success')
-            else:
-                # 第一个用户自动创建家庭
+            elif allow_new_family:
+                # 仅当显式开启时才允许注册并自建家庭（默认关闭，防陌生人自助建号）
                 family = create_family_for_first_user(user)
                 flash(f'注册成功！已为您创建家庭 {family.name}，邀请码：{family.invite_code}', 'success')
+            else:
+                db.session.rollback()
+                flash('注册需要家庭邀请码，请向家人索取', 'error')
+                return render_template('auth/register-redesigned.html')
 
             db.session.commit()
 
