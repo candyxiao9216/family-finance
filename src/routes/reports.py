@@ -235,7 +235,11 @@ def api_asset_trend():
         AccountType, Account.type_id == AccountType.id
     ).filter(
         AccountBalance.account_id.in_(account_ids),
-        AccountBalance.record_month >= start_date
+        AccountBalance.record_month >= start_date,
+        # P1-2：只取 snapshot 记录。AccountBalance 同账户同月可有
+        # 1 行 snapshot + N 行 transfer（balance 是「变更后快照余额」非增量），
+        # 不过滤会把同一笔钱数 N 遍，资产翻倍。与 account.py:59 一致。
+        AccountBalance.source == 'snapshot',
     ).group_by(
         func.strftime('%Y-%m', AccountBalance.record_month),
         AccountType.category
@@ -509,7 +513,8 @@ def monthly_summary():
     ).filter(
         AccountBalance.account_id.in_(account_ids),
         AccountBalance.record_month >= month_start,
-        AccountBalance.record_month < next_month_start
+        AccountBalance.record_month < next_month_start,
+        AccountBalance.source == 'snapshot',  # P1-2：避免 transfer 重复求和
     ).first() if account_ids else None
 
     # 上月快照
@@ -519,7 +524,8 @@ def monthly_summary():
     ).filter(
         AccountBalance.account_id.in_(account_ids),
         AccountBalance.record_month >= prev_month_start_date,
-        AccountBalance.record_month < month_start
+        AccountBalance.record_month < month_start,
+        AccountBalance.source == 'snapshot',  # P1-2：避免 transfer 重复求和
     ).first() if account_ids else None
 
     asset_start = float(prev_balances.total) if prev_balances and prev_balances.total else 0.0

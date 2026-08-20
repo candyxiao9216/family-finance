@@ -46,6 +46,45 @@ app.register_blueprint(transaction_bp)
 app.register_blueprint(advisor_bp)
 app.register_blueprint(settings_bp)
 
+
+# ===== 转账余额/快照一致性 helper =====
+# 转账在 add / edit / delete 三处都要写 Account.current_balance + AccountBalance，
+# 此前各自手写导致：edit 用回滚后余额匹配旧记录删不掉、且不插新记录（P1-1）。
+# 抽成共用 helper，统一「按 record_month + source=transfer + change_amount 匹配」。
+
+def _apply_transfer_balance(account_id, amount, record_month, user_id):
+    """应用转账：扣/加账户余额，并插入一条 transfer AccountBalance 记录。
+
+    amount 带符号：转出为负，转入为正。
+    """
+    account = Account.query.get(account_id)
+    if account:
+        account.current_balance = (account.current_balance or 0) + amount
+    db.session.add(AccountBalance(
+        account_id=account_id,
+        balance=account.current_balance if account else 0,
+        change_amount=amount,
+        record_month=record_month,
+        source='transfer',
+        recorded_by=user_id
+    ))
+
+
+def _remove_transfer_balance(account_id, amount, record_month):
+    """撤销转账：反向回滚余额，删除对应的 transfer AccountBalance 记录。
+
+    按 record_month + source=transfer + change_amount 精确匹配（与 delete
+    路径一致），避免误删同月其他转账记录。
+    """
+    account = Account.query.get(account_id)
+    if account:
+        account.current_balance = (account.current_balance or 0) - amount
+    AccountBalance.query.filter_by(
+        account_id=account_id, record_month=record_month, source='transfer'
+    ).filter(AccountBalance.change_amount == amount).delete(
+        synchronize_session=False)
+
+
 @app.before_request
 def require_login():
     """登录状态检查"""
@@ -258,31 +297,15 @@ def add_transaction():
         txn_out.transfer_pair_id = txn_in.id
         txn_in.transfer_pair_id = txn_out.id
 
-        # 更新账户余额
-        from_account.current_balance = from_account.current_balance - transfer_amount
-        to_account.current_balance = to_account.current_balance + transfer_amount
-
-        # 插入变更记录
+        # 更新账户余额 + 插入 transfer 变更记录（经共用 helper，与 edit/delete 一致）
         this_month = transaction_date.replace(day=1)
-        bal_out = AccountBalance(
-            account_id=from_account_id,
-            balance=from_account.current_balance,
-            change_amount=-transfer_amount,
-            record_month=this_month,
-            source='transfer',
-            recorded_by=user_id
-        )
-        bal_in = AccountBalance(
-            account_id=to_account_id,
-            balance=to_account.current_balance,
-            change_amount=transfer_amount,
-            record_month=this_month,
-            source='transfer',
-            recorded_by=user_id
-        )
-        db.session.add(bal_out)
-        db.session.add(bal_in)
+        _apply_transfer_balance(from_account_id, -transfer_amount, this_month, user_id)
+        _apply_transfer_balance(to_account_id, transfer_amount, this_month, user_id)
         db.session.commit()
+
+        return redirect(url_for('transaction.transaction_list'))
+
+    # === 普通收入/支出逻辑 ===
 
         return redirect(url_for('transaction.transaction_list'))
 
@@ -411,25 +434,14 @@ def edit_transaction(transaction_id):
                 field_name='备注', old_value=transaction.description or '', new_value=new_description or ''))
 
         if modifications:
-            # 1. 回滚旧账户余额
+            # 1+2. 撤销旧转账：回滚余额 + 删旧 AccountBalance 记录（经 helper，
+            #    按 record_month + source + change_amount 精确匹配，修 P1-1：
+            #    原先用回滚后余额匹配，条件永不成立，旧记录删不掉）
+            old_month = (transaction.transaction_date or new_date).replace(day=1)
             if old_from_account_id:
-                old_from = Account.query.get(old_from_account_id)
-                if old_from:
-                    old_from.current_balance = (old_from.current_balance or 0) + old_amount
+                _remove_transfer_balance(old_from_account_id, -old_amount, old_month)
             if old_to_account_id:
-                old_to = Account.query.get(old_to_account_id)
-                if old_to:
-                    old_to.current_balance = (old_to.current_balance or 0) - old_amount
-
-            # 2. 删除旧的 AccountBalance 变更记录
-            AccountBalance.query.filter_by(
-                account_id=old_from_account_id, source='transfer',
-                balance=Account.query.get(old_from_account_id).current_balance if old_from_account_id else 0
-            ).delete(synchronize_session=False)
-            AccountBalance.query.filter_by(
-                account_id=old_to_account_id, source='transfer',
-                balance=Account.query.get(old_to_account_id).current_balance if old_to_account_id else 0
-            ).delete(synchronize_session=False)
+                _remove_transfer_balance(old_to_account_id, old_amount, old_month)
 
             # 3. 更新交易记录
             transaction.amount = new_amount_decimal
@@ -446,15 +458,13 @@ def edit_transaction(transaction_id):
                 pair.transaction_date = new_date
                 pair.description = new_description or None
 
-            # 4. 更新新账户余额
+            # 4. 应用新转账：更新余额 + 插新 AccountBalance 记录（修 P1-1：
+            #    原先只改余额不插记录，导致快照历史与 current_balance 脱钩）
+            new_month = new_date.replace(day=1)
             if new_from_account_id:
-                new_from = Account.query.get(new_from_account_id)
-                if new_from:
-                    new_from.current_balance = (new_from.current_balance or 0) - new_amount_decimal
+                _apply_transfer_balance(new_from_account_id, -new_amount_decimal, new_month, user_id)
             if new_to_account_id:
-                new_to = Account.query.get(new_to_account_id)
-                if new_to:
-                    new_to.current_balance = (new_to.current_balance or 0) + new_amount_decimal
+                _apply_transfer_balance(new_to_account_id, new_amount_decimal, new_month, user_id)
 
             for mod in modifications:
                 db.session.add(mod)
@@ -537,26 +547,12 @@ def delete_transaction(transaction_id):
         else:
             txn_out, txn_in = pair, transaction
 
-        # 回滚余额
-        if txn_out and txn_out.account_id:
-            from_account = Account.query.get(txn_out.account_id)
-            if from_account:
-                from_account.current_balance = from_account.current_balance + txn_out.amount
-        if txn_in and txn_in.account_id:
-            to_account = Account.query.get(txn_in.account_id)
-            if to_account:
-                to_account.current_balance = to_account.current_balance - txn_in.amount
-
-        # 删除对应的变更记录
+        # 撤销余额 + 删 transfer AccountBalance 记录（经 helper，统一三路径）
         this_month = transaction.transaction_date.replace(day=1)
         if txn_out and txn_out.account_id:
-            AccountBalance.query.filter_by(
-                account_id=txn_out.account_id, record_month=this_month, source='transfer'
-            ).filter(AccountBalance.change_amount == -txn_out.amount).delete()
+            _remove_transfer_balance(txn_out.account_id, -txn_out.amount, this_month)
         if txn_in and txn_in.account_id:
-            AccountBalance.query.filter_by(
-                account_id=txn_in.account_id, record_month=this_month, source='transfer'
-            ).filter(AccountBalance.change_amount == txn_in.amount).delete()
+            _remove_transfer_balance(txn_in.account_id, txn_in.amount, this_month)
 
         # 删除配对记录
         if pair:
