@@ -54,7 +54,7 @@ def reports_page():
     user_id = session.get('user_id')
     user = User.query.get(user_id)
     family = user.family if user else None
-    current_view = request.args.get('view', 'personal')
+    current_view = request.args.get('view', 'family' if family else 'personal')
 
     # 无家庭时回退到个人视图
     if current_view == 'family' and not family:
@@ -463,7 +463,7 @@ def monthly_summary():
 
     user = User.query.get(user_id)
     family = user.family if user else None
-    current_view = request.args.get('view', 'personal')
+    current_view = request.args.get('view', 'family' if family else 'personal')
     if current_view == 'family' and not family:
         current_view = 'personal'
 

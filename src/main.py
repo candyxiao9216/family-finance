@@ -308,6 +308,7 @@ def add_transaction():
         _apply_transfer_balance(to_account_id, transfer_amount, this_month, user_id)
         db.session.commit()
 
+        flash(f'已添加转账 ¥{float(transfer_amount):,.2f}', 'success')
         return redirect(url_for('transaction.transaction_list'))
 
     # === 普通收入/支出逻辑 ===
@@ -334,6 +335,8 @@ def add_transaction():
     db.session.add(transaction)
     db.session.commit()
 
+    type_label = '收入' if transaction_type == 'income' else '支出'
+    flash(f'已添加{type_label} ¥{float(amount_val):,.2f}', 'success')
     return redirect(url_for('transaction.transaction_list'))
 
 
@@ -475,6 +478,7 @@ def edit_transaction(transaction_id):
                 db.session.add(mod)
             db.session.commit()
 
+        flash('交易已更新', 'success')
         return redirect(url_for('transaction.transaction_list'))
 
     # ===== 普通收入/支出编辑 =====
@@ -566,6 +570,7 @@ def delete_transaction(transaction_id):
     db.session.delete(transaction)
     db.session.commit()
 
+    flash('交易已删除', 'success')
     return redirect(url_for('transaction.transaction_list'))
 
 

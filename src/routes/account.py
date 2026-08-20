@@ -28,7 +28,7 @@ def account_list():
     user_id = session.get('user_id')
     user = User.query.get(user_id)
     family = user.family if user else None
-    current_view = request.args.get('view', 'personal')
+    current_view = request.args.get('view', 'family' if family else 'personal')
 
     if current_view == 'family' and not family:
         current_view = 'personal'
@@ -196,6 +196,7 @@ def create_account():
     db.session.add(account)
     db.session.commit()
 
+    flash(f'已创建账户「{name}」', 'success')
     return redirect(url_for('account.account_list'))
 
 

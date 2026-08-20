@@ -25,8 +25,8 @@ def transaction_list():
     user = User.query.get(user_id)
     family = user.family if user else None
 
-    # 读取视图参数：personal（个人）或 family（家庭）
-    current_view = request.args.get('view', 'personal')
+    # 读取视图参数：personal（个人）或 family（家庭）；默认与首页一致（有家庭则家庭视图）
+    current_view = request.args.get('view', 'family' if family else 'personal')
 
     # 确定查询范围
     if current_view == 'family' and family:

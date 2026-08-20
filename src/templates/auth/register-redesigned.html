@@ -369,13 +369,15 @@
                     <label for="password">密码</label>
                     <input type="password" id="password" name="password" required
                            class="form-input"
-                           placeholder="至少6个字符" minlength="6"
+                           placeholder="至少8位，需含字母和数字" minlength="8"
+                           pattern="(?=.*[A-Za-z])(?=.*\d).{8,}"
+                           title="至少8位，需同时包含字母和数字"
                            autocomplete="new-password">
-                    <small class="form-hint">至少6个字符</small>
+                    <small class="form-hint">至少8位，需同时包含字母和数字</small>
                 </div>
 
                 <div class="form-group">
-                    <label for="invite_code">邀请码（可选）</label>
+                    <label for="invite_code">邀请码</label>
                     <input type="text" id="invite_code" name="invite_code"
                            class="form-input"
                            placeholder="输入邀请码加入已有家庭">
