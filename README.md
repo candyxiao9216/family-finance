@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/版本-v2.1.22-blue" alt="version">
+  <img src="https://img.shields.io/badge/版本-v2.1.23-blue" alt="version">
   <img src="https://img.shields.io/badge/Python-3.8+-green" alt="python">
   <img src="https://img.shields.io/badge/Flask-3.0-lightgrey" alt="flask">
   <img src="https://img.shields.io/badge/测试覆盖率-81%25-brightgreen" alt="coverage">
@@ -156,10 +156,16 @@ FLASK_PORT=5001                      # 服务端口
 
 ## 📋 版本历史
 
+## v2.1.23 (2026-08-21)
+
+### 修复
+- 注册密码规则统一 + 删演示账号 + 视图默认一致 + 操作反馈
+
 ## v2.1.22 (2026-08-20)
 
 ### 修复
 - 测试 app 注册全局 before_request，与生产一致（P1-8）
+
 
 ## v2.1.21 (2026-08-20)
 
@@ -177,12 +183,6 @@ FLASK_PORT=5001                      # 服务端口
 
 ### 修复
 - 补齐 5 个 blueprint 的 IDOR 越权校验 + 关闭公开注册
-
-
-## v2.1.18 (2026-08-20)
-
-### 修复
-- before_request 白名单移除冗余的 family 路由
 
 
 > 完整变更日志见 [CHANGELOG.md](./CHANGELOG.md)
