@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/版本-v2.1.20-blue" alt="version">
+  <img src="https://img.shields.io/badge/版本-v2.1.21-blue" alt="version">
   <img src="https://img.shields.io/badge/Python-3.8+-green" alt="python">
   <img src="https://img.shields.io/badge/Flask-3.0-lightgrey" alt="flask">
   <img src="https://img.shields.io/badge/测试覆盖率-81%25-brightgreen" alt="coverage">
@@ -156,10 +156,16 @@ FLASK_PORT=5001                      # 服务端口
 
 ## 📋 版本历史
 
+## v2.1.21 (2026-08-20)
+
+### 修复
+- 修转账余额一致性 + 资产趋势重复求和（P1-1/P1-2）
+
 ## v2.1.20 (2026-08-20)
 
 ### 修复
 - 修复两个休眠崩溃炸弹（定期交易 source 列 + 删账户外键）
+
 
 ## v2.1.19 (2026-08-20)
 
@@ -177,12 +183,6 @@ FLASK_PORT=5001                      # 服务端口
 
 ### 修复
 - 修复点「家庭」视图跳登录（308 缓存 + session 早夭）
-
-
-## v2.1.16 (2026-08-10)
-
-### 修复
-- 修复多站点共用 nginx 导致的部署脚本隐患
 
 
 > 完整变更日志见 [CHANGELOG.md](./CHANGELOG.md)
