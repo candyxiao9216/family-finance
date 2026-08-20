@@ -8,7 +8,7 @@ from dateutil.relativedelta import relativedelta
 from flask import Blueprint, redirect, render_template, request, session, url_for, flash
 from pypinyin import lazy_pinyin
 
-from models import db, Account, AccountType, AccountBalance, User, Transaction, AccountGroup
+from models import db, Account, AccountType, AccountBalance, User, Transaction, AccountGroup, StockHolding, FundHolding, WealthHolding, SavingsRecord, BabyFund, TransactionTemplate, RecurringTransaction
 
 account_bp = Blueprint('account', __name__, url_prefix='/accounts')
 
@@ -448,11 +448,25 @@ def delete_account(account_id):
     if account.user_id != user_id:
         return "无权删除此账户", 403
 
+    # 有持仓的账户不得删除：StockHolding/FundHolding/WealthHolding 的 account_id
+    # 为 NOT NULL，删账户会触发外键约束崩溃。提示用户先转移/删除持仓。
+    has_holdings = (
+        StockHolding.query.filter_by(account_id=account_id).first()
+        or FundHolding.query.filter_by(account_id=account_id).first()
+        or WealthHolding.query.filter_by(account_id=account_id).first()
+    )
+    if has_holdings:
+        flash('该账户下还有投资持仓，请先在「财务顾问」中删除或转出持仓后再删账户', 'error')
+        return redirect(url_for('account.account_list'))
+
     # 删除关联的快照记录
     AccountBalance.query.filter_by(account_id=account_id).delete()
-    # 清除关联交易的 account_id
-    from models import Transaction
+    # nullable 外键资源：置空，避免悬空指向已删账户
     Transaction.query.filter_by(account_id=account_id).update({'account_id': None})
+    SavingsRecord.query.filter_by(account_id=account_id).update({'account_id': None})
+    BabyFund.query.filter_by(account_id=account_id).update({'account_id': None})
+    TransactionTemplate.query.filter_by(account_id=account_id).update({'account_id': None})
+    RecurringTransaction.query.filter_by(account_id=account_id).update({'account_id': None})
     db.session.delete(account)
     db.session.commit()
 

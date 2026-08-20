@@ -47,7 +47,6 @@ def process_recurring_transactions(user_id):
                 category_id=item.category_id,
                 description=f"[定期] {item.description or item.name}",
                 transaction_date=item.next_run_date,
-                source='recurring',
                 account_id=item.account_id
             )
             db.session.add(txn)
