@@ -50,7 +50,10 @@ app.register_blueprint(settings_bp)
 def require_login():
     """登录状态检查"""
     # 允许访问的公开路由
-    allowed_routes = ['auth.login', 'auth.register', 'static', 'family.family_info', 'family.family_members']
+    # 注意：family.family_info / family.family_members 不再放行——
+    # 它们由本 before_request 统一拦截即可，无需白名单冗余（原先靠函数内部
+    # 自检 session 兜底，但那样一旦内部检查被误删就成泄露隐患）。
+    allowed_routes = ['auth.login', 'auth.register', 'static']
 
     if request.endpoint and request.endpoint not in allowed_routes:
         if 'user_id' not in session:
