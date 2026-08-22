@@ -150,7 +150,32 @@
   - `tests/test_deploy_config.py` 守护上述不变量
   - 部署拓扑与端口分配 → 见 [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)
 
+### 7. IDOR 越权大面积缺失 + 测试自我安慰（2026-08-20 体检）
+- **问题**: 系统体检发现 5 个 blueprint 共 18 个写路由不校验资源归属，转账不校验账户归属，注册接口对公网开放。陌生人自助注册即可遍历 id 删改全站所有家庭的财务数据。同时覆盖率 81% 是"自我安慰"——main.py（566 行）和 advisor.py（1221 行）被 omit，真实覆盖率约 55%，而两个最大的文件恰好各藏一个 IDOR
+- **根因**: 只在 `before_request` 做了"是否登录"的全局闸，没在路由内做"资源是否属于你"的对象级授权（IDOR）。转账 add/edit/delete 写 `AccountBalance` 的逻辑各写一遍，导致同一 bug 修两次（v2.1.13/14）还漏第三处。测试用 conftest 自建 app 但漏注册 `before_request`，且 `test_main_routes.py` 抄了 index/add 副本已与真代码漂移，断言与真行为相反却全绿
+- **方案**:
+  - 新增 `src/utils/auth.py` 的 `is_owner_or_family` 统一权限 helper，21 处写路由补归属校验
+  - 转账写 AccountBalance 抽成 `_apply_transfer_balance`/`_remove_transfer_balance` 共用，add/edit/delete 三处统一
+  - 注册默认要求邀请码（`ALLOW_SELF_REGISTER_FAMILY` 逃生口）
+  - conftest 注册 `require_login`，测试 app 与生产一致
+  - API 未登录返回 401 JSON 而非 302 跳登录（前端 fetch 能区分）
+- **防范**:
+  - 新增写路由（带 id 参数的 POST）**必须**加归属校验，复用 `is_owner_or_family`
+  - 新增资源的归属字段若是 `created_by` 而非 `user_id`，helper 传 `field=` 参数
+  - 同一逻辑在多处出现时**抽 helper**，别复制粘贴（transfer 写余额是教训）
+  - 测试要用真路由（conftest 已注册 `/add`/`/edit`/`/delete`），不要抄副本
+  - `tests/test_idor.py` 的两用户越权测试模式可复用：B 操作 A 的资源断言被拒且 A 数据不变
+
+### 8. 覆盖率 omit 的真实代价（2026-08-20 体检）
+- **问题**: `pyproject.toml` 把 `main.py`/`advisor.py` 整体 omit，81% 覆盖率数字掩盖了关键路径空洞。移出后 main.py 仅 61%，总覆盖率跌至 79% 跌破门槛
+- **根因**: "排除了难测的文件"的决策，代价是两个最严重的越权点恰好落在两个盲区里。`release.sh` 用这个虚高数字做发版卡口，等于放行
+- **当前状态**: 暂未移出 omit（移出会卡发版）。待 `test_main_routes.py` 重写覆盖 main.py 后再移除
+- **待办（不紧急，单独批次）**:
+  - P1-9: 重写 `test_main_routes.py`，删 main_app 影子实现，改用 conftest 真 app
+  - P1-10: main.py/advisor.py 移出 omit（advisor 拆分：持仓 CRUD 纳入覆盖，AI 端点留 omit）
+  - `release.sh:115` 覆盖率提取失败降级为 100 的 fail-open 改为 fail
+
 ---
 
-**版本**: v2.1.15
-**最后更新**: 2026-08-08
+**版本**: v2.1.23
+**最后更新**: 2026-08-22
