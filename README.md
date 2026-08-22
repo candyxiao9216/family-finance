@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/版本-v2.1.23-blue" alt="version">
+  <img src="https://img.shields.io/badge/版本-v2.1.24-blue" alt="version">
   <img src="https://img.shields.io/badge/Python-3.8+-green" alt="python">
   <img src="https://img.shields.io/badge/Flask-3.0-lightgrey" alt="flask">
   <img src="https://img.shields.io/badge/测试覆盖率-81%25-brightgreen" alt="coverage">
@@ -156,10 +156,16 @@ FLASK_PORT=5001                      # 服务端口
 
 ## 📋 版本历史
 
+## v2.1.24 (2026-08-22)
+
+### 新增
+- 页脚加备案号（备案合规）
+
 ## v2.1.23 (2026-08-21)
 
 ### 修复
 - 注册密码规则统一 + 删演示账号 + 视图默认一致 + 操作反馈
+
 
 ## v2.1.22 (2026-08-20)
 
@@ -177,12 +183,6 @@ FLASK_PORT=5001                      # 服务端口
 
 ### 修复
 - 修复两个休眠崩溃炸弹（定期交易 source 列 + 删账户外键）
-
-
-## v2.1.19 (2026-08-20)
-
-### 修复
-- 补齐 5 个 blueprint 的 IDOR 越权校验 + 关闭公开注册
 
 
 > 完整变更日志见 [CHANGELOG.md](./CHANGELOG.md)
