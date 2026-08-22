@@ -3602,3 +3602,17 @@ button.loading::after {
     font-size: 13px;
 }
 }
+/* ── 备案号页脚 ─────────────────────────────── */
+.site-footer {
+    text-align: center;
+    padding: 16px 8px;
+    font-size: 12px;
+    color: var(--color-text-secondary, #999);
+}
+.site-footer a {
+    color: var(--color-text-secondary, #999);
+    text-decoration: none;
+}
+.site-footer a:hover {
+    text-decoration: underline;
+}
