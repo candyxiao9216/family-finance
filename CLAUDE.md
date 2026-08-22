@@ -175,7 +175,18 @@
   - P1-10: main.py/advisor.py 移出 omit（advisor 拆分：持仓 CRUD 纳入覆盖，AI 端点留 omit）
   - `release.sh:115` 覆盖率提取失败降级为 100 的 fail-open 改为 fail
 
+### 9. HTTPS + Secure cookie + ProxyFix 三件套（2026-08-22）
+- **背景**: 域名 `finance.candyxiao.cn` 备案下来后上 HTTPS（腾讯云 SSL 证书）
+- **坑**: 光配 nginx 443 不够。开了 `SESSION_COOKIE_SECURE=True` 后，Flask 默认不信任 nginx 的 `X-Forwarded-Proto` 头，以为自己在 HTTP → Secure cookie 不发出 → **HTTPS 域名也登录不了**（登录后立即被踢回登录页）
+- **方案**: 三件套缺一不可
+  - nginx: `listen 443 ssl` + `X-Forwarded-Proto $scheme` + 80 跳转 HTTPS
+  - 应用: `SESSION_COOKIE_SECURE/HTTPONLY/SAMESITE` 配置
+  - 应用: `ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)` 让 Flask 信任反代头
+- **权衡**: 开 Secure 后 **8080 HTTP 入口无法登录**（cookie 不在 HTTP 下传），但 8080 仍可用于部署健康检查（curl 验 302）。需要登录走 HTTPS
+- **证书续期**: 腾讯云免费 SSL 有效期 1 年，到期前 30 天须续期，否则 HTTPS 失效。续期步骤见 [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)「HTTPS 配置与证书续期」
+- **备案合规**: 页脚必须显示备案号（粤ICP备2026120681号-1），否则可能被注销备案。已在 `base.html`/`auth_base.html` 加 `.site-footer`
+
 ---
 
-**版本**: v2.1.23
+**版本**: v2.1.25
 **最后更新**: 2026-08-22
