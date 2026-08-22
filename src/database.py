@@ -1,3 +1,4 @@
+import os
 from datetime import timedelta
 from datetime import timedelta
 from flask import Flask
@@ -116,6 +117,21 @@ def create_app() -> Flask:
     app.config['SECRET_KEY'] = SECRET_KEY
     app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)  # 会话 24 小时过期
+
+    # Session cookie 安全属性
+    # - HttpOnly：禁止 JS 读取 cookie（防 XSS 窃取），始终开启
+    # - SameSite=Lax：防 CSRF（默认值显式声明）
+    # - Secure：只在 HTTPS 下发送 cookie。生产环境经 HTTPS 域名访问时开启；
+    #   8080 HTTP 入口在此模式下无法登录（仍可用于部署健康检查）。
+    #   由环境变量 SESSION_COOKIE_SECURE 控制，默认开启（生产）。
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    app.config['SESSION_COOKIE_SECURE'] = os.environ.get('SESSION_COOKIE_SECURE', 'True').lower() == 'true'
+
+    # ProxyFix：nginx 反代时让 Flask 信任 X-Forwarded-* 头，否则 Flask 以为
+    # 是 HTTP（看不到 HTTPS），Secure cookie 不会发出 → HTTPS 域名也登录不了。
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
     # 初始化数据库
     db.init_app(app)

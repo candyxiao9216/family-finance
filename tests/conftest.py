@@ -11,6 +11,8 @@ os.environ['DATABASE_PATH'] = _test_db.name
 # ⚠️ 在 import config 之前注入测试用 SECRET_KEY，使 create_app() 的安全闸通过
 # （load_dotenv 默认不覆盖已存在的环境变量，故此值优先于 .env）
 os.environ.setdefault('SECRET_KEY', 'test-secret-key-for-pytest')
+# 测试用 HTTP test_client，Secure cookie 会让 session 失效，关闭
+os.environ.setdefault('SESSION_COOKIE_SECURE', 'False')
 
 # 确保 src 在 path 中
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
